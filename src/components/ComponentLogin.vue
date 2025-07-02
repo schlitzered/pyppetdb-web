@@ -66,59 +66,59 @@
 </template>
 
 <script setup>
-import { reactive, ref, nextTick, onMounted } from "vue";
-import axios from "axios";
-import api from "@/api/common";
-import router from "../router/routes";
+import { reactive, ref, nextTick, onMounted } from 'vue'
+import axios from 'axios'
+import api from '@/api/common'
+import router from '../router/routes'
 
-const form = ref(null);
+const form = ref(null)
 const formData = reactive({
-  user: "",
-  password: "",
-});
-const formValid = ref(false);
-const formShowPassword = ref(false);
+  user: '',
+  password: ''
+})
+const formValid = ref(false)
+const formShowPassword = ref(false)
 
 const oauth = reactive({
-  providers: [],
-});
+  providers: []
+})
 
 const oauthFetchProviders = async () => {
   try {
-    const response = await api.get("/oauth/authenticate/oauth");
+    const response = await api.get('/oauth/authenticate/oauth')
     if (response.result) {
-      oauth.providers = response.result;
+      oauth.providers = response.result
     } else {
-      oauth.providers = [];
+      oauth.providers = []
     }
   } catch (error) {
-    console.error(error);
+    console.error(error)
   }
-};
+}
 
 function formSubmit(event) {
-  event.preventDefault();
+  event.preventDefault()
   axios
-    .post("/api/v1/authenticate", formData)
+    .post('/api/v1/authenticate', formData)
     .then(() => {
-      router.push({ name: "Home" });
+      router.push({ name: 'Home' })
     })
-    .catch((error) => {
-      router.push({ name: "LoginError" });
-    });
+    .catch(() => {
+      router.push({ name: 'LoginError' })
+    })
   // alert(JSON.stringify(this.form));
 }
 function formReset(event) {
-  event.preventDefault();
-  formData.user = "";
-  formData.password = "";
-  formShowPassword.value = false;
-  formValid.value = false;
+  event.preventDefault()
+  formData.user = ''
+  formData.password = ''
+  formShowPassword.value = false
+  formValid.value = false
 
   nextTick(() => {
-    form.value.resetValidation();
-  });
+    form.value.resetValidation()
+  })
 }
 
-onMounted(oauthFetchProviders);
+onMounted(oauthFetchProviders)
 </script>

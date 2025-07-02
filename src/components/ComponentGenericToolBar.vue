@@ -33,43 +33,45 @@
 </template>
 
 <script setup>
-import { computed } from "vue";
-import { useRoute, useRouter } from "vue-router/dist/vue-router";
-import { loginDataStore } from "@/store/login_data";
+import { computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router/dist/vue-router'
+import { loginDataStore } from '@/store/login_data'
 
-const loginData = loginDataStore();
-const route = useRoute();
-const router = useRouter();
+const loginData = loginDataStore()
+const route = useRoute()
+const router = useRouter()
 
 const navItems = computed(() => {
-  let items = [];
-  let user_is_admin = loginData.getUserDataIsAdmin;
+  let items = []
+  let user_is_admin = loginData.getUserDataIsAdmin
   if (route.meta.toolBar) {
     route.meta.toolBar.call(this, route).items.forEach((item) => {
       if (item.hide.call(this, route)) {
-        return;
+        return
       }
       if ((item.requireAdmin && user_is_admin) || !item.requireAdmin) {
         items.push({
           title: item.title,
           link: item.link,
-          to: item.to,
-        });
+          to: item.to
+        })
       }
-    });
+    })
   }
-  return items;
-});
+  return items
+})
 
 const navTitle = computed(() => {
   if (route.meta.toolBar) {
-    return route.meta.toolBar.call(this, route).title;
+    return route.meta.toolBar.call(this, route).title
+  } else {
+    return ''
   }
-});
+})
 
 function onBtnClick(event) {
   if (event.name !== route.name) {
-    router.push(event.to);
+    router.push(event.to)
   }
 }
 </script>

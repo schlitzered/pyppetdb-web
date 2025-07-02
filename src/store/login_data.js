@@ -1,33 +1,33 @@
-import { ref, computed } from "vue";
-import { defineStore } from "pinia";
+import { ref, computed } from 'vue'
+import { defineStore } from 'pinia'
 
-export const loginDataStore = defineStore("loginData", () => {
-  const timestamp = ref(0);
-  const userData = ref({});
+export const loginDataStore = defineStore('loginData', () => {
+  const timestamp = ref(0)
+  const userData = ref({})
 
   const isTimestampOlderThan = (seconds) => {
-    const currentTimeStamp = Date.now();
-    const secondsAgo = currentTimeStamp - seconds * 1000; // convert seconds to milliseconds
-    return timestamp.value < secondsAgo;
-  };
+    const currentTimeStamp = Date.now()
+    const secondsAgo = currentTimeStamp - seconds * 1000 // convert seconds to milliseconds
+    return timestamp.value < secondsAgo
+  }
 
-  const getUserData = computed(() => userData.value);
-  const getUserDataId = computed(() => userData.value.id);
-  const getUserDataIsAdmin = computed(() => userData.value.admin);
+  const getUserData = computed(() => userData.value)
+  const getUserDataId = computed(() => userData.value.id)
+  const getUserDataIsAdmin = computed(() => userData.value.admin)
 
   function setTimestamp() {
-    timestamp.value = Date.now();
+    timestamp.value = Date.now()
   }
 
   function resetTimestamp() {
-    timestamp.value = 0;
+    timestamp.value = 0
   }
   function resetUserData() {
-    userData.value = {};
+    userData.value = {}
   }
 
   function setUserData(data) {
-    userData.value = data;
+    userData.value = data
   }
 
   return {
@@ -40,6 +40,6 @@ export const loginDataStore = defineStore("loginData", () => {
     resetTimestamp,
     resetUserData,
     setTimestamp,
-    setUserData,
-  };
-});
+    setUserData
+  }
+})

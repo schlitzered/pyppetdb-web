@@ -1,10 +1,10 @@
 <script setup>
-import { ref, onMounted } from "vue";
-import router from "../router/routes";
+import { onMounted } from 'vue'
+import router from '../router/routes'
 
 onMounted(() => {
-  setTimeout(() => router.push({ name: "Login" }), 5000);
-});
+  setTimeout(() => router.push({ name: 'Login' }), 5000)
+})
 </script>
 
 <template>

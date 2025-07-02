@@ -17,33 +17,33 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from "vue";
-import { apiErrorStore } from "@/store/api_error";
-import { useRouter } from "vue-router/dist/vue-router";
+import { ref, onMounted, watch } from 'vue'
+import { apiErrorStore } from '@/store/api_error'
+import { useRouter } from 'vue-router/dist/vue-router'
 
-const router = useRouter();
+const router = useRouter()
 
-const apiError = apiErrorStore();
-const dialogShow = ref(false);
+const apiError = apiErrorStore()
+const dialogShow = ref(false)
 
 function resetDialog() {
-  dialogShow.value = false;
-  let httpStatus = apiError.getDialogHTTPStatus;
-  let httpRedirect = apiError.getRedirect;
+  dialogShow.value = false
+  let httpStatus = apiError.getDialogHTTPStatus
+  let httpRedirect = apiError.getRedirect
   if (httpStatus === 404) {
-    router.push(httpRedirect);
+    router.push(httpRedirect)
   }
-  apiError.clear();
+  apiError.clear()
 }
 
 onMounted(() => {
-  dialogShow.value = apiError.getDialogShow;
-});
+  dialogShow.value = apiError.getDialogShow
+})
 
 watch(
   () => apiError.getDialogShow,
   () => {
-    dialogShow.value = apiError.getDialogShow;
-  },
-);
+    dialogShow.value = apiError.getDialogShow
+  }
+)
 </script>
