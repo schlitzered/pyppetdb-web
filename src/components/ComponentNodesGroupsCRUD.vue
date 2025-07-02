@@ -130,9 +130,7 @@ const formInputIdReadOnly = ref(true)
 
 const nodeGroupFilterAsString = ref({})
 
-const filterTableData = ref([
-  { filter_part_index: '0/0', fact: 'role', values: ['abnapi'] }
-])
+const filterTableData = ref([])
 const filterTableHeaders = ref([
   { title: 'Filter Part Index', key: 'filter_part_index' },
   { title: 'Fact', key: 'fact' },
@@ -147,11 +145,11 @@ const nodesTableSearch = ref('')
 const nodesTableData = ref([])
 
 function formConfigure() {
-  if (route.params.team !== '_new') {
+  if (route.params.node_group !== '_new') {
     formInputIdReadOnly.value = true
     formDataReadOnly.value = true
     formButtonEditShow.value = true
-  } else if (route.params.team === '_new') {
+  } else if (route.params.node_group === '_new') {
     formInputIdReadOnly.value = false
     formDataReadOnly.value = false
     formButtonDeleteShow.value = false
@@ -195,15 +193,15 @@ function formSubmit(event) {
     teams: formData.teams,
     filters: _filters
   }
-  if (route.params.team === '_new') {
+  if (route.params.node_group === '_new') {
     method = 'post'
   }
   api.request(method, url, data).then(() => {
-    if (route.params.team === '_new') {
+    if (route.params.node_group === '_new') {
       formButtonDeleteShow.value = true
       router.push({
         name: 'NodesGroupsCRUD',
-        params: { team: formData.id }
+        params: { node_group: formData.id }
       })
     } else {
       formDataReadOnly.value = true
@@ -213,13 +211,14 @@ function formSubmit(event) {
 }
 
 function formGetNodeGroupData() {
-  if (route.params.team === '_new') {
+  if (route.params.node_group === '_new') {
     formDataValid.value = false
     nextTick(() => {
       form.value.resetValidation()
     })
     formData['id'] = ''
     formData['filters'] = []
+    nodeGroupFilterAsString.value = JSON.stringify([], null, 2)
     formData['teams'] = []
     nodesTableData.value = []
   } else {
@@ -273,7 +272,7 @@ function getTeams() {
 }
 
 watch(
-  () => [route.params.team, loginData.getUserDataIsAdmin],
+  () => [route.params.node_group, loginData.getUserDataIsAdmin],
   () => {
     if (route.name === 'NodesGroupsCRUD') {
       formConfigure()
