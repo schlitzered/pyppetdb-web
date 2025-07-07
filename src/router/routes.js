@@ -1,6 +1,7 @@
 // Composable
 import { createRouter, createWebHistory } from 'vue-router'
 import routesLogin from './routes_login.js'
+import routesNodes from './routes_nodes.js'
 import routesNodesGroups from './routes_nodes_groups.js'
 import routesTeams from './routes_teams.js'
 import routesUsers from './routes_users.js'
@@ -8,6 +9,7 @@ import routesUsersCredentials from './routes_users_credentials'
 
 const routes = [
   ...routesLogin,
+  ...routesNodes,
   ...routesNodesGroups,
   ...routesTeams,
   ...routesUsers,

@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { apiErrorStore } from '@/store/api_error'
 import router from '../router/routes'
+import qs from 'qs'
 
 const apiError = apiErrorStore()
 
@@ -8,7 +9,10 @@ export default {
   async request(method, url, data, params) {
     let config = {
       method: method,
-      url: url
+      url: url,
+      paramsSerializer: (params) => {
+        return qs.stringify(params, { arrayFormat: 'repeat' }) // Ensures fields=id&fields=environment&...
+      }
     }
     if (data) {
       config.data = data

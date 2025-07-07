@@ -9,6 +9,7 @@
       :headers="tableHeaders"
       :items-length="tableTotalItems"
       :items="tableItems"
+      :items-per-page-options="tableItemsPerPageOptions"
       :loading="tableLoading"
       v-model:page="tablePage"
       v-model:items-per-page="tableItemsPerPage"
@@ -36,6 +37,7 @@ const tablePage = ref(Number(route.query.page) ? Number(route.query.page) : 1)
 const tableItemsPerPage = ref(
   Number(route.query.limit) ? Number(route.query.limit) : 10
 )
+const tableItemsPerPageOptions = [10, 25, 50, 100]
 const tableTotalItems = ref(tablePage.value * tableItemsPerPage.value)
 
 const tableSortBy = reactive([])

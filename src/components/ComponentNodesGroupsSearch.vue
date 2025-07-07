@@ -9,6 +9,7 @@
       :headers="tableHeaders"
       :items-length="tableTotalItems"
       :items="tableItems"
+      :items-per-page-options="tableItemsPerPageOptions"
       :loading="tableLoading"
       v-model:page="tablePage"
       v-model:items-per-page="tableItemsPerPage"
@@ -17,15 +18,6 @@
       @click:row="onRowClick"
       @update:options="getNodesGroupsTableEvent"
     >
-      <template v-slot:item.admin="{ item }">
-        <v-icon>
-          {{
-            item.admin
-              ? 'mdi-checkbox-marked-outline'
-              : 'mdi-checkbox-blank-outline'
-          }}
-        </v-icon>
-      </template>
     </v-data-table-server>
   </v-card>
 </template>
@@ -45,6 +37,7 @@ const tablePage = ref(Number(route.query.page) ? Number(route.query.page) : 1)
 const tableItemsPerPage = ref(
   Number(route.query.limit) ? Number(route.query.limit) : 10
 )
+const tableItemsPerPageOptions = [10, 25, 50, 100]
 const tableTotalItems = ref(tablePage.value * tableItemsPerPage.value)
 
 const tableSortBy = reactive([])
