@@ -144,7 +144,7 @@ const tableHeaders = [
   { title: 'Node ID', key: 'id', sortable: true },
   { title: 'Environment', key: 'environment', sortable: false },
   { title: 'Report Status', key: 'report.status', sortable: true },
-  { title: 'Change Report', key: 'change_report', sortable: true},
+  { title: 'Change Report', key: 'change_report', sortable: true },
   { title: 'Disabled', key: 'disabled', sortable: false }
 ]
 
@@ -290,7 +290,13 @@ function getNodes(event) {
   }
 
   let _params = { ...query }
-  _params.fields = ['id', 'environment', 'report.status', 'disabled', 'change_report']
+  _params.fields = [
+    'id',
+    'environment',
+    'report.status',
+    'disabled',
+    'change_report'
+  ]
   if (_params.page) {
     _params.page = _params.page - 1
   }

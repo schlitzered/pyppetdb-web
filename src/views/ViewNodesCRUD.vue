@@ -1,11 +1,11 @@
 <template>
   <v-container>
     <ComponentGenericToolBar />
-    <ComponentNodesGroupsCrud />
+    <ComponentNodesCrud />
   </v-container>
 </template>
 
 <script setup>
 import ComponentGenericToolBar from '@/components/ComponentGenericToolBar.vue'
-import ComponentNodesGroupsCrud from '@/components/ComponentNodesGroupsCRUD.vue'
+import ComponentNodesCrud from '@/components/ComponentNodesCRUD.vue'
 </script>
