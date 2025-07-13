@@ -79,7 +79,9 @@ const navItems = computed(() => {
 
 function onBtnClick(event) {
   if (event.name !== route.name) {
-    router.push({ name: event.to })
+    router.push({ name: event.to }).catch((err) => {
+      console.log(err)
+    })
   }
 }
 </script>

@@ -1,69 +1,6 @@
 <template>
   <v-card>
     <v-container>
-      <v-row>
-        <v-text-field
-          v-model="formSearchBy.node_id"
-          label="Filter Node ID"
-          @update:modelValue="getSearchNode"
-        ></v-text-field>
-        <v-text-field
-          v-model="formSearchBy.environment"
-          label="Filter Environment"
-          @update:modelValue="getSearchNode"
-        ></v-text-field>
-        <v-text-field
-          v-model="formSearchBy.report.status"
-          label="Filter Report Status"
-          @update:modelValue="getSearchNode"
-        ></v-text-field>
-        <v-select
-          v-model="formSearchBy.disabled"
-          :items="tableDisabledDropdownOptions"
-          label="Filter Disabled"
-          @update:modelValue="getSearchNode"
-        >
-        </v-select>
-      </v-row>
-      <v-row>
-        <v-col cols="12" md="12">
-          <h3>Fact Search Parameters</h3>
-        </v-col>
-      </v-row>
-
-      <v-row v-for="(fact, index) in formSearchBy.fact" :key="index">
-        <v-col cols="3">
-          <v-text-field
-            label="Fact Name"
-            v-model="fact.fact_name"
-          ></v-text-field>
-        </v-col>
-        <v-col cols="3">
-          <v-select
-            label="Operator"
-            :items="formSearchByFactsOperators"
-            v-model="fact.operator"
-          ></v-select>
-        </v-col>
-        <v-col cols="2">
-          <v-select
-            label="Type"
-            :items="formSearchByFactsTypes"
-            v-model="fact.type"
-          ></v-select>
-        </v-col>
-        <v-col cols="3">
-          <v-text-field label="Value" v-model="fact.value"></v-text-field>
-        </v-col>
-        <v-col cols="1">
-          <v-btn icon @click="formSearchByFactsRemove(index)">
-            <v-icon>mdi-minus</v-icon>
-          </v-btn>
-        </v-col>
-      </v-row>
-
-      <v-btn @click="formSearchByFactsAdd" color="primary">Add Fact</v-btn>
-
       <v-data-table-server
         :headers="tableHeaders"
         :items-length="tableTotalItems"
@@ -77,6 +14,70 @@
         @click:row="onRowClick"
         @update:options="getNodesTableEvent"
       >
+        <template v-slot:top>
+          <v-row>
+            <v-text-field
+              v-model="formSearchBy.node_id"
+              label="Filter Node ID"
+              @update:modelValue="getSearchNode"
+            ></v-text-field>
+            <v-text-field
+              v-model="formSearchBy.environment"
+              label="Filter Environment"
+              @update:modelValue="getSearchNode"
+            ></v-text-field>
+            <v-text-field
+              v-model="formSearchBy.report.status"
+              label="Filter Report Status"
+              @update:modelValue="getSearchNode"
+            ></v-text-field>
+            <v-select
+              v-model="formSearchBy.disabled"
+              :items="tableDisabledDropdownOptions"
+              label="Filter Disabled"
+              @update:modelValue="getSearchNode"
+            >
+            </v-select>
+          </v-row>
+          <v-row>
+            <v-col cols="12" md="12">
+              <h3>Fact Search Parameters</h3>
+            </v-col>
+          </v-row>
+
+          <v-row v-for="(fact, index) in formSearchBy.fact" :key="index">
+            <v-col cols="3">
+              <v-text-field
+                label="Fact Name"
+                v-model="fact.fact_name"
+              ></v-text-field>
+            </v-col>
+            <v-col cols="3">
+              <v-select
+                label="Operator"
+                :items="formSearchByFactsOperators"
+                v-model="fact.operator"
+              ></v-select>
+            </v-col>
+            <v-col cols="2">
+              <v-select
+                label="Type"
+                :items="formSearchByFactsTypes"
+                v-model="fact.type"
+              ></v-select>
+            </v-col>
+            <v-col cols="3">
+              <v-text-field label="Value" v-model="fact.value"></v-text-field>
+            </v-col>
+            <v-col cols="1">
+              <v-btn icon @click="formSearchByFactsRemove(index)">
+                <v-icon>mdi-minus</v-icon>
+              </v-btn>
+            </v-col>
+          </v-row>
+
+          <v-btn @click="formSearchByFactsAdd" color="primary">Add Fact</v-btn>
+        </template>
         <template v-slot:item.disabled="{ item }">
           <v-icon>
             {{

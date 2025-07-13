@@ -1,10 +1,5 @@
 <template>
   <v-card>
-    <v-text-field
-      v-model="formSearchBy.team_id"
-      label="Filter Team ID"
-      @update:modelValue="getTeamsSearchTeamId"
-    ></v-text-field>
     <v-data-table-server
       :headers="tableHeaders"
       :items-length="tableTotalItems"
@@ -18,6 +13,13 @@
       @click:row="onRowClick"
       @update:options="getTeamsTableEvent"
     >
+      <template v-slot:top>
+        <v-text-field
+          v-model="formSearchBy.team_id"
+          label="Filter Team ID"
+          @update:modelValue="getTeamsSearchTeamId"
+        ></v-text-field>
+      </template>
     </v-data-table-server>
   </v-card>
 </template>

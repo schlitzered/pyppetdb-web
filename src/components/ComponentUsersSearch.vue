@@ -1,10 +1,5 @@
 <template>
   <v-card>
-    <v-text-field
-      v-model="formSearchBy.user_id"
-      label="Filter User ID"
-      @update:modelValue="getUsersSearchUserId"
-    ></v-text-field>
     <v-data-table-server
       :headers="tableHeaders"
       :items-length="tableTotalItems"
@@ -18,6 +13,13 @@
       @click:row="onRowClick"
       @update:options="getUsersTableEvent"
     >
+      <template v-slot:top>
+        <v-text-field
+          v-model="formSearchBy.user_id"
+          label="Filter User ID"
+          @update:modelValue="getUsersSearchUserId"
+        ></v-text-field>
+      </template>
       <template v-slot:item.admin="{ item }">
         <v-icon>
           {{

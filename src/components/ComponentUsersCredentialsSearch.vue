@@ -120,7 +120,7 @@ function onRowClick(item, item_data) {
     name: 'UsersCredentialsCRUD',
     params: {
       user: route.params.user,
-      credential: item_data.item.value
+      credential: item_data.item.id
     }
   })
 }

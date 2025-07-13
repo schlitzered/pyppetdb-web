@@ -22,15 +22,7 @@ const routeNodesSearch = {
     toolBar() {
       return {
         title: `Nodes`,
-        items: [
-          {
-            title: 'New Node ',
-            to: { name: 'NodesCRUD', params: { node: '_new' } },
-            hide() {
-              return false
-            }
-          }
-        ]
+        items: []
       }
     }
   },
@@ -64,8 +56,19 @@ const routeNodesCrud = {
     },
     toolBar(route) {
       return {
-        title: `Node ${route.params.node}`,
-        items: []
+        title: `Node `,
+        items: [
+          {
+            title: 'Reports',
+            to: {
+              name: 'NodesReportsSearch',
+              params: { node: route.params.node }
+            },
+            hide() {
+              return false
+            }
+          }
+        ]
       }
     }
   },

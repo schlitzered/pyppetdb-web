@@ -11,12 +11,12 @@
       :sort-by="tableSortBy"
       item-value="id"
       @click:row="onRowClick"
-      @update:options="getNodesGroupsTableEvent"
+      @update:options="getNodesReportsTableEvent"
     >
       <template v-slot:top>
         <v-text-field
-          v-model="formSearchBy.node_group_id"
-          label="Filter Node Group ID"
+          v-model="formSearchBy['report_status']"
+          label="Filter Report Status"
           @update:modelValue="getSearchNodeGroupId"
         ></v-text-field>
       </template>
@@ -26,7 +26,7 @@
 
 <script setup>
 import api from '@/api/common'
-import { ref, reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
@@ -45,10 +45,34 @@ const tableTotalItems = ref(tablePage.value * tableItemsPerPage.value)
 const tableSortBy = reactive([])
 
 const formSearchBy = reactive({
-  node_group_id: ''
+  report_status: ''
 })
 
-const tableHeaders = [{ title: 'Node Group ID', key: 'id', sortable: true }]
+const tableHeaders = [
+  { title: 'Report ID', key: 'id', sortable: true },
+  { title: 'Status', key: 'report.status', sortable: true },
+  {
+    title: 'Resources Total',
+    key: 'report.metrics.resources_total',
+    sortable: false
+  },
+  {
+    title: 'Changes Total',
+    key: 'report.metrics.changes_total',
+    sortable: false
+  },
+  {
+    title: 'Event Failures',
+    key: 'report.metrics.events_failure',
+    sortable: false
+  },
+  {
+    title: 'Event Success',
+    key: 'report.metrics.events_success',
+    sortable: false
+  },
+  { title: 'Event Total', key: 'report.metrics.events_total', sortable: false }
+]
 
 if (route.query.sort) {
   if (route.query.sort_order === 'ascending') {
@@ -63,12 +87,6 @@ if (route.query.sort) {
     })
   }
 }
-
-Object.entries(formSearchBy).forEach(([key]) => {
-  if (route.query[key]) {
-    formSearchBy[key] = route.query[key]
-  }
-})
 
 function getParamsSearchBy() {
   let items = []
@@ -91,10 +109,10 @@ function getSearchNodeGroupId() {
     searchBy: getParamsSearchBy()
   }
   tablePage.value = 1
-  getNodesGroups(_event)
+  getNodesReports(_event)
 }
 
-function getNodesGroupsTableEvent(event) {
+function getNodesReportsTableEvent(event) {
   event.searchBy = getParamsSearchBy()
   event.sortBy = [...event.sortBy]
   tableSortBy.length = 0
@@ -103,10 +121,10 @@ function getNodesGroupsTableEvent(event) {
       tableSortBy.push(item)
     }
   }
-  getNodesGroups(event)
+  getNodesReports(event)
 }
 
-function getNodesGroups(event) {
+function getNodesReports(event) {
   tableLoading.value = true
   let query = {}
 
@@ -145,23 +163,46 @@ function getNodesGroups(event) {
   }
 
   router.replace({
-    name: 'NodesGroupsSearch',
+    name: 'NodesReportsSearch',
     query: query
   })
 
-  api.get('/api/v1/nodes_groups', _params).then((data) => {
-    if (data) {
-      tableTotalItems.value = data.meta['result_size']
-      tableItems.value = data.result
-      tableLoading.value = false
-    }
-  })
+  api
+    .get('/api/v1/nodes/' + route.params.node + '/reports', _params)
+    .then((data) => {
+      if (data) {
+        tableTotalItems.value = data.meta['result_size']
+        tableItems.value = data.result.map((item) => {
+          if (item.report && item.report.metrics) {
+            const metricsDict = {}
+            item.report.metrics.forEach((metric) => {
+              const key = `${metric.category}_${metric.name}`
+              metricsDict[key] = metric.value
+            })
+
+            return {
+              ...item,
+              report: {
+                ...item.report,
+                metrics: metricsDict
+              }
+            }
+          }
+          return item
+        })
+        console.log(tableItems.value)
+        tableLoading.value = false
+      }
+    })
 }
 
 function onRowClick(item, item_data) {
   router.push({
-    name: 'NodesGroupsCRUD',
-    params: { node_group: item_data.item.id }
+    name: 'NodesReportsCRUD',
+    params: {
+      node: route.params.node,
+      report: item_data.item.id
+    }
   })
 }
 </script>
