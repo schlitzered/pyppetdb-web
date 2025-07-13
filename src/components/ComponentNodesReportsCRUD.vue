@@ -150,6 +150,9 @@
                 ></v-text-field>
               </v-toolbar>
             </template>
+            <template v-slot:item.events="{ item }">
+              <pre class="text-caption">{{ formatResourcesEvents(item.events) }}</pre>
+            </template>
           </v-data-table>
         </v-expansion-panel-text>
       </v-expansion-panel>
@@ -254,6 +257,11 @@ const tableReportMetricsItems = computed(() => {
   })
 })
 
+function formatResourcesEvents(events) {
+  if (!events || events.length === 0) return 'No events'
+  return JSON.stringify(events, null, 2)
+}
+
 const tableReportResourcesSearchResourceType = ref('')
 const tableReportResourcesSearchResourceTitle = ref('')
 const tableReportResourcesHeaders = [
@@ -317,7 +325,6 @@ function formGetNodeReportData() {
     .get(`/api/v1/nodes/${route.params.node}/reports/${route.params.report}`)
     .then((data) => {
       if (data) {
-        console.log(data)
         formData['id'] = data['id']
         formData['node_id'] = data['node_id']
         formData['report'] = data['report']
