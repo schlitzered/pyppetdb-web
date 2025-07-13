@@ -190,7 +190,6 @@ function getNodesReports(event) {
           }
           return item
         })
-        console.log(tableItems.value)
         tableLoading.value = false
       }
     })

@@ -6,7 +6,7 @@ const routeNodesSearch = {
       name: 'Nodes',
       to: 'NodesSearch',
       href: '/nodes',
-      requireAdmin: true,
+      requireAdmin: false,
       icon: 'mdi-account-multiple'
     },
     breadCrumb: [
@@ -50,7 +50,8 @@ const routeNodesCrud = {
           to: { name: 'NodesSearch' }
         },
         {
-          title: route.params.node
+          title: route.params.node,
+          to: { name: 'NodesCRUD', params: { node: route.params.node } }
         }
       ]
     },

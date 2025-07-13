@@ -17,7 +17,11 @@ const routeNodesReportsSearch = {
           to: { name: 'NodesCRUD', params: { node: route.params.node } }
         },
         {
-          title: 'Reports'
+          title: 'Reports',
+          to: {
+            name: 'NodesReportsSearch',
+            params: { node: route.params.node }
+          }
         }
       ]
     },
