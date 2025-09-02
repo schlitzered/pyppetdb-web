@@ -12,7 +12,16 @@
       item-value="id"
       @click:row="onRowClick"
       @update:options="getUsersCredentialsTableEvent"
-    ></v-data-table-server>
+    >
+      <template v-slot:item.id="{ item }">
+        <a
+            :href="router.resolve({ name: 'UsersCredentialsCRUD', params: { user: item.user, credential: item.id } }).href"
+            @click.left.prevent
+        >
+          {{ item.id }}
+        </a>
+      </template>
+    </v-data-table-server>
   </v-card>
 </template>
 

@@ -92,6 +92,14 @@
             }}
           </v-icon>
         </template>
+        <template v-slot:item.id="{ item }">
+          <a
+            :href="router.resolve({ name: 'NodesCRUD', params: { node: item.id } }).href"
+            @click.left.prevent
+          >
+            {{ item.id }}
+          </a>
+        </template>
       </v-data-table-server>
     </v-container>
   </v-card>
@@ -322,6 +330,7 @@ function getNodes(event) {
 }
 
 function onRowClick(item, item_data) {
+  console.log(item_data)
   router.push({
     name: 'NodesCRUD',
     params: { node: item_data.item.id }
