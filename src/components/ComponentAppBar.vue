@@ -14,6 +14,7 @@
         >{{ item.name }}
       </v-btn>
     </div>
+    <v-btn href="/docs">API</v-btn>
     <v-menu open-on-hover>
       <template v-slot:activator="{ props }">
         <v-btn icon="mdi-account" v-bind="props"> </v-btn>

@@ -39,12 +39,14 @@
             >
             </v-select>
           </v-row>
-          <v-row>
-            <v-col cols="12" md="12">
-              <h3>Fact Search Parameters</h3>
-            </v-col>
-          </v-row>
 
+          <v-expansion-panels class="mt-4">
+            <v-expansion-panel>
+              <v-expansion-panel-title>
+                <v-icon class="me-2">mdi-history</v-icon>
+                Fact Search
+              </v-expansion-panel-title>
+              <v-expansion-panel-text>
           <v-row v-for="(fact, index) in formSearchBy.fact" :key="index">
             <v-col cols="3">
               <v-text-field
@@ -77,6 +79,9 @@
           </v-row>
 
           <v-btn @click="formSearchByFactsAdd" color="primary">Add Fact</v-btn>
+              </v-expansion-panel-text>
+            </v-expansion-panel>
+          </v-expansion-panels>
         </template>
         <template v-slot:item.disabled="{ item }">
           <v-icon>
@@ -326,9 +331,8 @@ function onRowClick(item, item_data) {
 watch(
   () => formSearchBy.fact,
   () => {
-    // Check if all parameters of any fact are defined
     getSearchNode()
   },
-  { deep: true } // Enable deep watching for nested objects
+  { deep: true }
 )
 </script>
