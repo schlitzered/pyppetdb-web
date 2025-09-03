@@ -255,8 +255,8 @@ function getNodesDistinctFactValues(event) {
   })
 }
 
-function getRowHref(item) {
-  const clickedValue = item.value
+// Helper function to build query for row navigation
+function buildRowQuery(clickedValue) {
   let query = {}
 
   // Forward existing fact parameters from current URL
@@ -294,6 +294,11 @@ function getRowHref(item) {
     query.report_status = formSearchBy.report_status
   }
 
+  return query
+}
+
+function getRowHref(item) {
+  const query = buildRowQuery(item.value)
   return router.resolve({
     name: 'NodesSearch',
     query: query
@@ -301,44 +306,7 @@ function getRowHref(item) {
 }
 
 function onRowClick(item, item_data) {
-  const clickedValue = item_data.item.value
-  let query = {}
-
-  // Forward existing fact parameters from current URL
-  const currentFacts = []
-  if (route.query.fact) {
-    if (Array.isArray(route.query.fact)) {
-      currentFacts.push(...route.query.fact)
-    } else {
-      currentFacts.push(route.query.fact)
-    }
-  }
-
-  // Create the new fact parameter based on clicked row and put it first
-  const allFacts = []
-  if (formSearchBy.fact_id) {
-    const newFactParam = `${formSearchBy.fact_id}:eq:str:${clickedValue}`
-    allFacts.push(newFactParam, ...currentFacts)
-  } else {
-    allFacts.push(...currentFacts)
-  }
-
-  // Add all fact parameters to query
-  if (allFacts.length > 0) {
-    query.fact = allFacts
-  }
-
-  // Forward additional filter parameters
-  if (formSearchBy.disabled) {
-    query.disabled = formSearchBy.disabled
-  }
-  if (formSearchBy.environment) {
-    query.environment = formSearchBy.environment
-  }
-  if (formSearchBy.report_status) {
-    query.report_status = formSearchBy.report_status
-  }
-
+  const query = buildRowQuery(item_data.item.value)
   router.push({
     name: 'NodesSearch',
     query: query

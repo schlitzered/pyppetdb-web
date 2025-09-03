@@ -80,9 +80,13 @@
         <v-data-table
           :headers="tableFactsHeaders"
           :items="tableFactsItems"
-          :items-per-page="10"
+          :items-per-page-options="[5, 10, 25, 50]"
+          v-model:page="tableFactsPage"
+          v-model:items-per-page="tableFactsItemsPerPage"
+          :sort-by="tableFactsSortBy"
           class="elevation-1"
           density="compact"
+          @update:options="handleFactsTableUpdate"
         >
           <template v-slot:top>
             <v-toolbar flat>
@@ -111,19 +115,29 @@
           </template>
 
           <template v-slot:item.key="{ item }">
-            <code class="text-body-2">{{ item.key }}</code>
+            <a
+              :href="getFactKeyHref(item)"
+              @click.left.prevent="onFactKeyClick(item)"
+            >
+              <code class="text-body-2">{{ item.key }}</code>
+            </a>
           </template>
 
           <template v-slot:item.value="{ item }">
-            <span
-              v-if="typeof item.value === 'string' && item.value.length > 50"
+            <a
+              :href="getFactValueHref(item)"
+              @click.left.prevent="onFactValueClick(item)"
             >
-              {{ item.value.substring(0, 50) }}...
-              <v-tooltip activator="parent" location="top">
-                <span>{{ item.value }}</span>
-              </v-tooltip>
-            </span>
-            <span v-else>{{ formatValue(item.value) }}</span>
+              <span
+                v-if="typeof item.value === 'string' && item.value.length > 50"
+              >
+                {{ item.value.substring(0, 50) }}...
+                <v-tooltip activator="parent" location="top">
+                  <span>{{ item.value }}</span>
+                </v-tooltip>
+              </span>
+              <span v-else>{{ formatValue(item.value) }}</span>
+            </a>
           </template>
         </v-data-table>
       </v-expansion-panel-text>
@@ -148,8 +162,26 @@ const router = useRouter()
 const dialogDeleteShow = ref(false)
 const dialogDeleteMsg = ref('')
 
-const tableFactsSearchKey = ref('')
-const tableFactsSearchValue = ref('')
+const tableFactsSearchKey = ref(route.query.facts_search_key || '')
+const tableFactsSearchValue = ref(route.query.facts_search_value || '')
+const tableFactsPage = ref(Number(route.query.facts_page) || 1)
+const tableFactsItemsPerPage = ref(Number(route.query.facts_limit) || 10)
+const tableFactsSortBy = reactive([])
+
+// Initialize facts table sort from URL
+if (route.query.facts_sort) {
+  if (route.query.facts_sort_order === 'ascending') {
+    tableFactsSortBy.push({
+      key: route.query.facts_sort,
+      order: 'asc'
+    })
+  } else {
+    tableFactsSortBy.push({
+      key: route.query.facts_sort,
+      order: 'desc'
+    })
+  }
+}
 const tableFactsHeaders = [
   {
     title: 'Key',
@@ -252,6 +284,98 @@ function formatValue(value) {
   return JSON.stringify(value)
 }
 
+// Helper function to build query for fact key navigation
+function buildFactKeyQuery(item) {
+  let query = {
+    fact_id: item.key
+  }
+
+  // Forward existing parameters from current URL if they exist
+  if (route.query.disabled) {
+    query.disabled = route.query.disabled
+  }
+  if (route.query.environment) {
+    query.environment = route.query.environment
+  }
+  if (route.query.report_status) {
+    query.report_status = route.query.report_status
+  }
+  if (route.query.fact) {
+    query.fact = route.query.fact
+  }
+
+  return query
+}
+
+// Helper function to build query for fact value navigation
+function buildFactValueQuery(item) {
+  let query = {}
+
+  // Forward existing fact parameters from current URL
+  const currentFacts = []
+  if (route.query.fact) {
+    if (Array.isArray(route.query.fact)) {
+      currentFacts.push(...route.query.fact)
+    } else {
+      currentFacts.push(route.query.fact)
+    }
+  }
+
+  // Create the new fact parameter based on clicked row and put it first
+  const newFactParam = `${item.key}:eq:str:${item.value}`
+  const allFacts = [newFactParam, ...currentFacts]
+
+  // Add all fact parameters to query
+  if (allFacts.length > 0) {
+    query.fact = allFacts
+  }
+
+  // Forward other existing parameters from current URL if they exist
+  if (route.query.disabled) {
+    query.disabled = route.query.disabled
+  }
+  if (route.query.environment) {
+    query.environment = route.query.environment
+  }
+  if (route.query.report_status) {
+    query.report_status = route.query.report_status
+  }
+
+  return query
+}
+
+function getFactKeyHref(item) {
+  const query = buildFactKeyQuery(item)
+  return router.resolve({
+    name: 'NodesDistinctFactValues',
+    query: query
+  }).href
+}
+
+function onFactKeyClick(item) {
+  const query = buildFactKeyQuery(item)
+  router.push({
+    name: 'NodesDistinctFactValues',
+    query: query
+  })
+}
+
+function getFactValueHref(item) {
+  const query = buildFactValueQuery(item)
+  return router.resolve({
+    name: 'NodesSearch',
+    query: query
+  }).href
+}
+
+function onFactValueClick(item) {
+  const query = buildFactValueQuery(item)
+  router.push({
+    name: 'NodesSearch',
+    query: query
+  })
+}
+
 function formConfigure() {
   formInputIdReadOnly.value = true
   formDataReadOnly.value = true
@@ -299,6 +423,74 @@ function formGetNodeData() {
     }
   })
 }
+
+function handleFactsTableUpdate(options) {
+  // Update local sort state from table
+  tableFactsSortBy.splice(0, tableFactsSortBy.length, ...options.sortBy)
+  updateUrlQuery()
+}
+
+function updateUrlQuery() {
+  let query = { ...route.query }
+
+  // Add facts table pagination parameters
+  if (tableFactsPage.value !== 1) {
+    query.facts_page = tableFactsPage.value
+  } else {
+    delete query.facts_page
+  }
+
+  if (tableFactsItemsPerPage.value !== 10) {
+    query.facts_limit = tableFactsItemsPerPage.value
+  } else {
+    delete query.facts_limit
+  }
+
+  // Add facts table sorting parameters
+  if (tableFactsSortBy.length > 0) {
+    query.facts_sort = tableFactsSortBy[0].key
+    query.facts_sort_order = tableFactsSortBy[0].order === 'asc' ? 'ascending' : 'descending'
+  } else {
+    delete query.facts_sort
+    delete query.facts_sort_order
+  }
+
+  // Add facts table search parameters
+  if (tableFactsSearchKey.value) {
+    query.facts_search_key = tableFactsSearchKey.value
+  } else {
+    delete query.facts_search_key
+  }
+
+  if (tableFactsSearchValue.value) {
+    query.facts_search_value = tableFactsSearchValue.value
+  } else {
+    delete query.facts_search_value
+  }
+
+  router.replace({
+    name: route.name,
+    params: route.params,
+    query: query
+  })
+}
+
+// Watch for facts table state changes to update URL
+watch(tableFactsPage, () => {
+  updateUrlQuery()
+})
+
+watch(tableFactsItemsPerPage, () => {
+  updateUrlQuery()
+})
+
+watch(tableFactsSearchKey, () => {
+  updateUrlQuery()
+})
+
+watch(tableFactsSearchValue, () => {
+  updateUrlQuery()
+})
 
 watch(
   () => [route.params.node],
