@@ -40,8 +40,8 @@
             </v-select>
           </v-row>
 
-          <v-expansion-panels class="mt-4">
-            <v-expansion-panel>
+          <v-expansion-panels class="mt-4" v-model="expansionModel">
+            <v-expansion-panel value="fact-search-panel">
               <v-expansion-panel-title>
                 <v-icon class="me-2">mdi-history</v-icon>
                 Fact Search
@@ -124,6 +124,17 @@ const tableItemsPerPageOptions = [10, 25, 50, 100]
 const tableTotalItems = ref(tablePage.value * tableItemsPerPage.value)
 
 const tableSortBy = reactive([])
+
+// Initialize expansion state for fact search panel
+const initializeExpansionState = () => {
+  const expanded = []
+  if (route.query.fact_search_expanded === 'fact-search-panel') {
+    expanded.push('fact-search-panel')
+  }
+  return expanded
+}
+
+const expansionModel = ref(initializeExpansionState())
 
 const formSearchBy = reactive({
   node_id: '',
@@ -315,6 +326,11 @@ function getNodes(event) {
     _params.page = _params.page - 1
   }
 
+  // Add fact search expansion state
+  if (expansionModel.value && expansionModel.value.includes('fact-search-panel')) {
+    query.fact_search_expanded = 'fact-search-panel'
+  }
+
   router.replace({
     name: 'NodesSearch',
     query: query
@@ -344,4 +360,9 @@ watch(
   },
   { deep: true }
 )
+
+watch(expansionModel, () => {
+  // Trigger a URL update when expansion state changes
+  getSearchNode()
+}, { deep: true })
 </script>

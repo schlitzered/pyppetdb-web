@@ -15,10 +15,10 @@
         {{ formData.report['corrective_change'] }}
       </v-col>
     </v-row>
-    <v-expansion-panels class="mt-4">
-      <v-expansion-panel>
+    <v-expansion-panels class="mt-4" v-model="expansionModel">
+      <v-expansion-panel value="metrics-panel">
         <v-expansion-panel-title>
-          <v-icon class="me-2">mdi-history</v-icon>
+          <v-icon class="me-2">mdi-chart-line</v-icon>
           Report Metrics
         </v-expansion-panel-title>
         <v-expansion-panel-text>
@@ -67,9 +67,7 @@
           </v-data-table>
         </v-expansion-panel-text>
       </v-expansion-panel>
-    </v-expansion-panels>
-    <v-expansion-panels class="mt-4">
-      <v-expansion-panel>
+      <v-expansion-panel value="logs-panel">
         <v-expansion-panel-title>
           <v-icon class="me-2">mdi-history</v-icon>
           Change Information
@@ -110,11 +108,9 @@
           </v-data-table>
         </v-expansion-panel-text>
       </v-expansion-panel>
-    </v-expansion-panels>
-    <v-expansion-panels class="mt-4">
-      <v-expansion-panel>
+      <v-expansion-panel value="resources-panel">
         <v-expansion-panel-title>
-          <v-icon class="me-2">mdi-history</v-icon>
+          <v-icon class="me-2">mdi-folder</v-icon>
           Resources
         </v-expansion-panel-title>
         <v-expansion-panel-text>
@@ -162,7 +158,7 @@
 
 <script setup>
 import { reactive, ref, onMounted, watch, computed } from 'vue'
-import { useRoute } from 'vue-router/dist/vue-router'
+import { useRoute, useRouter } from 'vue-router/dist/vue-router'
 
 import api from '@/api/common'
 import { apiErrorStore } from '@/store/api_error'
@@ -170,9 +166,27 @@ import { apiErrorStore } from '@/store/api_error'
 const apiError = apiErrorStore()
 
 const route = useRoute()
+const router = useRouter()
 
-const tableReportLogsSearchLevel = ref('')
-const tableReportLogsSearchMessage = ref('')
+// Initialize expansion state for all three panels
+const initializeExpansionState = () => {
+  const expanded = []
+  if (route.query.metrics_expanded === 'metrics-panel') {
+    expanded.push('metrics-panel')
+  }
+  if (route.query.logs_expanded === 'logs-panel') {
+    expanded.push('logs-panel')
+  }
+  if (route.query.resources_expanded === 'resources-panel') {
+    expanded.push('resources-panel')
+  }
+  return expanded
+}
+
+const expansionModel = ref(initializeExpansionState())
+
+const tableReportLogsSearchLevel = ref(route.query.logs_search_level || '')
+const tableReportLogsSearchMessage = ref(route.query.logs_search_message || '')
 const tableReportLogsHeaders = [
   {
     title: 'time',
@@ -214,9 +228,9 @@ const tableReportLogsItems = computed(() => {
   })
 })
 
-const tableReportMetricsSearchCategory = ref('')
-const tableReportMetricsSearchName = ref('')
-const tableReportMetricsSearchValue = ref('')
+const tableReportMetricsSearchCategory = ref(route.query.metrics_search_category || '')
+const tableReportMetricsSearchName = ref(route.query.metrics_search_name || '')
+const tableReportMetricsSearchValue = ref(route.query.metrics_search_value || '')
 const tableReportMetricsHeaders = [
   {
     title: 'Category',
@@ -262,8 +276,8 @@ function formatResourcesEvents(events) {
   return JSON.stringify(events, null, 2)
 }
 
-const tableReportResourcesSearchResourceType = ref('')
-const tableReportResourcesSearchResourceTitle = ref('')
+const tableReportResourcesSearchResourceType = ref(route.query.resources_search_type || '')
+const tableReportResourcesSearchResourceTitle = ref(route.query.resources_search_title || '')
 const tableReportResourcesHeaders = [
   {
     title: 'Resource Type',
@@ -320,6 +334,78 @@ function formatValue(value) {
   return JSON.stringify(value)
 }
 
+function updateUrlQuery() {
+  let query = { ...route.query }
+
+  // Add expansion states
+  if (expansionModel.value && expansionModel.value.includes('metrics-panel')) {
+    query.metrics_expanded = 'metrics-panel'
+  } else {
+    delete query.metrics_expanded
+  }
+
+  if (expansionModel.value && expansionModel.value.includes('logs-panel')) {
+    query.logs_expanded = 'logs-panel'
+  } else {
+    delete query.logs_expanded
+  }
+
+  if (expansionModel.value && expansionModel.value.includes('resources-panel')) {
+    query.resources_expanded = 'resources-panel'
+  } else {
+    delete query.resources_expanded
+  }
+
+  // Add search parameters
+  if (tableReportMetricsSearchCategory.value) {
+    query.metrics_search_category = tableReportMetricsSearchCategory.value
+  } else {
+    delete query.metrics_search_category
+  }
+
+  if (tableReportMetricsSearchName.value) {
+    query.metrics_search_name = tableReportMetricsSearchName.value
+  } else {
+    delete query.metrics_search_name
+  }
+
+  if (tableReportMetricsSearchValue.value) {
+    query.metrics_search_value = tableReportMetricsSearchValue.value
+  } else {
+    delete query.metrics_search_value
+  }
+
+  if (tableReportLogsSearchLevel.value) {
+    query.logs_search_level = tableReportLogsSearchLevel.value
+  } else {
+    delete query.logs_search_level
+  }
+
+  if (tableReportLogsSearchMessage.value) {
+    query.logs_search_message = tableReportLogsSearchMessage.value
+  } else {
+    delete query.logs_search_message
+  }
+
+  if (tableReportResourcesSearchResourceType.value) {
+    query.resources_search_type = tableReportResourcesSearchResourceType.value
+  } else {
+    delete query.resources_search_type
+  }
+
+  if (tableReportResourcesSearchResourceTitle.value) {
+    query.resources_search_title = tableReportResourcesSearchResourceTitle.value
+  } else {
+    delete query.resources_search_title
+  }
+
+  router.replace({
+    name: route.name,
+    params: route.params,
+    query: query
+  })
+}
+
 function formGetNodeReportData() {
   api
     .get(`/api/v1/nodes/${route.params.node}/reports/${route.params.report}`)
@@ -333,6 +419,40 @@ function formGetNodeReportData() {
       }
     })
 }
+
+// Watch for expansion state changes
+watch(expansionModel, () => {
+  updateUrlQuery()
+}, { deep: true })
+
+// Watch for search field changes
+watch(tableReportMetricsSearchCategory, () => {
+  updateUrlQuery()
+})
+
+watch(tableReportMetricsSearchName, () => {
+  updateUrlQuery()
+})
+
+watch(tableReportMetricsSearchValue, () => {
+  updateUrlQuery()
+})
+
+watch(tableReportLogsSearchLevel, () => {
+  updateUrlQuery()
+})
+
+watch(tableReportLogsSearchMessage, () => {
+  updateUrlQuery()
+})
+
+watch(tableReportResourcesSearchResourceType, () => {
+  updateUrlQuery()
+})
+
+watch(tableReportResourcesSearchResourceTitle, () => {
+  updateUrlQuery()
+})
 
 watch(
   () => [route.params.node],

@@ -39,8 +39,8 @@
             </v-select>
           </v-row>
 
-          <v-expansion-panels class="mt-4">
-            <v-expansion-panel>
+          <v-expansion-panels class="mt-4" v-model="expansionModel">
+            <v-expansion-panel value="fact-search-panel">
               <v-expansion-panel-title>
                 <v-icon class="me-2">mdi-history</v-icon>
                 Fact Search
@@ -114,6 +114,17 @@ const tableItemsPerPageOptions = [10, 25, 50, 100]
 // Remove tableTotalItems since we're using client-side pagination
 
 const tableSortBy = reactive([])
+
+// Initialize expansion state for fact search panel
+const initializeExpansionState = () => {
+  const expanded = []
+  if (route.query.fact_search_expanded === 'fact-search-panel') {
+    expanded.push('fact-search-panel')
+  }
+  return expanded
+}
+
+const expansionModel = ref(initializeExpansionState())
 
 const formSearchBy = reactive({
   fact_id: '',
@@ -330,6 +341,10 @@ watch(tableItemsPerPage, (newItemsPerPage) => {
   updateUrlQuery()
 })
 
+watch(expansionModel, () => {
+  updateUrlQuery()
+}, { deep: true })
+
 function handleTableUpdate(options) {
   // Update local sort state from table
   tableSortBy.splice(0, tableSortBy.length, ...options.sortBy)
@@ -358,6 +373,13 @@ function updateUrlQuery() {
   if (tableSortBy.length > 0) {
     query.sort = tableSortBy[0].key
     query.sort_order = tableSortBy[0].order === 'asc' ? 'ascending' : 'descending'
+  }
+
+  // Add fact search expansion state
+  if (expansionModel.value && expansionModel.value.includes('fact-search-panel')) {
+    query.fact_search_expanded = 'fact-search-panel'
+  } else {
+    delete query.fact_search_expanded
   }
 
   router.replace({

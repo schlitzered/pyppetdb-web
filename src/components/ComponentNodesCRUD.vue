@@ -42,8 +42,8 @@
       </v-card-actions>
     </v-form>
   </v-card>
-  <v-expansion-panels class="mt-4" v-if="formDataReadOnly">
-    <v-expansion-panel>
+  <v-expansion-panels class="mt-4" v-if="formDataReadOnly" v-model="expansionModel">
+    <v-expansion-panel value="change-info-panel">
       <v-expansion-panel-title>
         <v-icon class="me-2">mdi-history</v-icon>
         Change Information
@@ -69,9 +69,7 @@
         </v-row>
       </v-expansion-panel-text>
     </v-expansion-panel>
-  </v-expansion-panels>
-  <v-expansion-panels class="mt-4" v-if="formDataReadOnly">
-    <v-expansion-panel>
+    <v-expansion-panel value="facts-panel">
       <v-expansion-panel-title>
         <v-icon class="me-2">mdi-database</v-icon>
         Facts Data
@@ -167,6 +165,19 @@ const tableFactsSearchValue = ref(route.query.facts_search_value || '')
 const tableFactsPage = ref(Number(route.query.facts_page) || 1)
 const tableFactsItemsPerPage = ref(Number(route.query.facts_limit) || 10)
 const tableFactsSortBy = reactive([])
+// Initialize expansion state for both panels
+const initializeExpansionState = () => {
+  const expanded = []
+  if (route.query.change_info_expanded === 'change-info-panel') {
+    expanded.push('change-info-panel')
+  }
+  if (route.query.facts_expanded === 'facts-panel') {
+    expanded.push('facts-panel')
+  }
+  return expanded
+}
+
+const expansionModel = ref(initializeExpansionState())
 
 // Initialize facts table sort from URL
 if (route.query.facts_sort) {
@@ -468,6 +479,19 @@ function updateUrlQuery() {
     delete query.facts_search_value
   }
 
+  // Add expansion states
+  if (expansionModel.value && expansionModel.value.includes('change-info-panel')) {
+    query.change_info_expanded = 'change-info-panel'
+  } else {
+    delete query.change_info_expanded
+  }
+
+  if (expansionModel.value && expansionModel.value.includes('facts-panel')) {
+    query.facts_expanded = 'facts-panel'
+  } else {
+    delete query.facts_expanded
+  }
+
   router.replace({
     name: route.name,
     params: route.params,
@@ -491,6 +515,10 @@ watch(tableFactsSearchKey, () => {
 watch(tableFactsSearchValue, () => {
   updateUrlQuery()
 })
+
+watch(expansionModel, () => {
+  updateUrlQuery()
+}, { deep: true })
 
 watch(
   () => [route.params.node],
