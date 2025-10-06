@@ -28,14 +28,9 @@ function syncSortToUrl(query, sortBy, tableSortBy) {
     }
 }
 
-function syncExpPanelToUrl(query, exp_panel_name, expansionModeled) {
-    let panels = []
-    expansionModeled.forEach((item) => {
-        panels.push(item)
-    })
-    console.log(panels)
-    if (panels.length) {
-        query["exp_pan_" + exp_panel_name] = panels
+function syncExpPanelToUrl(query, exp_panel_name, expansionPanel) {
+    if (expansionPanel.length) {
+        query["exp_pan_" + exp_panel_name] = expansionPanel.join(',')
     }
 }
 
