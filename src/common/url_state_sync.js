@@ -1,9 +1,17 @@
-function syncPaginationToUrl(query, page, perPage) {
+function syncPaginationToUrl(query, page, perPage, suffix='') {
   if (page !== 1) {
-    query.page = page
+      if (suffix) {
+          query["page_" + suffix] = page
+      } else {
+          query.page = page
+      }
   }
   if (perPage !== 10) {
-    query.limit = perPage
+      if (suffix) {
+          query["limit_" + suffix] = perPage
+      } else {
+          query.limit = perPage
+      }
   }
 }
 
@@ -15,13 +23,31 @@ function syncSeachByToUrl(query, searchBy) {
   }
 }
 
-function syncSortToUrl(query, sortBy, tableSortBy) {
+function syncSimpleStringToUrl(query, key, value) {
+    if (value) {
+        query[key] = value
+    }
+}
+
+function syncSortToUrl(query, sortBy, tableSortBy, suffix='') {
   if (sortBy.length) {
-    query.sort = sortBy[0].key
+      if (suffix) {
+          query["sort_" + suffix] = sortBy[0].key
+      } else {
+          query.sort = sortBy[0].key
+      }
     if (sortBy[0].order === 'asc') {
-      query.sort_order = 'ascending'
+        if (suffix) {
+            query["sort_order_" + suffix] = 'ascending'
+        } else {
+            query.sort_order = 'ascending'
+        }
     } else {
-      query.sort_order = 'descending'
+        if (suffix) {
+            query["sort_order_" + suffix] = 'descending'
+        } else {
+            query.sort_order = 'descending'
+        }
     }
   } else {
     tableSortBy.length = 0
@@ -35,8 +61,9 @@ function syncExpPanelToUrl(query, exp_panel_name, expansionPanel) {
 }
 
 export {
-  syncExpPanelToUrl,
-  syncPaginationToUrl,
-  syncSeachByToUrl,
-  syncSortToUrl
+    syncExpPanelToUrl,
+    syncPaginationToUrl,
+    syncSeachByToUrl,
+    syncSimpleStringToUrl,
+    syncSortToUrl
 }

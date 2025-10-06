@@ -130,7 +130,7 @@
 </template>
 
 <script setup>
-import { useDataTable } from '@/common/data_table_hooks'
+import { useDataTable } from '@/common/datatable_generic'
 import { factFieldProcessor } from '@/common/field_processors'
 import { useRouter } from 'vue-router'
 

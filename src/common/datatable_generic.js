@@ -52,7 +52,7 @@ export function useDataTable(config) {
     return buildSearchParams(formSearchBy, searchFormSchema)
   }
 
-  function getNodes(event) {
+  function getSearchData(event) {
     let query = {}
 
     if (event.itemsPerPage === -1) {
@@ -92,7 +92,7 @@ export function useDataTable(config) {
     })
   }
 
-  function getSearchData() {
+  function getSearchDataInputEvent() {
     let _event = {
       page: tablePage.value,
       itemsPerPage: tableItemsPerPage.value,
@@ -100,7 +100,7 @@ export function useDataTable(config) {
       searchBy: getParamsSearchBy()
     }
     tablePage.value = 1
-    getNodes(_event)
+    getSearchData(_event)
   }
 
   function getSearchDataTableEvent(event) {
@@ -112,7 +112,7 @@ export function useDataTable(config) {
         tableSortBy.push(item)
       }
     }
-    getNodes(event)
+    getSearchData(event)
   }
 
   return {
@@ -126,7 +126,7 @@ export function useDataTable(config) {
     tableExpPan: tableExpPan,
     formSearchBy,
 
-    getSearchData,
+    getSearchData: getSearchDataInputEvent,
     getSearchDataTableEvent,
     getParamsSearchBy
   }
