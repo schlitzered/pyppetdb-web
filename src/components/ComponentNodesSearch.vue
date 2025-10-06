@@ -40,8 +40,8 @@
             </v-select>
           </v-row>
 
-          <v-expansion-panels class="mt-4" v-model="expansionModel">
-            <v-expansion-panel value="fact-search-panel">
+          <v-expansion-panels class="mt-4" v-model="expPanDefault" @update:model-value="getSearchNode" multiple>
+            <v-expansion-panel value="fact">
               <v-expansion-panel-title>
                 <v-icon class="me-2">mdi-history</v-icon>
                 Fact Search
@@ -52,6 +52,7 @@
               <v-text-field
                 label="Fact Name"
                 v-model="fact.fact_name"
+                @update:modelValue="getSearchNode"
               ></v-text-field>
             </v-col>
             <v-col cols="3">
@@ -59,6 +60,7 @@
                 label="Operator"
                 :items="formSearchByFactsOperators"
                 v-model="fact.operator"
+                @update:modelValue="getSearchNode"
               ></v-select>
             </v-col>
             <v-col cols="2">
@@ -66,10 +68,15 @@
                 label="Type"
                 :items="formSearchByFactsTypes"
                 v-model="fact.type"
+                @update:modelValue="getSearchNode"
               ></v-select>
             </v-col>
             <v-col cols="3">
-              <v-text-field label="Value" v-model="fact.value"></v-text-field>
+              <v-text-field
+                  label="Value"
+                  v-model="fact.value"
+                  @update:modelValue="getSearchNode"
+              ></v-text-field>
             </v-col>
             <v-col cols="1">
               <v-btn icon @click="formSearchByFactsRemove(index)">
@@ -107,7 +114,12 @@
 
 <script setup>
 import api from '@/api/common'
-import { ref, reactive, watch } from 'vue'
+import {syncExpPanelToUrl} from '@/common/url_state_sync'
+import {syncPaginationToUrl} from '@/common/url_state_sync'
+import {syncSeachByToUrl} from '@/common/url_state_sync'
+import {syncSortToUrl} from '@/common/url_state_sync'
+
+import { ref, reactive, watch} from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
@@ -116,25 +128,29 @@ const router = useRouter()
 const tableItems = ref([])
 const tableLoading = ref(true)
 
-const tablePage = ref(Number(route.query.page) ? Number(route.query.page) : 1)
-const tableItemsPerPage = ref(
-  Number(route.query.limit) ? Number(route.query.limit) : 10
-)
+const tablePage = ref( Number(route.query.page) || 1)
+const tableItemsPerPage = ref(Number(route.query.limit) || 10)
 const tableItemsPerPageOptions = [10, 25, 50, 100]
 const tableTotalItems = ref(tablePage.value * tableItemsPerPage.value)
 
-const tableSortBy = reactive([])
+let oldUrlParams = {}
 
-// Initialize expansion state for fact search panel
-const initializeExpansionState = () => {
-  const expanded = []
-  if (route.query.fact_search_expanded === 'fact-search-panel') {
-    expanded.push('fact-search-panel')
+const tableSortBy = reactive([])
+if (route.query.sort) {
+  if (route.query.sort_order === 'ascending') {
+    tableSortBy.push({
+      key: route.query.sort,
+      order: 'asc'
+    })
+  } else {
+    tableSortBy.push({
+      key: route.query.sort,
+      order: 'desc'
+    })
   }
-  return expanded
 }
 
-const expansionModel = ref(initializeExpansionState())
+const expPanDefault = ref(Array(route.query.exp_pan_default) || [])
 
 const formSearchBy = reactive({
   node_id: '',
@@ -143,6 +159,34 @@ const formSearchBy = reactive({
   environment: '',
   fact: []
 })
+if (route.query.node_id) {
+  formSearchBy.node_id = route.query.node_id
+}
+if (route.query.disabled) {
+  formSearchBy.disabled = route.query.disabled
+}
+if (route.query.environment) {
+  formSearchBy.environment = route.query.environment
+}
+if (route.query.report_status) {
+  formSearchBy.report.status = route.query.report_status
+}
+if (route.query.fact) {
+  const fact_values = Array.isArray(route.query.fact)
+      ? route.query.fact
+      : [route.query.fact]
+
+  fact_values.forEach((fact_value) => {
+    const fact_value_split = fact_value.split(':')
+    formSearchBy.fact.push({
+      fact_name: fact_value_split[0],
+      operator: fact_value_split[1],
+      type: fact_value_split[2],
+      value: fact_value_split[3]
+    })
+  })
+}
+
 
 const formSearchByFactsOperators = [
   'eq',
@@ -179,88 +223,37 @@ const tableDisabledDropdownOptions = [
   { title: 'False', value: 'false' }
 ]
 
-if (route.query.sort) {
-  if (route.query.sort_order === 'ascending') {
-    tableSortBy.push({
-      key: route.query.sort,
-      order: 'asc'
-    })
-  } else {
-    tableSortBy.push({
-      key: route.query.sort,
-      order: 'desc'
-    })
+function getParamsSearchBy() {
+  const items = []
+  
+  if (formSearchBy.node_id) {
+    items.push({ key: 'node_id', value: formSearchBy.node_id })
   }
-}
-
-Object.entries(formSearchBy).forEach(([key]) => {
-  if (route.query[key]) {
-    if (key === 'fact') {
-      let fact_values = []
-      if (Array.isArray(route.query[key])) {
-        fact_values = route.query[key]
-      } else {
-        fact_values.push(route.query[key])
-      }
-      fact_values.forEach((fact_value) => {
-        let fact_value_split = fact_value.split(':')
-        formSearchBy.fact.push({
-          fact_name: fact_value_split[0],
-          operator: fact_value_split[1],
-          type: fact_value_split[2],
-          value: fact_value_split[3]
-        })
-      })
-    } else {
-      formSearchBy[key] = route.query[key]
+  if (formSearchBy.disabled) {
+    items.push({ key: 'disabled', value: formSearchBy.disabled })
+  }
+  if (formSearchBy.environment) {
+    items.push({ key: 'environment', value: formSearchBy.environment })
+  }
+  if (formSearchBy.report.status) {
+    items.push({ key: 'report_status', value: formSearchBy.report.status })
+  }
+  if (formSearchBy.fact.length > 0) {
+    const facts = formSearchBy.fact
+      .filter(fact => fact.fact_name && fact.operator && fact.type && fact.value)
+      .map(fact => `${fact.fact_name}:${fact.operator}:${fact.type}:${fact.value}`)
+    
+    if (facts.length > 0) {
+      items.push({ key: 'fact', value: facts })
     }
   }
-})
-
-function getParamsSearchBy() {
-  // Helper function for recursion
-  function flattenObject(obj, parentKey = '') {
-    let items = []
-    Object.entries(obj).forEach(([key, value]) => {
-      const newKey = parentKey ? `${parentKey}_${key}` : key
-      if (
-        typeof value === 'object' &&
-        value !== null &&
-        !Array.isArray(value)
-      ) {
-        items = items.concat(flattenObject(value, newKey))
-      } else if (key === 'fact' && value) {
-        let _facts = []
-        formSearchBy.fact.forEach((fact) => {
-          if (fact.fact_name && fact.operator && fact.type && fact.value) {
-            _facts.push(
-              `${fact.fact_name}:${fact.operator}:${fact.type}:${fact.value}`
-            )
-          }
-        })
-        if (_facts.length) {
-          items.push({
-            key: 'fact',
-            value: _facts
-          })
-        }
-      } else if (value) {
-        items.push({
-          key: newKey,
-          value: value
-        })
-      }
-    })
-    return items
-  }
-
-  // Use the helper function to process formSearchBy
-  return flattenObject(formSearchBy)
+  
+  return items
 }
 
 function getSearchNode() {
   let _event = {
-    page: 1,
+    page: tablePage.value,
     itemsPerPage: tableItemsPerPage.value,
     sortBy: [...tableSortBy],
     searchBy: getParamsSearchBy()
@@ -282,37 +275,15 @@ function getNodesTableEvent(event) {
 }
 
 function getNodes(event) {
-  tableLoading.value = true
   let query = {}
-
-  if (event.page !== 1) {
-    query.page = event.page
-  }
 
   if (event.itemsPerPage === -1) {
     tableItemsPerPage.value = 100
     event.itemsPerPage = 100
-    query.limit = 100
-  } else if (event.itemsPerPage !== 10) {
-    query.limit = event.itemsPerPage
   }
-
-  if (event.sortBy.length) {
-    query.sort = event.sortBy[0].key
-    if (event.sortBy[0].order === 'asc') {
-      query.sort_order = 'ascending'
-    } else {
-      query.sort_order = 'descending'
-    }
-  } else {
-    tableSortBy.length = 0
-  }
-
-  if (event.searchBy.length) {
-    event.searchBy.forEach((item) => {
-      query[item.key] = item.value
-    })
-  }
+  syncPaginationToUrl(query, event.page, event.itemsPerPage)
+  syncSortToUrl(query, event.sortBy, tableSortBy)
+  syncSeachByToUrl(query, event.searchBy)
 
   let _params = { ...query }
   _params.fields = [
@@ -326,15 +297,18 @@ function getNodes(event) {
     _params.page = _params.page - 1
   }
 
-  // Add fact search expansion state
-  if (expansionModel.value && expansionModel.value.includes('fact-search-panel')) {
-    query.fact_search_expanded = 'fact-search-panel'
-  }
+  syncExpPanelToUrl(query,'default', expPanDefault.value)
 
   router.replace({
     name: 'NodesSearch',
     query: query
   })
+
+  if (JSON.stringify(_params) === JSON.stringify(oldUrlParams)) {
+    return
+  }
+  oldUrlParams = _params
+  tableLoading.value = true
 
   api.get('/api/v1/nodes', _params).then((data) => {
     if (data) {
@@ -352,17 +326,4 @@ function onRowClick(item, item_data) {
     params: { node: item_data.item.id }
   })
 }
-
-watch(
-  () => formSearchBy.fact,
-  () => {
-    getSearchNode()
-  },
-  { deep: true }
-)
-
-watch(expansionModel, () => {
-  // Trigger a URL update when expansion state changes
-  getSearchNode()
-}, { deep: true })
 </script>
