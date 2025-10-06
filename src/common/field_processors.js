@@ -11,12 +11,17 @@ export const factFieldProcessor = {
       }
     })
   },
-  
+
   toUrl: (formValue) => {
     const facts = formValue
-      .filter(fact => fact.fact_name && fact.operator && fact.type && fact.value)
-      .map(fact => `${fact.fact_name}:${fact.operator}:${fact.type}:${fact.value}`)
-    
+      .filter(
+        (fact) => fact.fact_name && fact.operator && fact.type && fact.value
+      )
+      .map(
+        (fact) =>
+          `${fact.fact_name}:${fact.operator}:${fact.type}:${fact.value}`
+      )
+
     return facts.length > 0 ? facts : null
   }
 }
@@ -25,7 +30,7 @@ export const commaSeparatedProcessor = {
   fromUrl: (urlValue) => {
     return typeof urlValue === 'string' ? urlValue.split(',') : urlValue
   },
-  
+
   toUrl: (formValue) => {
     return Array.isArray(formValue) ? formValue.join(',') : formValue
   }
@@ -35,7 +40,7 @@ export const booleanProcessor = {
   fromUrl: (urlValue) => {
     return urlValue === 'true'
   },
-  
+
   toUrl: (formValue) => {
     return formValue ? 'true' : 'false'
   }

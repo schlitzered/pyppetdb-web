@@ -22,8 +22,11 @@
       </template>
       <template v-slot:item.id="{ item }">
         <a
-            :href="router.resolve({ name: 'TeamsCRUD', params: { team: item.id } }).href"
-            @click.left.prevent
+          :href="
+            router.resolve({ name: 'TeamsCRUD', params: { team: item.id } })
+              .href
+          "
+          @click.left.prevent
         >
           {{ item.id }}
         </a>

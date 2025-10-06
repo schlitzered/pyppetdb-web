@@ -32,7 +32,11 @@
             ></v-text-field>
             <v-select
               v-model="formSearchBy.disabled"
-              :items="[{ title: 'Unset', value: '' }, { title: 'True', value: 'true' }, { title: 'False', value: 'false' }]"
+              :items="[
+                { title: 'Unset', value: '' },
+                { title: 'True', value: 'true' },
+                { title: 'False', value: 'false' }
+              ]"
               label="Filter Disabled"
               @update:modelValue="getSearchNodesDistinctFactValues"
             >
@@ -46,38 +50,43 @@
                 Fact Search
               </v-expansion-panel-title>
               <v-expansion-panel-text>
-          <v-row v-for="(fact, index) in formSearchBy.fact" :key="index">
-            <v-col cols="3">
-              <v-text-field
-                label="Fact Name"
-                v-model="fact.fact_name"
-              ></v-text-field>
-            </v-col>
-            <v-col cols="3">
-              <v-select
-                label="Operator"
-                :items="formSearchByFactsOperators"
-                v-model="fact.operator"
-              ></v-select>
-            </v-col>
-            <v-col cols="2">
-              <v-select
-                label="Type"
-                :items="formSearchByFactsTypes"
-                v-model="fact.type"
-              ></v-select>
-            </v-col>
-            <v-col cols="3">
-              <v-text-field label="Value" v-model="fact.value"></v-text-field>
-            </v-col>
-            <v-col cols="1">
-              <v-btn icon @click="formSearchByFactsRemove(index)">
-                <v-icon>mdi-minus</v-icon>
-              </v-btn>
-            </v-col>
-          </v-row>
+                <v-row v-for="(fact, index) in formSearchBy.fact" :key="index">
+                  <v-col cols="3">
+                    <v-text-field
+                      label="Fact Name"
+                      v-model="fact.fact_name"
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="3">
+                    <v-select
+                      label="Operator"
+                      :items="formSearchByFactsOperators"
+                      v-model="fact.operator"
+                    ></v-select>
+                  </v-col>
+                  <v-col cols="2">
+                    <v-select
+                      label="Type"
+                      :items="formSearchByFactsTypes"
+                      v-model="fact.type"
+                    ></v-select>
+                  </v-col>
+                  <v-col cols="3">
+                    <v-text-field
+                      label="Value"
+                      v-model="fact.value"
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="1">
+                    <v-btn icon @click="formSearchByFactsRemove(index)">
+                      <v-icon>mdi-minus</v-icon>
+                    </v-btn>
+                  </v-col>
+                </v-row>
 
-          <v-btn @click="formSearchByFactsAdd" color="primary">Add Fact</v-btn>
+                <v-btn @click="formSearchByFactsAdd" color="primary"
+                  >Add Fact</v-btn
+                >
               </v-expansion-panel-text>
             </v-expansion-panel>
           </v-expansion-panels>
@@ -157,7 +166,7 @@ function formSearchByFactsRemove(index) {
 
 const tableHeaders = [
   { title: 'Value', key: 'value', sortable: true },
-  { title: 'Count', key: 'count', sortable: true },
+  { title: 'Count', key: 'count', sortable: true }
 ]
 
 if (route.query.sort) {
@@ -341,9 +350,13 @@ watch(tableItemsPerPage, (newItemsPerPage) => {
   updateUrlQuery()
 })
 
-watch(expansionModel, () => {
-  updateUrlQuery()
-}, { deep: true })
+watch(
+  expansionModel,
+  () => {
+    updateUrlQuery()
+  },
+  { deep: true }
+)
 
 function handleTableUpdate(options) {
   // Update local sort state from table
@@ -372,11 +385,15 @@ function updateUrlQuery() {
   // Add sorting parameters
   if (tableSortBy.length > 0) {
     query.sort = tableSortBy[0].key
-    query.sort_order = tableSortBy[0].order === 'asc' ? 'ascending' : 'descending'
+    query.sort_order =
+      tableSortBy[0].order === 'asc' ? 'ascending' : 'descending'
   }
 
   // Add fact search expansion state
-  if (expansionModel.value && expansionModel.value.includes('fact-search-panel')) {
+  if (
+    expansionModel.value &&
+    expansionModel.value.includes('fact-search-panel')
+  ) {
     query.fact_search_expanded = 'fact-search-panel'
   } else {
     delete query.fact_search_expanded

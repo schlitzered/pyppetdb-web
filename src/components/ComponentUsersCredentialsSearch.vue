@@ -15,8 +15,13 @@
     >
       <template v-slot:item.id="{ item }">
         <a
-            :href="router.resolve({ name: 'UsersCredentialsCRUD', params: { user: item.user, credential: item.id } }).href"
-            @click.left.prevent
+          :href="
+            router.resolve({
+              name: 'UsersCredentialsCRUD',
+              params: { user: item.user, credential: item.id }
+            }).href
+          "
+          @click.left.prevent
         >
           {{ item.id }}
         </a>

@@ -147,7 +147,9 @@
               </v-toolbar>
             </template>
             <template v-slot:item.events="{ item }">
-              <pre class="text-caption">{{ formatResourcesEvents(item.events) }}</pre>
+              <pre class="text-caption">{{
+                formatResourcesEvents(item.events)
+              }}</pre>
             </template>
           </v-data-table>
         </v-expansion-panel-text>
@@ -228,9 +230,13 @@ const tableReportLogsItems = computed(() => {
   })
 })
 
-const tableReportMetricsSearchCategory = ref(route.query.metrics_search_category || '')
+const tableReportMetricsSearchCategory = ref(
+  route.query.metrics_search_category || ''
+)
 const tableReportMetricsSearchName = ref(route.query.metrics_search_name || '')
-const tableReportMetricsSearchValue = ref(route.query.metrics_search_value || '')
+const tableReportMetricsSearchValue = ref(
+  route.query.metrics_search_value || ''
+)
 const tableReportMetricsHeaders = [
   {
     title: 'Category',
@@ -276,8 +282,12 @@ function formatResourcesEvents(events) {
   return JSON.stringify(events, null, 2)
 }
 
-const tableReportResourcesSearchResourceType = ref(route.query.resources_search_type || '')
-const tableReportResourcesSearchResourceTitle = ref(route.query.resources_search_title || '')
+const tableReportResourcesSearchResourceType = ref(
+  route.query.resources_search_type || ''
+)
+const tableReportResourcesSearchResourceTitle = ref(
+  route.query.resources_search_title || ''
+)
 const tableReportResourcesHeaders = [
   {
     title: 'Resource Type',
@@ -350,7 +360,10 @@ function updateUrlQuery() {
     delete query.logs_expanded
   }
 
-  if (expansionModel.value && expansionModel.value.includes('resources-panel')) {
+  if (
+    expansionModel.value &&
+    expansionModel.value.includes('resources-panel')
+  ) {
     query.resources_expanded = 'resources-panel'
   } else {
     delete query.resources_expanded
@@ -421,9 +434,13 @@ function formGetNodeReportData() {
 }
 
 // Watch for expansion state changes
-watch(expansionModel, () => {
-  updateUrlQuery()
-}, { deep: true })
+watch(
+  expansionModel,
+  () => {
+    updateUrlQuery()
+  },
+  { deep: true }
+)
 
 // Watch for search field changes
 watch(tableReportMetricsSearchCategory, () => {

@@ -42,7 +42,11 @@
       </v-card-actions>
     </v-form>
   </v-card>
-  <v-expansion-panels class="mt-4" v-if="formDataReadOnly" v-model="expansionModel">
+  <v-expansion-panels
+    class="mt-4"
+    v-if="formDataReadOnly"
+    v-model="expansionModel"
+  >
     <v-expansion-panel value="change-info-panel">
       <v-expansion-panel-title>
         <v-icon class="me-2">mdi-history</v-icon>
@@ -460,7 +464,8 @@ function updateUrlQuery() {
   // Add facts table sorting parameters
   if (tableFactsSortBy.length > 0) {
     query.facts_sort = tableFactsSortBy[0].key
-    query.facts_sort_order = tableFactsSortBy[0].order === 'asc' ? 'ascending' : 'descending'
+    query.facts_sort_order =
+      tableFactsSortBy[0].order === 'asc' ? 'ascending' : 'descending'
   } else {
     delete query.facts_sort
     delete query.facts_sort_order
@@ -480,7 +485,10 @@ function updateUrlQuery() {
   }
 
   // Add expansion states
-  if (expansionModel.value && expansionModel.value.includes('change-info-panel')) {
+  if (
+    expansionModel.value &&
+    expansionModel.value.includes('change-info-panel')
+  ) {
     query.change_info_expanded = 'change-info-panel'
   } else {
     delete query.change_info_expanded
@@ -516,9 +524,13 @@ watch(tableFactsSearchValue, () => {
   updateUrlQuery()
 })
 
-watch(expansionModel, () => {
-  updateUrlQuery()
-}, { deep: true })
+watch(
+  expansionModel,
+  () => {
+    updateUrlQuery()
+  },
+  { deep: true }
+)
 
 watch(
   () => [route.params.node],

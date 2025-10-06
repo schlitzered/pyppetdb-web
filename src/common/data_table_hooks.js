@@ -24,11 +24,17 @@ export function useDataTable(config) {
   const tableItems = ref([])
   const tableLoading = ref(true)
   const tablePage = ref(Number(route.query.page) || 1)
-  const tableItemsPerPage = ref(Number(route.query.limit) || defaultItemsPerPage)
+  const tableItemsPerPage = ref(
+    Number(route.query.limit) || defaultItemsPerPage
+  )
   const tableItemsPerPageOptions = [10, 25, 50, 100]
   const tableTotalItems = ref(0)
   const tableSortBy = reactive([])
-  const tableExpPan = ref(route.query["exp_pan_" + tableExpPanName] ? route.query["exp_pan_" + tableExpPanName].split(',') : [])
+  const tableExpPan = ref(
+    route.query['exp_pan_' + tableExpPanName]
+      ? route.query['exp_pan_' + tableExpPanName].split(',')
+      : []
+  )
 
   let oldUrlParams = {}
 
@@ -119,7 +125,7 @@ export function useDataTable(config) {
     tableSortBy,
     tableExpPan: tableExpPan,
     formSearchBy,
-    
+
     getSearchData,
     getSearchDataTableEvent,
     getParamsSearchBy
@@ -128,14 +134,9 @@ export function useDataTable(config) {
 
 function createSearchForm(schema) {
   const form = {}
-  schema.forEach(field => {
-    if (field.type === 'nested') {
-      form[field.key] = {}
-      field.children.forEach(child => {
-        form[field.key][child.key] = child.default || ''
-      })
-    } else if (field.type === 'array') {
-      form[field.key] = []
+  schema.forEach((field) => {
+    if (field.type === 'array') {
+      form[field.key] = field.default || []
     } else {
       form[field.key] = field.default || ''
     }
@@ -144,25 +145,14 @@ function createSearchForm(schema) {
 }
 
 function initializeFormFromUrl(form, schema, query) {
-  schema.forEach(field => {
-    if (field.type === 'nested') {
-      field.children.forEach(child => {
-        const queryKey = `${field.key}_${child.key}`
-        if (query[queryKey]) {
-          form[field.key][child.key] = query[queryKey]
-        }
-      })
-    } else if (field.type === 'array') {
-      if (query[field.key]) {
-        if (field.fromUrl) {
-          form[field.key] = field.fromUrl(query[field.key])
-        } else {
-          form[field.key] = Array.isArray(query[field.key]) ? query[field.key] : [query[field.key]]
-        }
-      }
-    } else if (query[field.key]) {
+  schema.forEach((field) => {
+    if (query[field.key]) {
       if (field.fromUrl) {
         form[field.key] = field.fromUrl(query[field.key])
+      } else if (field.type === 'array') {
+        form[field.key] = Array.isArray(query[field.key])
+          ? query[field.key]
+          : [query[field.key]]
       } else {
         form[field.key] = query[field.key]
       }
@@ -172,37 +162,24 @@ function initializeFormFromUrl(form, schema, query) {
 
 function buildSearchParams(form, schema) {
   const items = []
-  
-  schema.forEach(field => {
-    if (field.type === 'nested') {
-      field.children.forEach(child => {
-        const value = form[field.key][child.key]
-        if (value) {
-          items.push({ key: `${field.key}_${child.key}`, value })
-        }
-      })
-    } else if (field.type === 'array') {
-      if (form[field.key].length > 0) {
-        if (field.toUrl) {
-          const urlValue = field.toUrl(form[field.key])
-          if (urlValue) {
-            items.push({ key: field.key, value: urlValue })
-          }
-        } else {
-          items.push({ key: field.key, value: form[field.key] })
-        }
-      }
-    } else if (form[field.key]) {
+
+  schema.forEach((field) => {
+    const value = form[field.key]
+    const hasValue = field.type === 'array' ? value.length > 0 : value
+
+    if (hasValue) {
+      const apiKey = field.apiKey || field.key
+
       if (field.toUrl) {
-        const urlValue = field.toUrl(form[field.key])
+        const urlValue = field.toUrl(value)
         if (urlValue) {
-          items.push({ key: field.key, value: urlValue })
+          items.push({ key: apiKey, value: urlValue })
         }
       } else {
-        items.push({ key: field.key, value: form[field.key] })
+        items.push({ key: apiKey, value })
       }
     }
   })
-  
+
   return items
 }
