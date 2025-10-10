@@ -149,16 +149,20 @@ function applyDataTransformers(items, transformers) {
     return items
   }
 
-  return items.map(item => {
+  return items.map((item) => {
     const transformedItem = { ...item }
-    
+
     Object.entries(transformers).forEach(([fieldPath, transformer]) => {
       const fieldValue = getNestedValue(item, fieldPath)
       if (fieldValue !== undefined && typeof transformer === 'function') {
-        setNestedValue(transformedItem, fieldPath, transformer(fieldValue, item))
+        setNestedValue(
+          transformedItem,
+          fieldPath,
+          transformer(fieldValue, item)
+        )
       }
     })
-    
+
     return transformedItem
   })
 }

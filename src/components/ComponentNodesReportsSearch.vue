@@ -15,10 +15,10 @@
     >
       <template v-slot:top>
         <v-expansion-panels
-            class="mt-4"
-            v-model="tableExpPan"
-            @update:model-value="getSearchData"
-            multiple
+          class="mt-4"
+          v-model="tableExpPan"
+          @update:model-value="getSearchData"
+          multiple
         >
           <v-expansion-panel value="search">
             <v-expansion-panel-title>
@@ -26,11 +26,11 @@
               Search
             </v-expansion-panel-title>
             <v-expansion-panel-text>
-        <v-text-field
-          v-model="formSearchBy.report_status"
-          label="Filter Report Status"
-          @update:modelValue="getSearchData"
-        ></v-text-field>
+              <v-text-field
+                v-model="formSearchBy.report_status"
+                label="Filter Report Status"
+                @update:modelValue="getSearchData"
+              ></v-text-field>
             </v-expansion-panel-text>
           </v-expansion-panel>
         </v-expansion-panels>
@@ -63,9 +63,7 @@ const tableConfig = {
   apiEndpoint: `/api/v1/nodes/${route.params.node}/reports`,
   routeName: 'NodesReportsSearch',
   fields: [], // Add your desired fields here
-  searchFormSchema: [
-    { key: 'report_status', type: 'string' }
-  ],
+  searchFormSchema: [{ key: 'report_status', type: 'string' }],
   dataTransformers: {
     'report.metrics': (metrics, item) => {
       if (Array.isArray(metrics)) {

@@ -15,10 +15,10 @@
     >
       <template v-slot:top>
         <v-expansion-panels
-            class="mt-4"
-            v-model="tableExpPan"
-            @update:model-value="getSearchData"
-            multiple
+          class="mt-4"
+          v-model="tableExpPan"
+          @update:model-value="getSearchData"
+          multiple
         >
           <v-expansion-panel value="search">
             <v-expansion-panel-title>
@@ -26,11 +26,11 @@
               Search
             </v-expansion-panel-title>
             <v-expansion-panel-text>
-        <v-text-field
-          v-model="formSearchBy.node_group_id"
-          label="Filter Node Group ID"
-          @update:modelValue="getSearchData"
-        ></v-text-field>
+              <v-text-field
+                v-model="formSearchBy.node_group_id"
+                label="Filter Node Group ID"
+                @update:modelValue="getSearchData"
+              ></v-text-field>
             </v-expansion-panel-text>
           </v-expansion-panel>
         </v-expansion-panels>
@@ -79,9 +79,7 @@ const {
   getSearchDataTableEvent
 } = useDataTable(tableConfig)
 
-
 const tableHeaders = [{ title: 'Node Group ID', key: 'id', sortable: true }]
-
 
 function onRowClick(item, item_data) {
   router.push({

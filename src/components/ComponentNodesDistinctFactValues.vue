@@ -15,10 +15,10 @@
       >
         <template v-slot:top>
           <v-expansion-panels
-              class="mt-4"
-              v-model="tableExpPan"
-              @update:model-value="getSearchData"
-              multiple
+            class="mt-4"
+            v-model="tableExpPan"
+            @update:model-value="getSearchData"
+            multiple
           >
             <v-expansion-panel value="search">
               <v-expansion-panel-title>
@@ -26,34 +26,34 @@
                 Search
               </v-expansion-panel-title>
               <v-expansion-panel-text>
-          <v-row>
-            <v-text-field
-              v-model="formSearchBy.fact_id"
-              label="Fact ID"
-              @update:modelValue="getSearchData"
-            ></v-text-field>
-            <v-text-field
-              v-model="formSearchBy.environment"
-              label="Filter Environment"
-              @update:modelValue="getSearchData"
-            ></v-text-field>
-            <v-text-field
-              v-model="formSearchBy.report_status"
-              label="Filter Report Status"
-              @update:modelValue="getSearchData"
-            ></v-text-field>
-            <v-select
-              v-model="formSearchBy.disabled"
-              :items="[
-                { title: 'Unset', value: '' },
-                { title: 'True', value: 'true' },
-                { title: 'False', value: 'false' }
-              ]"
-              label="Filter Disabled"
-              @update:modelValue="getSearchData"
-            >
-            </v-select>
-          </v-row>
+                <v-row>
+                  <v-text-field
+                    v-model="formSearchBy.fact_id"
+                    label="Fact ID"
+                    @update:modelValue="getSearchData"
+                  ></v-text-field>
+                  <v-text-field
+                    v-model="formSearchBy.environment"
+                    label="Filter Environment"
+                    @update:modelValue="getSearchData"
+                  ></v-text-field>
+                  <v-text-field
+                    v-model="formSearchBy.report_status"
+                    label="Filter Report Status"
+                    @update:modelValue="getSearchData"
+                  ></v-text-field>
+                  <v-select
+                    v-model="formSearchBy.disabled"
+                    :items="[
+                      { title: 'Unset', value: '' },
+                      { title: 'True', value: 'true' },
+                      { title: 'False', value: 'false' }
+                    ]"
+                    label="Filter Disabled"
+                    @update:modelValue="getSearchData"
+                  >
+                  </v-select>
+                </v-row>
               </v-expansion-panel-text>
             </v-expansion-panel>
             <v-expansion-panel value="fact">
@@ -129,7 +129,14 @@ const route = useRoute()
 const router = useRouter()
 
 const formSearchByFactsOperators = [
-  'eq', 'gt', 'gte', 'in', 'lte', 'ne', 'nin', 'regex'
+  'eq',
+  'gt',
+  'gte',
+  'in',
+  'lte',
+  'ne',
+  'nin',
+  'regex'
 ]
 const formSearchByFactsTypes = ['bool', 'int', 'float', 'str']
 
@@ -143,8 +150,8 @@ const tableConfig = {
     { key: 'environment', type: 'string' },
     { key: 'report_status', type: 'string' },
     { key: 'disabled', type: 'string' },
-    { 
-      key: 'fact', 
+    {
+      key: 'fact',
       type: 'array',
       processor: factFieldProcessor,
       default: []

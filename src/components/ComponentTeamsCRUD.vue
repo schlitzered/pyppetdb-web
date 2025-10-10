@@ -60,7 +60,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, onMounted, watch, nextTick } from 'vue'
+import { reactive, ref, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router/dist/vue-router'
 
 import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
@@ -106,22 +106,21 @@ const usersChoices = ref([])
 const usersSearch = ref('')
 const usersSearchLoading = ref(true)
 
-function formConfigure() {
-  if (route.params.team !== '_new') {
-    formInputIdReadOnly.value = true
-    formDataReadOnly.value = true
-    formButtonEditShow.value = true
-  } else if (route.params.team === '_new') {
-    formInputIdReadOnly.value = false
-    formDataReadOnly.value = false
-    formButtonDeleteShow.value = false
-    formButtonEditShow.value = false
-  } else {
-    formInputIdReadOnly.value = true
-    formDataReadOnly.value = true
-    formButtonEditShow.value = false
-  }
+if (route.params.team !== '_new') {
+  formInputIdReadOnly.value = true
+  formDataReadOnly.value = true
+  formButtonEditShow.value = true
+} else if (route.params.team === '_new') {
+  formInputIdReadOnly.value = false
+  formDataReadOnly.value = false
+  formButtonDeleteShow.value = false
+  formButtonEditShow.value = false
+} else {
+  formInputIdReadOnly.value = true
+  formDataReadOnly.value = true
+  formButtonEditShow.value = false
 }
+formGetData()
 
 function formDelete() {
   dialogDeleteShow.value = true
@@ -130,7 +129,7 @@ function formDelete() {
 
 function formReset(event) {
   event.preventDefault()
-  formGetTeamData()
+  formGetData()
   formDataValid.value = false
   nextTick(() => {
     form.value.resetValidation()
@@ -157,12 +156,12 @@ function formSubmit(event) {
       })
     } else {
       formDataReadOnly.value = true
-      formGetTeamData()
+      formGetData()
     }
   })
 }
 
-function formGetTeamData() {
+function formGetData() {
   if (route.params.team === '_new') {
     formDataValid.value = false
     nextTick(() => {
@@ -201,20 +200,4 @@ function getUsers() {
   })
   usersSearchLoading.value = false
 }
-
-watch(
-  () => [route.params.team, loginData.getUserDataIsAdmin],
-  () => {
-    if (route.name === 'TeamsCRUD') {
-      formConfigure()
-      formGetTeamData()
-    }
-  }
-)
-
-onMounted(async () => {
-  formConfigure()
-  formGetTeamData()
-  apiError.setRedirect({ name: 'TeamsSearch' })
-})
 </script>

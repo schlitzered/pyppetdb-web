@@ -15,8 +15,8 @@
         {{ formData.report['corrective_change'] }}
       </v-col>
     </v-row>
-    <v-expansion-panels class="mt-4" v-model="expansionModel">
-      <v-expansion-panel value="metrics-panel">
+    <v-expansion-panels class="mt-4" v-model="expansionModel" @update:model-value="updateUrlQuery" multiple>
+      <v-expansion-panel value="metrics">
         <v-expansion-panel-title>
           <v-icon class="me-2">mdi-chart-line</v-icon>
           Report Metrics
@@ -34,6 +34,7 @@
                 <v-spacer></v-spacer>
                 <v-text-field
                   v-model="tableReportMetricsSearchCategory"
+                  @update:model-value="updateUrlQuery"
                   append-inner-icon="mdi-magnify"
                   label="Search category..."
                   single-line
@@ -44,6 +45,7 @@
                 ></v-text-field>
                 <v-text-field
                   v-model="tableReportMetricsSearchName"
+                  @update:model-value="updateUrlQuery"
                   append-inner-icon="mdi-magnify"
                   label="Search name..."
                   single-line
@@ -54,6 +56,7 @@
                 ></v-text-field>
                 <v-text-field
                   v-model="tableReportMetricsSearchValue"
+                  @update:model-value="updateUrlQuery"
                   append-inner-icon="mdi-magnify"
                   label="Search Value..."
                   single-line
@@ -67,7 +70,7 @@
           </v-data-table>
         </v-expansion-panel-text>
       </v-expansion-panel>
-      <v-expansion-panel value="logs-panel">
+      <v-expansion-panel value="logs">
         <v-expansion-panel-title>
           <v-icon class="me-2">mdi-history</v-icon>
           Change Information
@@ -85,6 +88,7 @@
                 <v-spacer></v-spacer>
                 <v-text-field
                   v-model="tableReportLogsSearchLevel"
+                  @update:model-value="updateUrlQuery"
                   append-inner-icon="mdi-magnify"
                   label="Search level..."
                   single-line
@@ -95,6 +99,7 @@
                 ></v-text-field>
                 <v-text-field
                   v-model="tableReportLogsSearchMessage"
+                  @update:model-value="updateUrlQuery"
                   append-inner-icon="mdi-magnify"
                   label="Search message..."
                   single-line
@@ -108,7 +113,7 @@
           </v-data-table>
         </v-expansion-panel-text>
       </v-expansion-panel>
-      <v-expansion-panel value="resources-panel">
+      <v-expansion-panel value="resources">
         <v-expansion-panel-title>
           <v-icon class="me-2">mdi-folder</v-icon>
           Resources
@@ -126,6 +131,7 @@
                 <v-spacer></v-spacer>
                 <v-text-field
                   v-model="tableReportResourcesSearchResourceType"
+                  @update:model-value="updateUrlQuery"
                   append-inner-icon="mdi-magnify"
                   label="Search type..."
                   single-line
@@ -136,6 +142,7 @@
                 ></v-text-field>
                 <v-text-field
                   v-model="tableReportResourcesSearchResourceTitle"
+                  @update:model-value="updateUrlQuery"
                   append-inner-icon="mdi-magnify"
                   label="Search title..."
                   single-line
@@ -164,28 +171,20 @@ import { useRoute, useRouter } from 'vue-router/dist/vue-router'
 
 import api from '@/api/common'
 import { apiErrorStore } from '@/store/api_error'
+import { syncSimpleStringToUrl } from '@/common/url_state_sync'
+import { syncExpPanelToUrl} from "@/common/url_state_sync";
 
 const apiError = apiErrorStore()
 
 const route = useRoute()
 const router = useRouter()
 
-// Initialize expansion state for all three panels
-const initializeExpansionState = () => {
-  const expanded = []
-  if (route.query.metrics_expanded === 'metrics-panel') {
-    expanded.push('metrics-panel')
-  }
-  if (route.query.logs_expanded === 'logs-panel') {
-    expanded.push('logs-panel')
-  }
-  if (route.query.resources_expanded === 'resources-panel') {
-    expanded.push('resources-panel')
-  }
-  return expanded
-}
-
-const expansionModel = ref(initializeExpansionState())
+const tableExpPanName = 'default'
+const expansionModel = ref(
+    route.query['exp_pan_' + tableExpPanName]
+        ? route.query['exp_pan_' + tableExpPanName].split(',')
+        : []
+)
 
 const tableReportLogsSearchLevel = ref(route.query.logs_search_level || '')
 const tableReportLogsSearchMessage = ref(route.query.logs_search_message || '')
@@ -345,72 +344,15 @@ function formatValue(value) {
 }
 
 function updateUrlQuery() {
-  let query = { ...route.query }
-
-  // Add expansion states
-  if (expansionModel.value && expansionModel.value.includes('metrics-panel')) {
-    query.metrics_expanded = 'metrics-panel'
-  } else {
-    delete query.metrics_expanded
-  }
-
-  if (expansionModel.value && expansionModel.value.includes('logs-panel')) {
-    query.logs_expanded = 'logs-panel'
-  } else {
-    delete query.logs_expanded
-  }
-
-  if (
-    expansionModel.value &&
-    expansionModel.value.includes('resources-panel')
-  ) {
-    query.resources_expanded = 'resources-panel'
-  } else {
-    delete query.resources_expanded
-  }
-
-  // Add search parameters
-  if (tableReportMetricsSearchCategory.value) {
-    query.metrics_search_category = tableReportMetricsSearchCategory.value
-  } else {
-    delete query.metrics_search_category
-  }
-
-  if (tableReportMetricsSearchName.value) {
-    query.metrics_search_name = tableReportMetricsSearchName.value
-  } else {
-    delete query.metrics_search_name
-  }
-
-  if (tableReportMetricsSearchValue.value) {
-    query.metrics_search_value = tableReportMetricsSearchValue.value
-  } else {
-    delete query.metrics_search_value
-  }
-
-  if (tableReportLogsSearchLevel.value) {
-    query.logs_search_level = tableReportLogsSearchLevel.value
-  } else {
-    delete query.logs_search_level
-  }
-
-  if (tableReportLogsSearchMessage.value) {
-    query.logs_search_message = tableReportLogsSearchMessage.value
-  } else {
-    delete query.logs_search_message
-  }
-
-  if (tableReportResourcesSearchResourceType.value) {
-    query.resources_search_type = tableReportResourcesSearchResourceType.value
-  } else {
-    delete query.resources_search_type
-  }
-
-  if (tableReportResourcesSearchResourceTitle.value) {
-    query.resources_search_title = tableReportResourcesSearchResourceTitle.value
-  } else {
-    delete query.resources_search_title
-  }
+  let query = {}
+  syncExpPanelToUrl(query, tableExpPanName, expansionModel.value)
+  syncSimpleStringToUrl(query, 'metrics_search_category', tableReportMetricsSearchCategory.value)
+  syncSimpleStringToUrl(query, 'metrics_search_name', tableReportMetricsSearchName.value)
+  syncSimpleStringToUrl(query, 'metrics_search_value', tableReportMetricsSearchValue.value)
+  syncSimpleStringToUrl(query, 'logs_search_level', tableReportLogsSearchLevel.value)
+  syncSimpleStringToUrl(query, 'logs_search_message', tableReportLogsSearchMessage.value)
+  syncSimpleStringToUrl(query, 'resources_search_type', tableReportResourcesSearchResourceType.value)
+  syncSimpleStringToUrl(query, 'resources_search_title', tableReportResourcesSearchResourceTitle.value)
 
   router.replace({
     name: route.name,
@@ -419,7 +361,7 @@ function updateUrlQuery() {
   })
 }
 
-function formGetNodeReportData() {
+function formGetData() {
   api
     .get(`/api/v1/nodes/${route.params.node}/reports/${route.params.report}`)
     .then((data) => {
@@ -432,58 +374,5 @@ function formGetNodeReportData() {
       }
     })
 }
-
-// Watch for expansion state changes
-watch(
-  expansionModel,
-  () => {
-    updateUrlQuery()
-  },
-  { deep: true }
-)
-
-// Watch for search field changes
-watch(tableReportMetricsSearchCategory, () => {
-  updateUrlQuery()
-})
-
-watch(tableReportMetricsSearchName, () => {
-  updateUrlQuery()
-})
-
-watch(tableReportMetricsSearchValue, () => {
-  updateUrlQuery()
-})
-
-watch(tableReportLogsSearchLevel, () => {
-  updateUrlQuery()
-})
-
-watch(tableReportLogsSearchMessage, () => {
-  updateUrlQuery()
-})
-
-watch(tableReportResourcesSearchResourceType, () => {
-  updateUrlQuery()
-})
-
-watch(tableReportResourcesSearchResourceTitle, () => {
-  updateUrlQuery()
-})
-
-watch(
-  () => [route.params.node],
-  () => {
-    if (route.name === 'NodesReportsCRUD') {
-      formGetNodeReportData()
-    }
-  }
-)
-
-onMounted(async () => {
-  formGetNodeReportData()
-  apiError.setRedirect({
-    name: 'NodesReportsSearch'
-  })
-})
+formGetData()
 </script>

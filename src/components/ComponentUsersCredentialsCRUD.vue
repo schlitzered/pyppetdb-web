@@ -60,7 +60,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, onMounted, watch, nextTick } from 'vue'
+import { reactive, ref, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router/dist/vue-router'
 
 import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
@@ -105,23 +105,22 @@ const formInputCreatedReadOnly = ref(true)
 const formInputCreatedShow = ref(true)
 const formInputSecretShow = ref(false)
 
-function formConfigure() {
-  if (route.params.credential !== '_new') {
-    formInputIdReadOnly.value = true
-    formDataReadOnly.value = true
-    formButtonEditShow.value = true
-  } else if (route.params.credential === '_new') {
-    formDataReadOnly.value = false
-    formButtonDeleteShow.value = false
-    formButtonEditShow.value = false
-    formInputCreatedShow.value = false
-    formInputIdShow.value = false
-  } else {
-    formInputIdReadOnly.value = true
-    formDataReadOnly.value = true
-    formButtonEditShow.value = false
-  }
+if (route.params.credential !== '_new') {
+  formInputIdReadOnly.value = true
+  formDataReadOnly.value = true
+  formButtonEditShow.value = true
+} else if (route.params.credential === '_new') {
+  formDataReadOnly.value = false
+  formButtonDeleteShow.value = false
+  formButtonEditShow.value = false
+  formInputCreatedShow.value = false
+  formInputIdShow.value = false
+} else {
+  formInputIdReadOnly.value = true
+  formDataReadOnly.value = true
+  formButtonEditShow.value = false
 }
+formGetData()
 
 function formDelete() {
   dialogDeleteShow.value = true
@@ -130,7 +129,7 @@ function formDelete() {
 
 function formReset(event) {
   event.preventDefault()
-  formGetUserData()
+  formGetData()
   formDataValid.value = false
   nextTick(() => {
     form.value.resetValidation()
@@ -161,12 +160,12 @@ function formSubmit(event) {
       })
     } else {
       formDataReadOnly.value = true
-      formGetUserData()
+      formGetData()
     }
   })
 }
 
-function formGetUserData() {
+function formGetData() {
   if (route.params.credential === '_new') {
     formDataValid.value = false
     nextTick(() => {
@@ -189,23 +188,4 @@ function formGetUserData() {
       })
   }
 }
-
-watch(
-  () => [route.params.user],
-  () => {
-    if (route.name === 'UsersCredentialsCRUD') {
-      formConfigure()
-      formGetUserData()
-    }
-  }
-)
-
-onMounted(async () => {
-  formConfigure()
-  formGetUserData()
-  apiError.setRedirect({
-    name: 'UsersCredentialsSearch',
-    params: { user: route.params.user }
-  })
-})
 </script>
