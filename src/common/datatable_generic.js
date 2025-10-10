@@ -16,7 +16,8 @@ export function useDataTable(config) {
     searchFormSchema,
     defaultItemsPerPage = 10,
     tableExpPanName = 'default',
-    dataTransformers = {} // New property for data transformers
+    dataTransformers = {},
+    dataTableType = 'server' // 'server', 'client', 'virtual', etc.
   } = config
 
   const route = useRoute()
@@ -66,9 +67,17 @@ export function useDataTable(config) {
     syncSeachByToUrl(query, event.searchBy)
 
     let _params = { ...query }
-    _params.fields = fields
-    if (_params.page) {
-      _params.page = _params.page - 1
+
+    if (dataTableType === 'server') {
+      _params.fields = fields
+      if (_params.page) {
+        _params.page = _params.page - 1
+      }
+    } else {
+      delete _params.page
+      delete _params.limit
+      delete _params.sort
+      delete _params.sort_order
     }
 
     syncExpPanelToUrl(query, tableExpPanName, tableExpPan.value)
@@ -86,8 +95,9 @@ export function useDataTable(config) {
 
     api.get(apiEndpoint, _params).then((data) => {
       if (data) {
-        tableTotalItems.value = data.meta['result_size']
-        // Apply data transformers if configured
+        if (dataTableType === 'server' && data.meta) {
+          tableTotalItems.value = data.meta['result_size']
+        }
         tableItems.value = applyDataTransformers(data.result, dataTransformers)
         tableLoading.value = false
       }
@@ -134,7 +144,6 @@ export function useDataTable(config) {
   }
 }
 
-// New function to apply data transformers
 function applyDataTransformers(items, transformers) {
   if (!transformers || Object.keys(transformers).length === 0) {
     return items
@@ -154,14 +163,12 @@ function applyDataTransformers(items, transformers) {
   })
 }
 
-// Helper function to get nested object values using dot notation
 function getNestedValue(obj, path) {
   return path.split('.').reduce((current, key) => {
     return current && current[key] !== undefined ? current[key] : undefined
   }, obj)
 }
 
-// Helper function to set nested object values using dot notation
 function setNestedValue(obj, path, value) {
   const keys = path.split('.')
   const lastKey = keys.pop()
@@ -189,7 +196,9 @@ function createSearchForm(schema) {
 function initializeFormFromUrl(form, schema, query) {
   schema.forEach((field) => {
     if (query[field.key]) {
-      if (field.fromUrl) {
+      if (field.processor && field.processor.fromUrl) {
+        form[field.key] = field.processor.fromUrl(query[field.key])
+      } else if (field.fromUrl) {
         form[field.key] = field.fromUrl(query[field.key])
       } else if (field.type === 'array') {
         form[field.key] = Array.isArray(query[field.key])
@@ -212,7 +221,12 @@ function buildSearchParams(form, schema) {
     if (hasValue) {
       const apiKey = field.apiKey || field.key
 
-      if (field.toUrl) {
+      if (field.processor && field.processor.toUrl) {
+        const urlValue = field.processor.toUrl(value)
+        if (urlValue) {
+          items.push({ key: apiKey, value: urlValue })
+        }
+      } else if (field.toUrl) {
         const urlValue = field.toUrl(value)
         if (urlValue) {
           items.push({ key: apiKey, value: urlValue })
