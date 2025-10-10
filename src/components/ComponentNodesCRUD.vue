@@ -152,10 +152,10 @@
 </template>
 
 <script setup>
-import {syncExpPanelToUrl} from '@/common/url_state_sync'
-import {syncPaginationToUrl} from '@/common/url_state_sync'
-import {syncSimpleStringToUrl} from '@/common/url_state_sync'
-import {syncSortToUrl} from '@/common/url_state_sync'
+import { syncExpPanelToUrl } from '@/common/url_state_sync'
+import { syncPaginationToUrl } from '@/common/url_state_sync'
+import { syncSimpleStringToUrl } from '@/common/url_state_sync'
+import { syncSortToUrl } from '@/common/url_state_sync'
 
 import { reactive, ref, onMounted, nextTick, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router/dist/vue-router'
@@ -180,9 +180,9 @@ const tableFactsItemsPerPage = ref(Number(route.query.limit_facts) || 10)
 const tableFactsSortBy = reactive([])
 const tableExpPanName = 'default'
 const tableExpPan = ref(
-    route.query['exp_pan_' + tableExpPanName]
-        ? route.query['exp_pan_' + tableExpPanName].split(',')
-        : []
+  route.query['exp_pan_' + tableExpPanName]
+    ? route.query['exp_pan_' + tableExpPanName].split(',')
+    : []
 )
 
 if (route.query.sort_facts) {
@@ -407,10 +407,19 @@ function handleFactsTableUpdate(options) {
 function updateUrlQuery() {
   let query = {}
   syncExpPanelToUrl(query, tableExpPanName, tableExpPan.value)
-  syncPaginationToUrl(query, tableFactsPage.value, tableFactsItemsPerPage.value, 'facts')
-  syncSortToUrl(query, tableFactsSortBy, tableFactsSortBy,'facts')
+  syncPaginationToUrl(
+    query,
+    tableFactsPage.value,
+    tableFactsItemsPerPage.value,
+    'facts'
+  )
+  syncSortToUrl(query, tableFactsSortBy, tableFactsSortBy, 'facts')
   syncSimpleStringToUrl(query, 'search_key_facts', tableFactsSearchKey.value)
-  syncSimpleStringToUrl(query, 'search_value_facts', tableFactsSearchValue.value)
+  syncSimpleStringToUrl(
+    query,
+    'search_value_facts',
+    tableFactsSearchValue.value
+  )
 
   router.replace({
     name: route.name,

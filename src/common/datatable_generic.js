@@ -15,7 +15,8 @@ export function useDataTable(config) {
     fields,
     searchFormSchema,
     defaultItemsPerPage = 10,
-    tableExpPanName = 'default'
+    tableExpPanName = 'default',
+    dataTransformers = {} // New property for data transformers
   } = config
 
   const route = useRoute()
@@ -86,7 +87,8 @@ export function useDataTable(config) {
     api.get(apiEndpoint, _params).then((data) => {
       if (data) {
         tableTotalItems.value = data.meta['result_size']
-        tableItems.value = data.result
+        // Apply data transformers if configured
+        tableItems.value = applyDataTransformers(data.result, dataTransformers)
         tableLoading.value = false
       }
     })
@@ -130,6 +132,46 @@ export function useDataTable(config) {
     getSearchDataTableEvent,
     getParamsSearchBy
   }
+}
+
+// New function to apply data transformers
+function applyDataTransformers(items, transformers) {
+  if (!transformers || Object.keys(transformers).length === 0) {
+    return items
+  }
+
+  return items.map(item => {
+    const transformedItem = { ...item }
+    
+    Object.entries(transformers).forEach(([fieldPath, transformer]) => {
+      const fieldValue = getNestedValue(item, fieldPath)
+      if (fieldValue !== undefined && typeof transformer === 'function') {
+        setNestedValue(transformedItem, fieldPath, transformer(fieldValue, item))
+      }
+    })
+    
+    return transformedItem
+  })
+}
+
+// Helper function to get nested object values using dot notation
+function getNestedValue(obj, path) {
+  return path.split('.').reduce((current, key) => {
+    return current && current[key] !== undefined ? current[key] : undefined
+  }, obj)
+}
+
+// Helper function to set nested object values using dot notation
+function setNestedValue(obj, path, value) {
+  const keys = path.split('.')
+  const lastKey = keys.pop()
+  const target = keys.reduce((current, key) => {
+    if (!current[key] || typeof current[key] !== 'object') {
+      current[key] = {}
+    }
+    return current[key]
+  }, obj)
+  target[lastKey] = value
 }
 
 function createSearchForm(schema) {
