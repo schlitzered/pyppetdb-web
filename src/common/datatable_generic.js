@@ -24,6 +24,7 @@ export function useDataTable(config) {
   const router = useRouter()
 
   const tableItems = ref([])
+  const tableItemsMeta = ref({})
   const tableLoading = ref(true)
   const tablePage = ref(Number(route.query.page) || 1)
   const tableItemsPerPage = ref(
@@ -97,6 +98,7 @@ export function useDataTable(config) {
       if (data) {
         if (dataTableType === 'server' && data.meta) {
           tableTotalItems.value = data.meta['result_size']
+          tableItemsMeta.value = data.meta
         }
         tableItems.value = applyDataTransformers(data.result, dataTransformers)
         tableLoading.value = false
@@ -129,6 +131,7 @@ export function useDataTable(config) {
 
   return {
     tableItems,
+    tableItemsMeta,
     tableLoading,
     tablePage,
     tableItemsPerPage,

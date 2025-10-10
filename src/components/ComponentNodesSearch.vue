@@ -103,6 +103,55 @@
               </v-expansion-panel-text>
             </v-expansion-panel>
           </v-expansion-panels>
+          <v-row class="mt-1">
+            <v-col cols="3">
+              <v-chip 
+                color="success" 
+                variant="outlined" 
+                size="large"
+                @click="filterByStatus('^unchanged$')"
+                class="cursor-pointer"
+              >
+                <v-icon start>mdi-check-circle</v-icon>
+                Unchanged: {{ tableItemsMeta.status_unchanged }}
+              </v-chip>
+            </v-col>
+            <v-col cols="3">
+              <v-chip 
+                color="warning" 
+                variant="outlined" 
+                size="large"
+                @click="filterByStatus('^changed$')"
+                class="cursor-pointer"
+              >
+                <v-icon start>mdi-alert-circle</v-icon>
+                Changed: {{ tableItemsMeta.status_changed }}
+              </v-chip>
+            </v-col>
+            <v-col cols="3">
+              <v-chip 
+                color="error" 
+                variant="outlined" 
+                size="large"
+                @click="filterByStatus('^failed$')"
+                class="cursor-pointer"
+              >
+                <v-icon start>mdi-close-circle</v-icon>
+                Failed: {{ tableItemsMeta.status_failed }}
+              </v-chip>
+            </v-col>
+            <v-col cols="3">
+              <v-chip 
+                color="info" 
+                variant="outlined" 
+                size="large"
+                class="cursor-pointer"
+              >
+                <v-icon start>mdi-help-circle</v-icon>
+                Unreported: {{ tableItemsMeta.status_unreported }}
+              </v-chip>
+            </v-col>
+          </v-row>
         </template>
         <template v-slot:item.disabled="{ item }">
           <v-icon>
@@ -160,6 +209,7 @@ const tableConfig = {
 
 const {
   tableItems,
+  tableItemsMeta,
   tableLoading,
   tablePage,
   tableItemsPerPage,
@@ -212,5 +262,16 @@ function onRowClick(item, item_data) {
     name: 'NodesCRUD',
     params: { node: item_data.item.id }
   })
+}
+
+function filterByStatus(status) {
+  // If the current filter matches the clicked status, clear it
+  if (formSearchBy.report_status === status) {
+    formSearchBy.report_status = ''
+  } else {
+    // Otherwise, set the new filter
+    formSearchBy.report_status = status
+  }
+  getSearchData()
 }
 </script>
