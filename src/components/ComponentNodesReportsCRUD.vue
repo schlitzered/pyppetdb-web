@@ -25,7 +25,9 @@
           <v-data-table
             :headers="tableReportMetricsHeaders"
             :items="tableReportMetricsItems"
-            :items-per-page="10"
+            v-model:page="metricsPage"
+            v-model:items-per-page="metricsItemsPerPage"
+            @update:options="updateUrlQuery"
             class="elevation-1"
             density="compact"
           >
@@ -79,7 +81,9 @@
           <v-data-table
             :headers="tableReportLogsHeaders"
             :items="tableReportLogsItems"
-            :items-per-page="10"
+            v-model:page="logsPage"
+            v-model:items-per-page="logsItemsPerPage"
+            @update:options="updateUrlQuery"
             class="elevation-1"
             density="compact"
           >
@@ -122,7 +126,8 @@
           <v-data-table
             :headers="tableReportResourcesHeaders"
             :items="tableReportResourcesItems"
-            :items-per-page="10"
+            v-model:page="resourcesPage"
+            v-model:items-per-page="resourcesItemsPerPage"
             class="elevation-1"
             density="compact"
           >
@@ -173,11 +178,20 @@ import api from '@/api/common'
 import { apiErrorStore } from '@/store/api_error'
 import { syncSimpleStringToUrl } from '@/common/url_state_sync'
 import { syncExpPanelToUrl} from "@/common/url_state_sync";
+import { syncPaginationToUrl} from "@/common/url_state_sync";
+import { syncSortToUrl} from "@/common/url_state_sync";
 
 const apiError = apiErrorStore()
 
 const route = useRoute()
 const router = useRouter()
+
+const metricsPage = ref(Number(route.query.page_metrics) || 1)
+const metricsItemsPerPage = ref(Number(route.query.limit_metrics) || 10)
+const logsPage = ref(Number(route.query.page_logs) || 1)
+const logsItemsPerPage = ref(Number(route.query.limit_logs) || 10)
+const resourcesPage = ref(Number(route.query.page_resources) || 1)
+const resourcesItemsPerPage = ref(Number(route.query.limit_resources) || 10)
 
 const tableExpPanName = 'default'
 const expansionModel = ref(
@@ -345,6 +359,9 @@ function formatValue(value) {
 
 function updateUrlQuery() {
   let query = {}
+  syncPaginationToUrl(query, metricsPage.value, metricsItemsPerPage.value, 'metrics')
+  syncPaginationToUrl(query, logsPage.value, logsItemsPerPage.value, 'logs')
+  syncPaginationToUrl(query, resourcesPage.value, resourcesItemsPerPage.value, 'resources')
   syncExpPanelToUrl(query, tableExpPanName, expansionModel.value)
   syncSimpleStringToUrl(query, 'metrics_search_category', tableReportMetricsSearchCategory.value)
   syncSimpleStringToUrl(query, 'metrics_search_name', tableReportMetricsSearchName.value)
