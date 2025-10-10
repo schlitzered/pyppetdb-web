@@ -15,7 +15,12 @@
         {{ formData.report['corrective_change'] }}
       </v-col>
     </v-row>
-    <v-expansion-panels class="mt-4" v-model="expansionModel" @update:model-value="updateUrlQuery" multiple>
+    <v-expansion-panels
+      class="mt-4"
+      v-model="expansionModel"
+      @update:model-value="updateUrlQuery"
+      multiple
+    >
       <v-expansion-panel value="metrics">
         <v-expansion-panel-title>
           <v-icon class="me-2">mdi-chart-line</v-icon>
@@ -171,15 +176,15 @@
 </template>
 
 <script setup>
-import { reactive, ref, onMounted, watch, computed } from 'vue'
+import { reactive, ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router/dist/vue-router'
 
 import api from '@/api/common'
 import { apiErrorStore } from '@/store/api_error'
 import { syncSimpleStringToUrl } from '@/common/url_state_sync'
-import { syncExpPanelToUrl} from "@/common/url_state_sync";
-import { syncPaginationToUrl} from "@/common/url_state_sync";
-import { syncSortToUrl} from "@/common/url_state_sync";
+import { syncExpPanelToUrl } from '@/common/url_state_sync'
+import { syncPaginationToUrl } from '@/common/url_state_sync'
+import { syncSortToUrl } from '@/common/url_state_sync'
 
 const apiError = apiErrorStore()
 
@@ -195,9 +200,9 @@ const resourcesItemsPerPage = ref(Number(route.query.limit_resources) || 10)
 
 const tableExpPanName = 'default'
 const expansionModel = ref(
-    route.query['exp_pan_' + tableExpPanName]
-        ? route.query['exp_pan_' + tableExpPanName].split(',')
-        : []
+  route.query['exp_pan_' + tableExpPanName]
+    ? route.query['exp_pan_' + tableExpPanName].split(',')
+    : []
 )
 
 const tableReportLogsSearchLevel = ref(route.query.logs_search_level || '')
@@ -359,17 +364,55 @@ function formatValue(value) {
 
 function updateUrlQuery() {
   let query = {}
-  syncPaginationToUrl(query, metricsPage.value, metricsItemsPerPage.value, 'metrics')
+  syncPaginationToUrl(
+    query,
+    metricsPage.value,
+    metricsItemsPerPage.value,
+    'metrics'
+  )
   syncPaginationToUrl(query, logsPage.value, logsItemsPerPage.value, 'logs')
-  syncPaginationToUrl(query, resourcesPage.value, resourcesItemsPerPage.value, 'resources')
+  syncPaginationToUrl(
+    query,
+    resourcesPage.value,
+    resourcesItemsPerPage.value,
+    'resources'
+  )
   syncExpPanelToUrl(query, tableExpPanName, expansionModel.value)
-  syncSimpleStringToUrl(query, 'metrics_search_category', tableReportMetricsSearchCategory.value)
-  syncSimpleStringToUrl(query, 'metrics_search_name', tableReportMetricsSearchName.value)
-  syncSimpleStringToUrl(query, 'metrics_search_value', tableReportMetricsSearchValue.value)
-  syncSimpleStringToUrl(query, 'logs_search_level', tableReportLogsSearchLevel.value)
-  syncSimpleStringToUrl(query, 'logs_search_message', tableReportLogsSearchMessage.value)
-  syncSimpleStringToUrl(query, 'resources_search_type', tableReportResourcesSearchResourceType.value)
-  syncSimpleStringToUrl(query, 'resources_search_title', tableReportResourcesSearchResourceTitle.value)
+  syncSimpleStringToUrl(
+    query,
+    'metrics_search_category',
+    tableReportMetricsSearchCategory.value
+  )
+  syncSimpleStringToUrl(
+    query,
+    'metrics_search_name',
+    tableReportMetricsSearchName.value
+  )
+  syncSimpleStringToUrl(
+    query,
+    'metrics_search_value',
+    tableReportMetricsSearchValue.value
+  )
+  syncSimpleStringToUrl(
+    query,
+    'logs_search_level',
+    tableReportLogsSearchLevel.value
+  )
+  syncSimpleStringToUrl(
+    query,
+    'logs_search_message',
+    tableReportLogsSearchMessage.value
+  )
+  syncSimpleStringToUrl(
+    query,
+    'resources_search_type',
+    tableReportResourcesSearchResourceType.value
+  )
+  syncSimpleStringToUrl(
+    query,
+    'resources_search_title',
+    tableReportResourcesSearchResourceTitle.value
+  )
 
   router.replace({
     name: route.name,
