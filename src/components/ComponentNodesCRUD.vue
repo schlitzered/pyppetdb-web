@@ -42,8 +42,14 @@
       </v-card-actions>
     </v-form>
   </v-card>
-  <v-expansion-panels class="mt-4" v-if="formDataReadOnly" v-model="expansionModel">
-    <v-expansion-panel value="change-info-panel">
+  <v-expansion-panels
+    class="mt-4"
+    v-if="formDataReadOnly"
+    v-model="tableExpPan"
+    @update:model-value="updateUrlQuery"
+    multiple
+  >
+    <v-expansion-panel value="change">
       <v-expansion-panel-title>
         <v-icon class="me-2">mdi-history</v-icon>
         Change Information
@@ -69,7 +75,7 @@
         </v-row>
       </v-expansion-panel-text>
     </v-expansion-panel>
-    <v-expansion-panel value="facts-panel">
+    <v-expansion-panel value="facts">
       <v-expansion-panel-title>
         <v-icon class="me-2">mdi-database</v-icon>
         Facts Data
@@ -91,6 +97,7 @@
               <v-spacer></v-spacer>
               <v-text-field
                 v-model="tableFactsSearchKey"
+                @update:model-value="updateUrlQuery"
                 append-inner-icon="mdi-magnify"
                 label="Search keys..."
                 single-line
@@ -101,6 +108,7 @@
               ></v-text-field>
               <v-text-field
                 v-model="tableFactsSearchValue"
+                @update:model-value="updateUrlQuery"
                 append-inner-icon="mdi-magnify"
                 label="Search values..."
                 single-line
@@ -144,7 +152,12 @@
 </template>
 
 <script setup>
-import { reactive, ref, onMounted, watch, nextTick, computed } from 'vue'
+import { syncExpPanelToUrl } from '@/common/url_state_sync'
+import { syncPaginationToUrl } from '@/common/url_state_sync'
+import { syncSimpleStringToUrl } from '@/common/url_state_sync'
+import { syncSortToUrl } from '@/common/url_state_sync'
+
+import { reactive, ref, onMounted, nextTick, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router/dist/vue-router'
 
 import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
@@ -160,35 +173,27 @@ const router = useRouter()
 const dialogDeleteShow = ref(false)
 const dialogDeleteMsg = ref('')
 
-const tableFactsSearchKey = ref(route.query.facts_search_key || '')
-const tableFactsSearchValue = ref(route.query.facts_search_value || '')
-const tableFactsPage = ref(Number(route.query.facts_page) || 1)
-const tableFactsItemsPerPage = ref(Number(route.query.facts_limit) || 10)
+const tableFactsSearchKey = ref(route.query.search_key_facts || '')
+const tableFactsSearchValue = ref(route.query.search_value_facts || '')
+const tableFactsPage = ref(Number(route.query.page_facts) || 1)
+const tableFactsItemsPerPage = ref(Number(route.query.limit_facts) || 10)
 const tableFactsSortBy = reactive([])
-// Initialize expansion state for both panels
-const initializeExpansionState = () => {
-  const expanded = []
-  if (route.query.change_info_expanded === 'change-info-panel') {
-    expanded.push('change-info-panel')
-  }
-  if (route.query.facts_expanded === 'facts-panel') {
-    expanded.push('facts-panel')
-  }
-  return expanded
-}
+const tableExpPanName = 'default'
+const tableExpPan = ref(
+  route.query['exp_pan_' + tableExpPanName]
+    ? route.query['exp_pan_' + tableExpPanName].split(',')
+    : []
+)
 
-const expansionModel = ref(initializeExpansionState())
-
-// Initialize facts table sort from URL
-if (route.query.facts_sort) {
-  if (route.query.facts_sort_order === 'ascending') {
+if (route.query.sort_facts) {
+  if (route.query.sort_order_facts === 'ascending') {
     tableFactsSortBy.push({
-      key: route.query.facts_sort,
+      key: route.query.sort_facts,
       order: 'asc'
     })
   } else {
     tableFactsSortBy.push({
-      key: route.query.facts_sort,
+      key: route.query.sort_facts,
       order: 'desc'
     })
   }
@@ -247,17 +252,15 @@ const formData = reactive({})
 const formDataReadOnly = ref(true)
 const formDataValid = ref(false)
 const formButtonDeleteShow = ref(true)
-const formButtonEditShow = ref(false)
+const formButtonEditShow = ref(true)
 const formInputIdReadOnly = ref(true)
 const formInputIdShow = ref(true)
 
 function flattenFacts(facts, prefix = '') {
   const result = []
-
   if (facts === null || facts === undefined) {
     return result
   }
-
   if (Array.isArray(facts)) {
     facts.forEach((item, index) => {
       const key = prefix ? `${prefix}.[${index}]` : `[${index}]`
@@ -282,7 +285,6 @@ function flattenFacts(facts, prefix = '') {
   } else {
     result.push({ key: prefix || 'root', value: facts })
   }
-
   return result
 }
 
@@ -295,34 +297,16 @@ function formatValue(value) {
   return JSON.stringify(value)
 }
 
-// Helper function to build query for fact key navigation
 function buildFactKeyQuery(item) {
   let query = {
     fact_id: item.key
   }
-
-  // Forward existing parameters from current URL if they exist
-  if (route.query.disabled) {
-    query.disabled = route.query.disabled
-  }
-  if (route.query.environment) {
-    query.environment = route.query.environment
-  }
-  if (route.query.report_status) {
-    query.report_status = route.query.report_status
-  }
-  if (route.query.fact) {
-    query.fact = route.query.fact
-  }
-
   return query
 }
 
-// Helper function to build query for fact value navigation
 function buildFactValueQuery(item) {
   let query = {}
 
-  // Forward existing fact parameters from current URL
   const currentFacts = []
   if (route.query.fact) {
     if (Array.isArray(route.query.fact)) {
@@ -332,26 +316,12 @@ function buildFactValueQuery(item) {
     }
   }
 
-  // Create the new fact parameter based on clicked row and put it first
   const newFactParam = `${item.key}:eq:str:${item.value}`
   const allFacts = [newFactParam, ...currentFacts]
 
-  // Add all fact parameters to query
   if (allFacts.length > 0) {
     query.fact = allFacts
   }
-
-  // Forward other existing parameters from current URL if they exist
-  if (route.query.disabled) {
-    query.disabled = route.query.disabled
-  }
-  if (route.query.environment) {
-    query.environment = route.query.environment
-  }
-  if (route.query.report_status) {
-    query.report_status = route.query.report_status
-  }
-
   return query
 }
 
@@ -385,12 +355,6 @@ function onFactValueClick(item) {
     name: 'NodesSearch',
     query: query
   })
-}
-
-function formConfigure() {
-  formInputIdReadOnly.value = true
-  formDataReadOnly.value = true
-  formButtonEditShow.value = true
 }
 
 function formDelete() {
@@ -436,61 +400,26 @@ function formGetNodeData() {
 }
 
 function handleFactsTableUpdate(options) {
-  // Update local sort state from table
   tableFactsSortBy.splice(0, tableFactsSortBy.length, ...options.sortBy)
   updateUrlQuery()
 }
 
 function updateUrlQuery() {
-  let query = { ...route.query }
-
-  // Add facts table pagination parameters
-  if (tableFactsPage.value !== 1) {
-    query.facts_page = tableFactsPage.value
-  } else {
-    delete query.facts_page
-  }
-
-  if (tableFactsItemsPerPage.value !== 10) {
-    query.facts_limit = tableFactsItemsPerPage.value
-  } else {
-    delete query.facts_limit
-  }
-
-  // Add facts table sorting parameters
-  if (tableFactsSortBy.length > 0) {
-    query.facts_sort = tableFactsSortBy[0].key
-    query.facts_sort_order = tableFactsSortBy[0].order === 'asc' ? 'ascending' : 'descending'
-  } else {
-    delete query.facts_sort
-    delete query.facts_sort_order
-  }
-
-  // Add facts table search parameters
-  if (tableFactsSearchKey.value) {
-    query.facts_search_key = tableFactsSearchKey.value
-  } else {
-    delete query.facts_search_key
-  }
-
-  if (tableFactsSearchValue.value) {
-    query.facts_search_value = tableFactsSearchValue.value
-  } else {
-    delete query.facts_search_value
-  }
-
-  // Add expansion states
-  if (expansionModel.value && expansionModel.value.includes('change-info-panel')) {
-    query.change_info_expanded = 'change-info-panel'
-  } else {
-    delete query.change_info_expanded
-  }
-
-  if (expansionModel.value && expansionModel.value.includes('facts-panel')) {
-    query.facts_expanded = 'facts-panel'
-  } else {
-    delete query.facts_expanded
-  }
+  let query = {}
+  syncExpPanelToUrl(query, tableExpPanName, tableExpPan.value)
+  syncPaginationToUrl(
+    query,
+    tableFactsPage.value,
+    tableFactsItemsPerPage.value,
+    'facts'
+  )
+  syncSortToUrl(query, tableFactsSortBy, tableFactsSortBy, 'facts')
+  syncSimpleStringToUrl(query, 'search_key_facts', tableFactsSearchKey.value)
+  syncSimpleStringToUrl(
+    query,
+    'search_value_facts',
+    tableFactsSearchValue.value
+  )
 
   router.replace({
     name: route.name,
@@ -499,39 +428,7 @@ function updateUrlQuery() {
   })
 }
 
-// Watch for facts table state changes to update URL
-watch(tableFactsPage, () => {
-  updateUrlQuery()
-})
-
-watch(tableFactsItemsPerPage, () => {
-  updateUrlQuery()
-})
-
-watch(tableFactsSearchKey, () => {
-  updateUrlQuery()
-})
-
-watch(tableFactsSearchValue, () => {
-  updateUrlQuery()
-})
-
-watch(expansionModel, () => {
-  updateUrlQuery()
-}, { deep: true })
-
-watch(
-  () => [route.params.node],
-  () => {
-    if (route.name === 'NodesCRUD') {
-      formConfigure()
-      formGetNodeData()
-    }
-  }
-)
-
 onMounted(async () => {
-  formConfigure()
   formGetNodeData()
   apiError.setRedirect({
     name: 'NodesSearch'

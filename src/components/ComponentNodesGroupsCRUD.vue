@@ -86,7 +86,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, onMounted, watch, nextTick } from 'vue'
+import { reactive, ref, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router/dist/vue-router'
 
 import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
@@ -144,22 +144,21 @@ const teamsSearchLoading = ref(true)
 const nodesTableSearch = ref('')
 const nodesTableData = ref([])
 
-function formConfigure() {
-  if (route.params.node_group !== '_new') {
-    formInputIdReadOnly.value = true
-    formDataReadOnly.value = true
-    formButtonEditShow.value = true
-  } else if (route.params.node_group === '_new') {
-    formInputIdReadOnly.value = false
-    formDataReadOnly.value = false
-    formButtonDeleteShow.value = false
-    formButtonEditShow.value = false
-  } else {
-    formInputIdReadOnly.value = true
-    formDataReadOnly.value = true
-    formButtonEditShow.value = false
-  }
+if (route.params.node_group !== '_new') {
+  formInputIdReadOnly.value = true
+  formDataReadOnly.value = true
+  formButtonEditShow.value = true
+} else if (route.params.node_group === '_new') {
+  formInputIdReadOnly.value = false
+  formDataReadOnly.value = false
+  formButtonDeleteShow.value = false
+  formButtonEditShow.value = false
+} else {
+  formInputIdReadOnly.value = true
+  formDataReadOnly.value = true
+  formButtonEditShow.value = false
 }
+formGetData()
 
 function formDelete() {
   dialogDeleteShow.value = true
@@ -168,7 +167,7 @@ function formDelete() {
 
 function formReset(event) {
   event.preventDefault()
-  formGetNodeGroupData()
+  formGetData()
   formDataValid.value = false
   nextTick(() => {
     form.value.resetValidation()
@@ -205,12 +204,12 @@ function formSubmit(event) {
       })
     } else {
       formDataReadOnly.value = true
-      formGetNodeGroupData()
+      formGetData()
     }
   })
 }
 
-function formGetNodeGroupData() {
+function formGetData() {
   if (route.params.node_group === '_new') {
     formDataValid.value = false
     nextTick(() => {
@@ -270,20 +269,4 @@ function getTeams() {
   })
   teamsSearchLoading.value = false
 }
-
-watch(
-  () => [route.params.node_group, loginData.getUserDataIsAdmin],
-  () => {
-    if (route.name === 'NodesGroupsCRUD') {
-      formConfigure()
-      formGetNodeGroupData()
-    }
-  }
-)
-
-onMounted(async () => {
-  formConfigure()
-  formGetNodeGroupData()
-  apiError.setRedirect({ name: 'NodesGroupsSearch' })
-})
 </script>

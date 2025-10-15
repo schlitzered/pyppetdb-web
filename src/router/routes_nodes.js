@@ -1,38 +1,38 @@
 const routeNodesDistinctFactValues = {
-    path: '/nodes/_distinct_fact_values',
-    component: () => import('@/layouts/default/LayoutDefault.vue'),
-    meta: {
-        appBar: {
-            name: 'Nodes Distinct Fact Values',
-            to: 'NodesDistinctFactValues',
-            href: '/nodes/_distinct_fact_values',
-            requireAdmin: false,
-            icon: 'mdi-account-multiple'
-        },
-        breadCrumb: [
-            {
-                title: 'Pyppetdb',
-                to: { name: 'Home' }
-            },
-            {
-                title: 'NodesDistinctFactValues',
-                to: { name: 'NodesDistinctFactValues' }
-            }
-        ],
-        toolBar() {
-            return {
-                title: `NodesDistinctFactValues`,
-                items: []
-            }
-        }
+  path: '/nodes/_distinct_fact_values',
+  component: () => import('@/layouts/default/LayoutDefault.vue'),
+  meta: {
+    appBar: {
+      name: 'Nodes Distinct Fact Values',
+      to: 'NodesDistinctFactValues',
+      href: '/nodes/_distinct_fact_values',
+      requireAdmin: false,
+      icon: 'mdi-account-multiple'
     },
-    children: [
-        {
-            path: '',
-            name: 'NodesDistinctFactValues',
-            component: () => import('@/views/ViewNodesDistinctFactValues.vue')
-        }
-    ]
+    breadCrumb: [
+      {
+        title: 'Pyppetdb',
+        to: { name: 'Home' }
+      },
+      {
+        title: 'NodesDistinctFactValues',
+        to: { name: 'NodesDistinctFactValues' }
+      }
+    ],
+    toolBar() {
+      return {
+        title: `NodesDistinctFactValues`,
+        items: []
+      }
+    }
+  },
+  children: [
+    {
+      path: '',
+      name: 'NodesDistinctFactValues',
+      component: () => import('@/views/ViewNodesDistinctFactValues.vue')
+    }
+  ]
 }
 
 const routeNodesSearch = {
@@ -119,6 +119,10 @@ const routeNodesCrud = {
   ]
 }
 
-const routesNodes = [routeNodesDistinctFactValues, routeNodesSearch, routeNodesCrud]
+const routesNodes = [
+  routeNodesDistinctFactValues,
+  routeNodesSearch,
+  routeNodesCrud
+]
 
 export default routesNodes

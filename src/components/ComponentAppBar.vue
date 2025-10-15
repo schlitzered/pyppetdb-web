@@ -10,9 +10,7 @@
     <v-breadcrumbs :items="getBreadCrumbs"> </v-breadcrumbs>
     <v-app-bar-title></v-app-bar-title>
     <div v-for="item in navItems">
-      <v-btn
-          @click.left.prevent="onBtnClick(item)"
-          :href="item.href"
+      <v-btn @click.left.prevent="onBtnClick(item)" :href="item.href"
         >{{ item.name }}
       </v-btn>
     </div>

@@ -69,7 +69,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, onMounted, watch, nextTick } from 'vue'
+import { reactive, ref, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router/dist/vue-router'
 
 import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
@@ -111,22 +111,21 @@ const formInputIdReadOnly = ref(true)
 const formInputPasswordShow = ref(false)
 const formInputPasswordChangeable = ref(false)
 
-function formConfigure() {
-  if (loginData.getUserDataIsAdmin && route.params.user !== '_new') {
-    formInputIdReadOnly.value = true
-    formDataReadOnly.value = true
-    formButtonEditShow.value = true
-  } else if (loginData.getUserDataIsAdmin && route.params.user === '_new') {
-    formInputIdReadOnly.value = false
-    formDataReadOnly.value = false
-    formButtonDeleteShow.value = false
-    formButtonEditShow.value = false
-  } else {
-    formInputIdReadOnly.value = true
-    formDataReadOnly.value = true
-    formButtonEditShow.value = false
-  }
+if (loginData.getUserDataIsAdmin && route.params.user !== '_new') {
+  formInputIdReadOnly.value = true
+  formDataReadOnly.value = true
+  formButtonEditShow.value = true
+} else if (loginData.getUserDataIsAdmin && route.params.user === '_new') {
+  formInputIdReadOnly.value = false
+  formDataReadOnly.value = false
+  formButtonDeleteShow.value = false
+  formButtonEditShow.value = false
+} else {
+  formInputIdReadOnly.value = true
+  formDataReadOnly.value = true
+  formButtonEditShow.value = false
 }
+formGetData()
 
 function formDelete() {
   dialogDeleteShow.value = true
@@ -136,7 +135,7 @@ function formDelete() {
 
 function formReset(event) {
   event.preventDefault()
-  formGetUserData()
+  formGetData()
   formInputPasswordShow.value = false
   formDataValid.value = false
   nextTick(() => {
@@ -165,12 +164,12 @@ function formSubmit(event) {
       router.push({ name: 'UsersCRUD', params: { user: formData.id } })
     } else {
       formDataReadOnly.value = true
-      formGetUserData()
+      formGetData()
     }
   })
 }
 
-function formGetUserData() {
+function formGetData() {
   formData['password'] = ''
   if (route.params.user === '_new') {
     formInputPasswordChangeable.value = true
@@ -196,31 +195,4 @@ function formGetUserData() {
     })
   }
 }
-
-watch(
-  () => [route.params.user, loginData.getUserDataIsAdmin],
-  () => {
-    if (route.name === 'UsersCRUD') {
-      formConfigure()
-      formGetUserData()
-    }
-  }
-)
-
-watch(
-  () => formDataReadOnly.value,
-  () => {
-    if (formDataReadOnly.value) {
-      formInputPasswordChangeable.value = false
-    } else {
-      formInputPasswordChangeable.value = formData['backend'] === 'internal'
-    }
-  }
-)
-
-onMounted(async () => {
-  formConfigure()
-  formGetUserData()
-  apiError.setRedirect({ name: 'UsersSearch' })
-})
 </script>

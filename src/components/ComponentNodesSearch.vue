@@ -12,76 +12,146 @@
         :sort-by="tableSortBy"
         item-value="id"
         @click:row="onRowClick"
-        @update:options="getNodesTableEvent"
+        @update:options="getSearchDataTableEvent"
       >
         <template v-slot:top>
-          <v-row>
-            <v-text-field
-              v-model="formSearchBy.node_id"
-              label="Filter Node ID"
-              @update:modelValue="getSearchNode"
-            ></v-text-field>
-            <v-text-field
-              v-model="formSearchBy.environment"
-              label="Filter Environment"
-              @update:modelValue="getSearchNode"
-            ></v-text-field>
-            <v-text-field
-              v-model="formSearchBy.report.status"
-              label="Filter Report Status"
-              @update:modelValue="getSearchNode"
-            ></v-text-field>
-            <v-select
-              v-model="formSearchBy.disabled"
-              :items="tableDisabledDropdownOptions"
-              label="Filter Disabled"
-              @update:modelValue="getSearchNode"
-            >
-            </v-select>
-          </v-row>
-
-          <v-expansion-panels class="mt-4" v-model="expansionModel">
-            <v-expansion-panel value="fact-search-panel">
+          <v-expansion-panels
+            class="mt-4"
+            v-model="tableExpPan"
+            @update:model-value="getSearchDataExpPanelEvent"
+            multiple
+          >
+            <v-expansion-panel value="search">
+              <v-expansion-panel-title>
+                <v-icon class="me-2">mdi-history</v-icon>
+                Search
+              </v-expansion-panel-title>
+              <v-expansion-panel-text>
+                <v-row>
+                  <v-text-field
+                    v-model="formSearchBy.node_id"
+                    label="Filter Node ID"
+                    @update:modelValue="getSearchData"
+                  ></v-text-field>
+                  <v-text-field
+                    v-model="formSearchBy.environment"
+                    label="Filter Environment"
+                    @update:modelValue="getSearchData"
+                  ></v-text-field>
+                  <v-text-field
+                    v-model="formSearchBy.report_status"
+                    label="Filter Report Status"
+                    @update:modelValue="getSearchData"
+                  ></v-text-field>
+                  <v-select
+                    v-model="formSearchBy.disabled"
+                    :items="tableDisabledDropdownOptions"
+                    label="Filter Disabled"
+                    @update:modelValue="getSearchData"
+                  >
+                  </v-select>
+                </v-row>
+              </v-expansion-panel-text>
+            </v-expansion-panel>
+            <v-expansion-panel value="fact">
               <v-expansion-panel-title>
                 <v-icon class="me-2">mdi-history</v-icon>
                 Fact Search
               </v-expansion-panel-title>
               <v-expansion-panel-text>
-          <v-row v-for="(fact, index) in formSearchBy.fact" :key="index">
-            <v-col cols="3">
-              <v-text-field
-                label="Fact Name"
-                v-model="fact.fact_name"
-              ></v-text-field>
-            </v-col>
-            <v-col cols="3">
-              <v-select
-                label="Operator"
-                :items="formSearchByFactsOperators"
-                v-model="fact.operator"
-              ></v-select>
-            </v-col>
-            <v-col cols="2">
-              <v-select
-                label="Type"
-                :items="formSearchByFactsTypes"
-                v-model="fact.type"
-              ></v-select>
-            </v-col>
-            <v-col cols="3">
-              <v-text-field label="Value" v-model="fact.value"></v-text-field>
-            </v-col>
-            <v-col cols="1">
-              <v-btn icon @click="formSearchByFactsRemove(index)">
-                <v-icon>mdi-minus</v-icon>
-              </v-btn>
-            </v-col>
-          </v-row>
+                <v-row v-for="(fact, index) in formSearchBy.fact" :key="index">
+                  <v-col cols="3">
+                    <v-text-field
+                      label="Fact Name"
+                      v-model="fact.fact_name"
+                      @update:modelValue="getSearchData"
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="3">
+                    <v-select
+                      label="Operator"
+                      :items="formSearchByFactsOperators"
+                      v-model="fact.operator"
+                      @update:modelValue="getSearchData"
+                    ></v-select>
+                  </v-col>
+                  <v-col cols="2">
+                    <v-select
+                      label="Type"
+                      :items="formSearchByFactsTypes"
+                      v-model="fact.type"
+                      @update:modelValue="getSearchData"
+                    ></v-select>
+                  </v-col>
+                  <v-col cols="3">
+                    <v-text-field
+                      label="Value"
+                      v-model="fact.value"
+                      @update:modelValue="getSearchData"
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="1">
+                    <v-btn icon @click="formSearchByFactsRemove(index)">
+                      <v-icon>mdi-minus</v-icon>
+                    </v-btn>
+                  </v-col>
+                </v-row>
 
-          <v-btn @click="formSearchByFactsAdd" color="primary">Add Fact</v-btn>
+                <v-btn @click="formSearchByFactsAdd" color="primary"
+                  >Add Fact</v-btn
+                >
               </v-expansion-panel-text>
             </v-expansion-panel>
           </v-expansion-panels>
+          <v-row class="mt-1">
+            <v-col cols="3">
+              <v-chip 
+                color="success" 
+                variant="outlined" 
+                size="large"
+                @click="filterByStatus('^unchanged$')"
+                class="cursor-pointer"
+              >
+                <v-icon start>mdi-check-circle</v-icon>
+                Unchanged: {{ tableItemsMeta.status_unchanged }}
+              </v-chip>
+            </v-col>
+            <v-col cols="3">
+              <v-chip 
+                color="warning" 
+                variant="outlined" 
+                size="large"
+                @click="filterByStatus('^changed$')"
+                class="cursor-pointer"
+              >
+                <v-icon start>mdi-alert-circle</v-icon>
+                Changed: {{ tableItemsMeta.status_changed }}
+              </v-chip>
+            </v-col>
+            <v-col cols="3">
+              <v-chip 
+                color="error" 
+                variant="outlined" 
+                size="large"
+                @click="filterByStatus('^failed$')"
+                class="cursor-pointer"
+              >
+                <v-icon start>mdi-close-circle</v-icon>
+                Failed: {{ tableItemsMeta.status_failed }}
+              </v-chip>
+            </v-col>
+            <v-col cols="3">
+              <v-chip 
+                color="info" 
+                variant="outlined" 
+                size="large"
+                class="cursor-pointer"
+              >
+                <v-icon start>mdi-help-circle</v-icon>
+                Unreported: {{ tableItemsMeta.status_unreported }}
+              </v-chip>
+            </v-col>
+          </v-row>
         </template>
         <template v-slot:item.disabled="{ item }">
           <v-icon>
@@ -94,7 +164,10 @@
         </template>
         <template v-slot:item.id="{ item }">
           <a
-            :href="router.resolve({ name: 'NodesCRUD', params: { node: item.id } }).href"
+            :href="
+              router.resolve({ name: 'NodesCRUD', params: { node: item.id } })
+                .href
+            "
             @click.left.prevent
           >
             {{ item.id }}
@@ -106,43 +179,63 @@
 </template>
 
 <script setup>
-import api from '@/api/common'
-import { ref, reactive, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useDataTable } from '@/common/datatable_generic'
+import { factFieldProcessor } from '@/common/field_processors'
+import { useRouter } from 'vue-router'
 
-const route = useRoute()
 const router = useRouter()
 
-const tableItems = ref([])
-const tableLoading = ref(true)
-
-const tablePage = ref(Number(route.query.page) ? Number(route.query.page) : 1)
-const tableItemsPerPage = ref(
-  Number(route.query.limit) ? Number(route.query.limit) : 10
-)
-const tableItemsPerPageOptions = [10, 25, 50, 100]
-const tableTotalItems = ref(tablePage.value * tableItemsPerPage.value)
-
-const tableSortBy = reactive([])
-
-// Initialize expansion state for fact search panel
-const initializeExpansionState = () => {
-  const expanded = []
-  if (route.query.fact_search_expanded === 'fact-search-panel') {
-    expanded.push('fact-search-panel')
-  }
-  return expanded
+const tableConfig = {
+  apiEndpoint: '/api/v1/nodes',
+  routeName: 'NodesSearch',
+  fields: ['id', 'environment', 'report.status', 'disabled', 'change_report'],
+  searchFormSchema: [
+    { key: 'node_id', type: 'string' },
+    { key: 'disabled', type: 'string' },
+    { key: 'environment', type: 'string' },
+    {
+      key: 'report_status',
+      type: 'string'
+    },
+    {
+      key: 'fact',
+      type: 'array',
+      default: [],
+      fromUrl: factFieldProcessor.fromUrl,
+      toUrl: factFieldProcessor.toUrl
+    }
+  ]
 }
 
-const expansionModel = ref(initializeExpansionState())
+const {
+  tableItems,
+  tableItemsMeta,
+  tableLoading,
+  tablePage,
+  tableItemsPerPage,
+  tableItemsPerPageOptions,
+  tableTotalItems,
+  tableSortBy,
+  tableExpPan,
+  formSearchBy,
+  getSearchData,
+  getSearchDataTableEvent,
+  getSearchDataExpPanelEvent
+} = useDataTable(tableConfig)
 
-const formSearchBy = reactive({
-  node_id: '',
-  disabled: '',
-  report: { status: '' },
-  environment: '',
-  fact: []
-})
+const tableHeaders = [
+  { title: 'Node ID', key: 'id', sortable: true },
+  { title: 'Environment', key: 'environment', sortable: false },
+  { title: 'Report Status', key: 'report.status', sortable: true },
+  { title: 'Change Report', key: 'change_report', sortable: true },
+  { title: 'Disabled', key: 'disabled', sortable: false }
+]
+
+const tableDisabledDropdownOptions = [
+  { title: 'Unset', value: '' },
+  { title: 'True', value: 'true' },
+  { title: 'False', value: 'false' }
+]
 
 const formSearchByFactsOperators = [
   'eq',
@@ -162,207 +255,24 @@ function formSearchByFactsAdd() {
 
 function formSearchByFactsRemove(index) {
   formSearchBy.fact.splice(index, 1)
-  getSearchNode()
-}
-
-const tableHeaders = [
-  { title: 'Node ID', key: 'id', sortable: true },
-  { title: 'Environment', key: 'environment', sortable: false },
-  { title: 'Report Status', key: 'report.status', sortable: true },
-  { title: 'Change Report', key: 'change_report', sortable: true },
-  { title: 'Disabled', key: 'disabled', sortable: false }
-]
-
-const tableDisabledDropdownOptions = [
-  { title: 'Unset', value: '' },
-  { title: 'True', value: 'true' },
-  { title: 'False', value: 'false' }
-]
-
-if (route.query.sort) {
-  if (route.query.sort_order === 'ascending') {
-    tableSortBy.push({
-      key: route.query.sort,
-      order: 'asc'
-    })
-  } else {
-    tableSortBy.push({
-      key: route.query.sort,
-      order: 'desc'
-    })
-  }
-}
-
-Object.entries(formSearchBy).forEach(([key]) => {
-  if (route.query[key]) {
-    if (key === 'fact') {
-      let fact_values = []
-      if (Array.isArray(route.query[key])) {
-        fact_values = route.query[key]
-      } else {
-        fact_values.push(route.query[key])
-      }
-      fact_values.forEach((fact_value) => {
-        let fact_value_split = fact_value.split(':')
-        formSearchBy.fact.push({
-          fact_name: fact_value_split[0],
-          operator: fact_value_split[1],
-          type: fact_value_split[2],
-          value: fact_value_split[3]
-        })
-      })
-    } else {
-      formSearchBy[key] = route.query[key]
-    }
-  }
-})
-
-function getParamsSearchBy() {
-  // Helper function for recursion
-  function flattenObject(obj, parentKey = '') {
-    let items = []
-    Object.entries(obj).forEach(([key, value]) => {
-      const newKey = parentKey ? `${parentKey}_${key}` : key
-      if (
-        typeof value === 'object' &&
-        value !== null &&
-        !Array.isArray(value)
-      ) {
-        items = items.concat(flattenObject(value, newKey))
-      } else if (key === 'fact' && value) {
-        let _facts = []
-        formSearchBy.fact.forEach((fact) => {
-          if (fact.fact_name && fact.operator && fact.type && fact.value) {
-            _facts.push(
-              `${fact.fact_name}:${fact.operator}:${fact.type}:${fact.value}`
-            )
-          }
-        })
-        if (_facts.length) {
-          items.push({
-            key: 'fact',
-            value: _facts
-          })
-        }
-      } else if (value) {
-        items.push({
-          key: newKey,
-          value: value
-        })
-      }
-    })
-    return items
-  }
-
-  // Use the helper function to process formSearchBy
-  return flattenObject(formSearchBy)
-}
-
-function getSearchNode() {
-  let _event = {
-    page: 1,
-    itemsPerPage: tableItemsPerPage.value,
-    sortBy: [...tableSortBy],
-    searchBy: getParamsSearchBy()
-  }
-  tablePage.value = 1
-  getNodes(_event)
-}
-
-function getNodesTableEvent(event) {
-  event.searchBy = getParamsSearchBy()
-  event.sortBy = [...event.sortBy]
-  tableSortBy.length = 0
-  if (event.sortBy.length) {
-    for (let item of event.sortBy) {
-      tableSortBy.push(item)
-    }
-  }
-  getNodes(event)
-}
-
-function getNodes(event) {
-  tableLoading.value = true
-  let query = {}
-
-  if (event.page !== 1) {
-    query.page = event.page
-  }
-
-  if (event.itemsPerPage === -1) {
-    tableItemsPerPage.value = 100
-    event.itemsPerPage = 100
-    query.limit = 100
-  } else if (event.itemsPerPage !== 10) {
-    query.limit = event.itemsPerPage
-  }
-
-  if (event.sortBy.length) {
-    query.sort = event.sortBy[0].key
-    if (event.sortBy[0].order === 'asc') {
-      query.sort_order = 'ascending'
-    } else {
-      query.sort_order = 'descending'
-    }
-  } else {
-    tableSortBy.length = 0
-  }
-
-  if (event.searchBy.length) {
-    event.searchBy.forEach((item) => {
-      query[item.key] = item.value
-    })
-  }
-
-  let _params = { ...query }
-  _params.fields = [
-    'id',
-    'environment',
-    'report.status',
-    'disabled',
-    'change_report'
-  ]
-  if (_params.page) {
-    _params.page = _params.page - 1
-  }
-
-  // Add fact search expansion state
-  if (expansionModel.value && expansionModel.value.includes('fact-search-panel')) {
-    query.fact_search_expanded = 'fact-search-panel'
-  }
-
-  router.replace({
-    name: 'NodesSearch',
-    query: query
-  })
-
-  api.get('/api/v1/nodes', _params).then((data) => {
-    if (data) {
-      tableTotalItems.value = data.meta['result_size']
-      tableItems.value = data.result
-      tableLoading.value = false
-    }
-  })
+  getSearchData()
 }
 
 function onRowClick(item, item_data) {
-  console.log(item_data)
   router.push({
     name: 'NodesCRUD',
     params: { node: item_data.item.id }
   })
 }
 
-watch(
-  () => formSearchBy.fact,
-  () => {
-    getSearchNode()
-  },
-  { deep: true }
-)
-
-watch(expansionModel, () => {
-  // Trigger a URL update when expansion state changes
-  getSearchNode()
-}, { deep: true })
+function filterByStatus(status) {
+  // If the current filter matches the clicked status, clear it
+  if (formSearchBy.report_status === status) {
+    formSearchBy.report_status = ''
+  } else {
+    // Otherwise, set the new filter
+    formSearchBy.report_status = status
+  }
+  getSearchData()
+}
 </script>
