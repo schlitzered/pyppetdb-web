@@ -108,12 +108,22 @@ export function useDataTable(config) {
 
   function getSearchDataInputEvent() {
     let _event = {
-      page: tablePage.value,
+      page: 1, // Reset to page 1 for search operations
       itemsPerPage: tableItemsPerPage.value,
       sortBy: [...tableSortBy],
       searchBy: getParamsSearchBy()
     }
     tablePage.value = 1
+    getSearchData(_event)
+  }
+
+  function getSearchDataExpPanelEvent() {
+    let _event = {
+      page: tablePage.value, // Keep current page for ExpPanel operations
+      itemsPerPage: tableItemsPerPage.value,
+      sortBy: [...tableSortBy],
+      searchBy: getParamsSearchBy()
+    }
     getSearchData(_event)
   }
 
@@ -143,6 +153,7 @@ export function useDataTable(config) {
 
     getSearchData: getSearchDataInputEvent,
     getSearchDataTableEvent,
+    getSearchDataExpPanelEvent, // Add this new function
     getParamsSearchBy
   }
 }

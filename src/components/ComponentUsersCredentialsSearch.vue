@@ -53,10 +53,7 @@ const {
   tableItemsPerPageOptions,
   tableTotalItems,
   tableSortBy,
-  tableExpPan,
-  formSearchBy,
-  getSearchData,
-  getSearchDataTableEvent
+  getSearchDataTableEvent,
 } = useDataTable(tableConfig)
 
 const tableHeaders = [

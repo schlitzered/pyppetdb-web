@@ -17,7 +17,7 @@
         <v-expansion-panels
           class="mt-4"
           v-model="tableExpPan"
-          @update:model-value="getSearchData"
+          @update:model-value="getSearchDataExpPanelEvent"
           multiple
         >
           <v-expansion-panel value="search">
@@ -90,7 +90,8 @@ const {
   tableExpPan,
   formSearchBy,
   getSearchData,
-  getSearchDataTableEvent
+  getSearchDataTableEvent,
+  getSearchDataExpPanelEvent
 } = useDataTable(tableConfig)
 
 const tableHeaders = [
