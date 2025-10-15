@@ -108,7 +108,7 @@ export function useDataTable(config) {
 
   function getSearchDataInputEvent() {
     let _event = {
-      page: 1, // Reset to page 1 for search operations
+      page: 1,
       itemsPerPage: tableItemsPerPage.value,
       sortBy: [...tableSortBy],
       searchBy: getParamsSearchBy()
@@ -119,7 +119,7 @@ export function useDataTable(config) {
 
   function getSearchDataExpPanelEvent() {
     let _event = {
-      page: tablePage.value, // Keep current page for ExpPanel operations
+      page: tablePage.value,
       itemsPerPage: tableItemsPerPage.value,
       sortBy: [...tableSortBy],
       searchBy: getParamsSearchBy()
@@ -161,7 +161,7 @@ export function useDataTable(config) {
 
     getSearchData: getSearchDataInputEvent,
     getSearchDataTableEvent,
-    getSearchDataExpPanelEvent, // Add this new function
+    getSearchDataExpPanelEvent,
     getParamsSearchBy
   }
 }
@@ -266,7 +266,6 @@ function buildSearchParams(form, schema) {
   return items
 }
 
-// Add this helper function at the end of the file
 function areArraysEqual(arr1, arr2) {
   if (arr1.length !== arr2.length) return false
   
