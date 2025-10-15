@@ -1,4 +1,4 @@
-import { ref, reactive } from 'vue'
+import { ref, reactive, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/api/common'
 import {
@@ -130,12 +130,20 @@ export function useDataTable(config) {
   function getSearchDataTableEvent(event) {
     event.searchBy = getParamsSearchBy()
     event.sortBy = [...event.sortBy]
-    tableSortBy.length = 0
-    if (event.sortBy.length) {
-      for (let item of event.sortBy) {
-        tableSortBy.push(item)
-      }
+    
+    const sortByChanged = !areArraysEqual(tableSortBy, event.sortBy)
+    
+    if (sortByChanged) {
+      nextTick(() => {
+        tableSortBy.length = 0
+        if (event.sortBy.length) {
+          for (let item of event.sortBy) {
+            tableSortBy.push(item)
+          }
+        }
+      })
     }
+    
     getSearchData(event)
   }
 
@@ -256,4 +264,17 @@ function buildSearchParams(form, schema) {
   })
 
   return items
+}
+
+// Add this helper function at the end of the file
+function areArraysEqual(arr1, arr2) {
+  if (arr1.length !== arr2.length) return false
+  
+  for (let i = 0; i < arr1.length; i++) {
+    if (arr1[i].key !== arr2[i].key || arr1[i].order !== arr2[i].order) {
+      return false
+    }
+  }
+  
+  return true
 }
