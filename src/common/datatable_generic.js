@@ -1,4 +1,4 @@
-import { ref, reactive } from 'vue'
+import { ref, reactive, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/api/common'
 import {
@@ -108,7 +108,7 @@ export function useDataTable(config) {
 
   function getSearchDataInputEvent() {
     let _event = {
-      page: 1, // Reset to page 1 for search operations
+      page: 1,
       itemsPerPage: tableItemsPerPage.value,
       sortBy: [...tableSortBy],
       searchBy: getParamsSearchBy()
@@ -119,7 +119,7 @@ export function useDataTable(config) {
 
   function getSearchDataExpPanelEvent() {
     let _event = {
-      page: tablePage.value, // Keep current page for ExpPanel operations
+      page: tablePage.value,
       itemsPerPage: tableItemsPerPage.value,
       sortBy: [...tableSortBy],
       searchBy: getParamsSearchBy()
@@ -130,12 +130,20 @@ export function useDataTable(config) {
   function getSearchDataTableEvent(event) {
     event.searchBy = getParamsSearchBy()
     event.sortBy = [...event.sortBy]
-    tableSortBy.length = 0
-    if (event.sortBy.length) {
-      for (let item of event.sortBy) {
-        tableSortBy.push(item)
-      }
+    
+    const sortByChanged = !areArraysEqual(tableSortBy, event.sortBy)
+    
+    if (sortByChanged) {
+      nextTick(() => {
+        tableSortBy.length = 0
+        if (event.sortBy.length) {
+          for (let item of event.sortBy) {
+            tableSortBy.push(item)
+          }
+        }
+      })
     }
+    
     getSearchData(event)
   }
 
@@ -153,7 +161,7 @@ export function useDataTable(config) {
 
     getSearchData: getSearchDataInputEvent,
     getSearchDataTableEvent,
-    getSearchDataExpPanelEvent, // Add this new function
+    getSearchDataExpPanelEvent,
     getParamsSearchBy
   }
 }
@@ -256,4 +264,16 @@ function buildSearchParams(form, schema) {
   })
 
   return items
+}
+
+function areArraysEqual(arr1, arr2) {
+  if (arr1.length !== arr2.length) return false
+  
+  for (let i = 0; i < arr1.length; i++) {
+    if (arr1[i].key !== arr2[i].key || arr1[i].order !== arr2[i].order) {
+      return false
+    }
+  }
+  
+  return true
 }
