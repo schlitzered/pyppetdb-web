@@ -24,6 +24,7 @@
                 :rules="[() => !!formData.password || 'This field is required']"
                 label="Password"
                 @click:append-inner="formShowPassword = !formShowPassword"
+                @keydown.enter="formSubmit"
               ></v-text-field>
             </v-card-text>
             <v-divider class="mt-12"></v-divider>
@@ -106,7 +107,6 @@ function formSubmit(event) {
     .catch(() => {
       router.push({ name: 'LoginError' })
     })
-  // alert(JSON.stringify(this.form));
 }
 function formReset(event) {
   event.preventDefault()
