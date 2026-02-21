@@ -236,9 +236,8 @@ function getFactItems(factName) {
     return suggestions
   }
 
-  // If search term exists and is not in suggestions, add it with a hint
   if (searchTerm && !suggestions.includes(searchTerm)) {
-    return [...suggestions, `${searchTerm} (new)`]
+    return [...suggestions, `${searchTerm}`]
   }
 
   return suggestions

@@ -145,18 +145,147 @@ const formDataModelString = computed({
   }
 })
 
+// Schema validator for simplified JSON schema subset
+function validateSchema(schema, path = 'root', isRoot = true) {
+  // Must be an object
+  if (typeof schema !== 'object' || schema === null || Array.isArray(schema)) {
+    return `${path}: Schema must be an object`
+  }
+
+  // Root level special validation
+  if (isRoot) {
+    if (!schema.properties) {
+      return `${path}: Root schema must have "properties"`
+    }
+
+    const propertyNames = Object.keys(schema.properties)
+    if (propertyNames.length !== 1 || propertyNames[0] !== 'data') {
+      return `${path}: Root schema must have exactly one property called "data"`
+    }
+
+    // Check that data field is not an array at root level
+    const dataSchema = schema.properties.data
+    if (dataSchema.type === 'array') {
+      return `${path}.properties.data: Root "data" field cannot be of type "array"`
+    }
+  }
+
+  // If it has properties, validate them
+  if (schema.properties) {
+    if (typeof schema.properties !== 'object' || Array.isArray(schema.properties)) {
+      return `${path}.properties: Must be an object`
+    }
+
+    // Validate each property
+    for (const [fieldName, fieldSchema] of Object.entries(schema.properties)) {
+      const fieldPath = `${path}.properties.${fieldName}`
+      const fieldError = validateFieldSchema(fieldSchema, fieldPath, false)
+      if (fieldError !== true) {
+        return fieldError
+      }
+    }
+  }
+
+  // If it has required, validate it
+  if (schema.required !== undefined) {
+    if (!Array.isArray(schema.required)) {
+      return `${path}.required: Must be an array`
+    }
+    // Check all required fields exist in properties
+    if (schema.properties) {
+      for (const req of schema.required) {
+        if (!(req in schema.properties)) {
+          return `${path}.required: Field "${req}" not found in properties`
+        }
+      }
+    }
+  }
+
+  return true
+}
+
+function validateFieldSchema(fieldSchema, path, isRoot = false) {
+  if (typeof fieldSchema !== 'object' || fieldSchema === null || Array.isArray(fieldSchema)) {
+    return `${path}: Field schema must be an object`
+  }
+
+  // Check for enum
+  if (fieldSchema.enum) {
+    if (!Array.isArray(fieldSchema.enum)) {
+      return `${path}.enum: Must be an array`
+    }
+    return true
+  }
+
+  // Check for pattern (must be string type)
+  if (fieldSchema.pattern) {
+    if (fieldSchema.type !== 'string') {
+      return `${path}: Pattern can only be used with type "string"`
+    }
+    // Validate regex pattern
+    try {
+      new RegExp(fieldSchema.pattern)
+    } catch (e) {
+      return `${path}.pattern: Invalid regex pattern`
+    }
+    return true
+  }
+
+  // Check type
+  const type = fieldSchema.type
+  if (!type) {
+    return `${path}: Missing "type" field`
+  }
+
+  const validTypes = ['string', 'integer', 'number', 'boolean', 'object', 'array']
+  if (!validTypes.includes(type)) {
+    return `${path}.type: Invalid type "${type}". Must be one of: ${validTypes.join(', ')}`
+  }
+
+  // Validate object type recursively
+  if (type === 'object') {
+    return validateSchema(fieldSchema, path, false)
+  }
+
+  // Validate array type
+  if (type === 'array') {
+    if (fieldSchema.items) {
+      const itemError = validateFieldSchema(fieldSchema.items, `${path}.items`, false)
+      if (itemError !== true) {
+        return itemError
+      }
+    }
+    if (fieldSchema.uniqueItems !== undefined && typeof fieldSchema.uniqueItems !== 'boolean') {
+      return `${path}.uniqueItems: Must be a boolean`
+    }
+  }
+
+  return true
+}
+
 // Validation rules for JSON
-const modelValidationRules = [
+const modelValidationRules = computed(() => [
   (value) => {
     if (!value) return true
+
+    let parsed
     try {
-      JSON.parse(value)
-      return true
+      parsed = JSON.parse(value)
     } catch (e) {
       return 'Invalid JSON format'
     }
+
+    // Only validate schema structure for dynamic models
+    if (isDynamic.value) {
+      const schemaError = validateSchema(parsed)
+      if (schemaError !== true) {
+        return `Invalid schema: ${schemaError}`
+      }
+    }
+
+    return true
   }
-]
+])
 
 function initializeFormState() {
   // Initialize form state based on route and model type

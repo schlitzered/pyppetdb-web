@@ -2,52 +2,40 @@
   <v-card>
     <v-card-text>
       <v-form ref="form" v-model="formValid">
-        <v-text-field
+        <v-autocomplete
           v-model="lookupKeyId"
           :rules="[() => !!lookupKeyId || 'Key ID is required']"
+          :items="availableKeys"
+          :loading="loadingKeys"
           label="Key ID"
           append-inner-icon="mdi-key"
+          @update:search="fetchAvailableKeys"
+          @focus="fetchAvailableKeys('')"
           @keyup.enter="performLookup"
-        ></v-text-field>
+        ></v-autocomplete>
 
         <v-divider class="my-4"></v-divider>
 
         <h3 class="mb-3">Facts (Optional)</h3>
-        <v-row v-for="(fact, index) in facts" :key="index" class="mb-2">
-          <v-col cols="5">
-            <v-text-field
-              v-model="fact.name"
-              label="Fact Name"
-              density="compact"
-            ></v-text-field>
-          </v-col>
-          <v-col cols="6">
-            <v-text-field
-              v-model="fact.value"
-              label="Fact Value"
-              density="compact"
-            ></v-text-field>
-          </v-col>
-          <v-col cols="1">
-            <v-btn
-              icon
-              size="small"
-              @click="removeFact(index)"
-            >
-              <v-icon>mdi-minus</v-icon>
-            </v-btn>
-          </v-col>
-        </v-row>
-
-        <v-btn
-          @click="addFact"
+        <v-progress-circular
+          v-if="loadingLevels"
+          indeterminate
           color="primary"
-          variant="outlined"
           class="mb-4"
-        >
-          <v-icon start>mdi-plus</v-icon>
-          Add Fact
-        </v-btn>
+        ></v-progress-circular>
+        <v-autocomplete
+          v-for="field in factFields"
+          :key="field"
+          :model-value="facts[field]"
+          :label="`Fact: ${field}`"
+          :items="getFactItems(field)"
+          :loading="loadingFactSuggestions[field]"
+          append-inner-icon="mdi-tag"
+          clearable
+          @update:search="(search) => fetchFactSuggestions(field, search)"
+          @focus="fetchFactSuggestions(field, '')"
+          @update:model-value="(val) => { facts[field] = cleanFactValue(val) }"
+        ></v-autocomplete>
 
         <v-divider class="my-4"></v-divider>
 
@@ -93,18 +81,137 @@ import api from '@/api/common'
 const form = ref(null)
 const formValid = ref(false)
 const lookupKeyId = ref('')
-const facts = ref([])
+const facts = reactive({})
 const loading = ref(false)
 const lookupResult = ref(null)
 const lookupError = ref(null)
 
-function addFact() {
-  facts.value.push({ name: '', value: '' })
+// Autocomplete for keys
+const availableKeys = ref([])
+const loadingKeys = ref(false)
+
+// Fact fields extracted from levels
+const factFields = ref([])
+const loadingLevels = ref(false)
+
+// Autocomplete data for fact fields
+const factSuggestions = reactive({})
+const factSearchTerms = reactive({})
+const loadingFactSuggestions = reactive({})
+
+// Fetch available keys
+async function fetchAvailableKeys(search) {
+  loadingKeys.value = true
+  try {
+    const params = {
+      limit: 10,
+      sort_by: 'id',
+      sort_order: 'ascending'
+    }
+    if (search) {
+      params.key_id = search
+    }
+    const data = await api.get('/api/v1/hiera/keys/', params, true)
+    if (data && data.result) {
+      availableKeys.value = data.result.map(item => item.id)
+    } else {
+      availableKeys.value = []
+    }
+  } catch (e) {
+    availableKeys.value = []
+  } finally {
+    loadingKeys.value = false
+  }
 }
 
-function removeFact(index) {
-  facts.value.splice(index, 1)
+// Fetch all levels and extract unique placeholders
+async function fetchFactFieldsFromLevels() {
+  loadingLevels.value = true
+  try {
+    const data = await api.get('/api/v1/hiera/levels/', { limit: 1000 }, true)
+    if (data && data.result) {
+      const uniquePlaceholders = new Set()
+      const regex = /\{([^}]+)\}/g
+
+      data.result.forEach(level => {
+        let match
+        while ((match = regex.exec(level.id)) !== null) {
+          uniquePlaceholders.add(match[1])
+        }
+      })
+
+      factFields.value = Array.from(uniquePlaceholders).sort()
+
+      // Initialize fact values
+      factFields.value.forEach(field => {
+        if (!(field in facts)) {
+          facts[field] = ''
+        }
+      })
+    }
+  } catch (e) {
+    factFields.value = []
+  } finally {
+    loadingLevels.value = false
+  }
 }
+
+// Get fact items including search term if not found
+function getFactItems(factName) {
+  const suggestions = factSuggestions[factName] || []
+  const searchTerm = factSearchTerms[factName]
+
+  if (!searchTerm) {
+    return suggestions
+  }
+
+  // If search term exists and is not in suggestions, add it with a hint
+  if (searchTerm && !suggestions.includes(searchTerm)) {
+    return [...suggestions, `${searchTerm}`]
+  }
+
+  return suggestions
+}
+
+// Clean up the value if it has the hint suffix
+function cleanFactValue(value) {
+  if (!value) return value
+  const suffix = ' (not yet known in pyppetdb)'
+  if (value.endsWith(suffix)) {
+    return value.slice(0, -suffix.length)
+  }
+  return value
+}
+
+// Fetch available fact values
+async function fetchFactSuggestions(factName, search) {
+  factSearchTerms[factName] = search || ''
+  loadingFactSuggestions[factName] = true
+  try {
+    const params = {
+      fact_id: factName,
+      limit: 10,
+      sort_by: 'value',
+      sort_order: 'ascending'
+    }
+    if (search) {
+      params.value = search
+    }
+    const data = await api.get('/api/v1/nodes/_distinct_fact_values', params, true)
+    if (data && data.result) {
+      factSuggestions[factName] = data.result.map(item => item.value)
+    } else {
+      factSuggestions[factName] = []
+    }
+  } catch (e) {
+    factSuggestions[factName] = []
+  } finally {
+    loadingFactSuggestions[factName] = false
+  }
+}
+
+// Fetch fact fields on component mount
+fetchFactFieldsFromLevels()
 
 function performLookup() {
   if (!lookupKeyId.value) return
@@ -115,9 +222,9 @@ function performLookup() {
 
   // Build the facts array in the format "name:value"
   const factsArray = []
-  facts.value.forEach(fact => {
-    if (fact.name && fact.value) {
-      factsArray.push(`${fact.name}:${fact.value}`)
+  Object.entries(facts).forEach(([name, value]) => {
+    if (name && value) {
+      factsArray.push(`${name}:${value}`)
     }
   })
 
