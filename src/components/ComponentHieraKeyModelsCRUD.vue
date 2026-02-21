@@ -37,9 +37,9 @@
           auto-grow
         ></v-textarea>
       </v-card-text>
-      <v-divider v-if="!formDataReadOnly"></v-divider>
-      <v-card-actions v-if="!formDataReadOnly">
-        <v-btn variant="text" @click="formReset">Reset</v-btn>
+      <v-divider v-if="!formDataReadOnly || formButtonDeleteShow"></v-divider>
+      <v-card-actions v-if="!formDataReadOnly || formButtonDeleteShow">
+        <v-btn v-if="!formDataReadOnly" variant="text" @click="formReset">Reset</v-btn>
         <v-spacer></v-spacer>
         <v-btn
           v-if="formButtonDeleteShow"
@@ -48,7 +48,7 @@
           @click="formDelete"
           >Delete
         </v-btn>
-        <v-btn color="primary" variant="text" @click="formSubmit">Submit</v-btn>
+        <v-btn v-if="!formDataReadOnly" color="primary" variant="text" @click="formSubmit">Submit</v-btn>
       </v-card-actions>
     </v-form>
   </v-card>
@@ -296,10 +296,10 @@ function initializeFormState() {
     formButtonEditShow.value = false
     formButtonDeleteShow.value = false
   } else if (route.params.key_model_id !== '_new') {
-    // Dynamic mode: existing record
+    // Dynamic mode: existing record - read-only with delete button, no modify/submit
     formInputIdReadOnly.value = true
     formDataReadOnly.value = true
-    formButtonEditShow.value = true
+    formButtonEditShow.value = false
     formButtonDeleteShow.value = true
   } else if (route.params.key_model_id === '_new') {
     // Dynamic mode: new record
