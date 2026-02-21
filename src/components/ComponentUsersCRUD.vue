@@ -69,7 +69,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, nextTick } from 'vue'
+import { reactive, ref, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router/dist/vue-router'
 
 import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
@@ -111,21 +111,33 @@ const formInputIdReadOnly = ref(true)
 const formInputPasswordShow = ref(false)
 const formInputPasswordChangeable = ref(false)
 
-if (loginData.getUserDataIsAdmin && route.params.user !== '_new') {
-  formInputIdReadOnly.value = true
-  formDataReadOnly.value = true
-  formButtonEditShow.value = true
-} else if (loginData.getUserDataIsAdmin && route.params.user === '_new') {
-  formInputIdReadOnly.value = false
-  formDataReadOnly.value = false
-  formButtonDeleteShow.value = false
-  formButtonEditShow.value = false
-} else {
-  formInputIdReadOnly.value = true
-  formDataReadOnly.value = true
-  formButtonEditShow.value = false
+function initializeFormState() {
+  if (loginData.getUserDataIsAdmin && route.params.user !== '_new') {
+    formInputIdReadOnly.value = true
+    formDataReadOnly.value = true
+    formButtonEditShow.value = true
+    formButtonDeleteShow.value = true
+  } else if (loginData.getUserDataIsAdmin && route.params.user === '_new') {
+    formInputIdReadOnly.value = false
+    formDataReadOnly.value = false
+    formButtonDeleteShow.value = false
+    formButtonEditShow.value = false
+  } else {
+    formInputIdReadOnly.value = true
+    formDataReadOnly.value = true
+    formButtonEditShow.value = false
+    formButtonDeleteShow.value = true
+  }
+  formGetData()
 }
-formGetData()
+
+// Initialize on mount
+initializeFormState()
+
+// Watch for route parameter changes
+watch(() => route.params.user, () => {
+  initializeFormState()
+})
 
 function formDelete() {
   dialogDeleteShow.value = true

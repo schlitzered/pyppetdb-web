@@ -7,7 +7,10 @@ const routeTeamsSearch = {
       to: 'TeamsSearch',
       href: '/teams',
       requireAdmin: true,
-      icon: 'mdi-account-multiple'
+      icon: 'mdi-account-multiple',
+      group: 'Administration',
+      groupOrder: 3,
+      order: 1
     },
     breadCrumb: [
       {

@@ -60,7 +60,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, nextTick } from 'vue'
+import { reactive, ref, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router/dist/vue-router'
 
 import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
@@ -106,21 +106,31 @@ const usersChoices = ref([])
 const usersSearch = ref('')
 const usersSearchLoading = ref(true)
 
-if (route.params.team !== '_new') {
-  formInputIdReadOnly.value = true
-  formDataReadOnly.value = true
-  formButtonEditShow.value = true
-} else if (route.params.team === '_new') {
-  formInputIdReadOnly.value = false
-  formDataReadOnly.value = false
-  formButtonDeleteShow.value = false
-  formButtonEditShow.value = false
-} else {
-  formInputIdReadOnly.value = true
-  formDataReadOnly.value = true
-  formButtonEditShow.value = false
+function initializeFormState() {
+  if (route.params.team !== '_new') {
+    formInputIdReadOnly.value = true
+    formDataReadOnly.value = true
+    formButtonEditShow.value = true
+  } else if (route.params.team === '_new') {
+    formInputIdReadOnly.value = false
+    formDataReadOnly.value = false
+    formButtonDeleteShow.value = false
+    formButtonEditShow.value = false
+  } else {
+    formInputIdReadOnly.value = true
+    formDataReadOnly.value = true
+    formButtonEditShow.value = false
+  }
+  formGetData()
 }
-formGetData()
+
+// Initialize on mount
+initializeFormState()
+
+// Watch for route parameter changes
+watch(() => route.params.team, () => {
+  initializeFormState()
+})
 
 function formDelete() {
   dialogDeleteShow.value = true

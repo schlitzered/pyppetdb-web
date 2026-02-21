@@ -1,19 +1,23 @@
 <template>
+  <!-- AppBar -->
   <v-app-bar
     v-if="route.name !== 'Login'"
     app
     efixed
-    dark
     elevation="10"
     extension-height="64"
   >
+    <v-app-bar-nav-icon @click="toggleDrawer"></v-app-bar-nav-icon>
     <v-breadcrumbs :items="getBreadCrumbs"> </v-breadcrumbs>
-    <v-app-bar-title></v-app-bar-title>
-    <div v-for="item in navItems">
-      <v-btn @click.left.prevent="onBtnClick(item)" :href="item.href"
-        >{{ item.name }}
-      </v-btn>
-    </div>
+    <v-spacer></v-spacer>
+    <v-switch
+      v-model="isDark"
+      :prepend-icon="isDark ? 'mdi-weather-night' : 'mdi-weather-sunny'"
+      hide-details
+      inset
+      @update:modelValue="toggleTheme"
+      class="mr-4"
+    ></v-switch>
     <v-btn href="/docs">API</v-btn>
     <v-menu open-on-hover>
       <template v-slot:activator="{ props }">
@@ -37,13 +41,18 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, inject, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router/dist/vue-router'
+import { useTheme } from 'vuetify'
 
 import { loginDataStore } from '@/store/login_data'
 
 const route = useRoute()
 const router = useRouter()
+const toggleDrawer = inject('toggleDrawer')
+const theme = useTheme()
+
+const isDark = ref(theme.global.name.value === 'dark')
 
 const getBreadCrumbs = computed(() => {
   let bc
@@ -57,32 +66,9 @@ const getBreadCrumbs = computed(() => {
 
 const loginData = loginDataStore()
 
-const navItems = computed(() => {
-  let items = []
-  let user_is_admin = loginData.getUserDataIsAdmin
-  router.getRoutes().forEach((item) => {
-    if (item.meta.appBar) {
-      if (
-        (item.meta.appBar.requireAdmin && user_is_admin) ||
-        !item.meta.appBar.requireAdmin
-      ) {
-        items.push({
-          name: item.meta.appBar.name,
-          to: item.meta.appBar.to,
-          icon: item.meta.appBar.icon,
-          href: item.meta.appBar.href
-        })
-      }
-    }
-  })
-  return items
-})
-
-function onBtnClick(event) {
-  if (event.name !== route.name) {
-    router.push({ name: event.to }).catch((err) => {
-      console.log(err)
-    })
-  }
+function toggleTheme() {
+  const newTheme = isDark.value ? 'dark' : 'light'
+  theme.global.name.value = newTheme
+  localStorage.setItem('theme', newTheme)
 }
 </script>
