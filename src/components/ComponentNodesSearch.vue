@@ -1,7 +1,6 @@
 <template>
   <v-card>
-    <v-container>
-      <v-data-table-server
+    <v-data-table-server
         :headers="tableHeaders"
         :items-length="tableTotalItems"
         :items="tableItems"
@@ -174,7 +173,6 @@
           </a>
         </template>
       </v-data-table-server>
-    </v-container>
   </v-card>
 </template>
 

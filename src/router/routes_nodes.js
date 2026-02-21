@@ -7,7 +7,10 @@ const routeNodesDistinctFactValues = {
       to: 'NodesDistinctFactValues',
       href: '/nodes/_distinct_fact_values',
       requireAdmin: false,
-      icon: 'mdi-account-multiple'
+      icon: 'mdi-account-multiple',
+      group: 'Nodes',
+      groupOrder: 1,
+      order: 2
     },
     breadCrumb: [
       {
@@ -44,7 +47,10 @@ const routeNodesSearch = {
       to: 'NodesSearch',
       href: '/nodes',
       requireAdmin: false,
-      icon: 'mdi-account-multiple'
+      icon: 'mdi-account-multiple',
+      group: 'Nodes',
+      groupOrder: 1,
+      order: 1
     },
     breadCrumb: [
       {

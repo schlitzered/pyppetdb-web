@@ -7,7 +7,10 @@ const routeUsersSearch = {
       to: 'UsersSearch',
       href: '/users',
       requireAdmin: true,
-      icon: 'mdi-account-multiple'
+      icon: 'mdi-account-multiple',
+      group: 'Administration',
+      groupOrder: 3,
+      order: 2
     },
     breadCrumb: [
       {

@@ -6,7 +6,7 @@ import qs from 'qs'
 const apiError = apiErrorStore()
 
 export default {
-  async request(method, url, data, params) {
+  async request(method, url, data, params, silent = false) {
     let config = {
       method: method,
       url: url,
@@ -30,22 +30,25 @@ export default {
         if (error.response.status === 401) {
           router.push({ name: 'LoginError' })
         } else {
-          apiError.set(error)
+          if (!silent) {
+            apiError.set(error)
+          }
         }
+        throw error
       })
     return result
   },
-  async delete(url) {
-    return await this.request('delete', url)
+  async delete(url, silent = false) {
+    return await this.request('delete', url, null, null, silent)
   },
-  async get(url, params) {
+  async get(url, params, silent = false) {
     let data
-    return await this.request('get', url, data, params)
+    return await this.request('get', url, data, params, silent)
   },
-  async post(url, data, params) {
-    return await this.request('post', url, data, params)
+  async post(url, data, params, silent = false) {
+    return await this.request('post', url, data, params, silent)
   },
-  async put(url, data, params) {
-    return await this.request('put', url, data, params)
+  async put(url, data, params, silent = false) {
+    return await this.request('put', url, data, params, silent)
   }
 }
