@@ -112,12 +112,17 @@ const availableModels = ref([])
 const loadingModels = ref(false)
 const isLoadingData = ref(false) // Track when we're loading data to prevent unwanted resets
 
+function getModelEndpoint(modelTypeValue, modelId) {
+  return modelTypeValue === 'static'
+    ? `/api/v1/hiera/key_models/static/${modelId}`
+    : `/api/v1/hiera/key_models/dynamic/${modelId}`
+}
+
 // Extract prefix and clean model ID
 function getModelTypeFromId(modelId) {
   if (!modelId) return ''
-  // Check for both : and _ prefixes to be safe
-  if (modelId.startsWith('static_') || modelId.startsWith('static:')) return 'static'
-  if (modelId.startsWith('dynamic_') || modelId.startsWith('dynamic:')) return 'dynamic'
+  if (modelId.startsWith('static:')) return 'static'
+  if (modelId.startsWith('dynamic:')) return 'dynamic'
   return ''
 }
 
@@ -131,8 +136,8 @@ async function fetchAvailableModels(search) {
   loadingModels.value = true
   try {
     const endpoint = modelType.value === 'static'
-      ? '/api/v1/hiera/key_models/static/'
-      : '/api/v1/hiera/key_models/dynamic/'
+      ? '/api/v1/hiera/key_models/static'
+      : '/api/v1/hiera/key_models/dynamic'
 
     const params = {
       limit: 10,
@@ -171,9 +176,7 @@ async function validateModelId(value) {
     return 'Please select a model type first'
   }
 
-  const endpoint = modelType.value === 'static'
-    ? `/api/v1/hiera/key_models/static/${value}`
-    : `/api/v1/hiera/key_models/dynamic/${value}`
+  const endpoint = getModelEndpoint(modelType.value, value)
 
   try {
     await api.get(endpoint, null, true)

@@ -161,6 +161,91 @@ const availableKeys = ref([])
 const loadingLevels = ref(false)
 const loadingKeys = ref(false)
 
+// Level data cache to avoid duplicate requests for same level_id
+const levelCache = reactive({})
+
+// Key data cache to avoid duplicate requests for same key_id
+const keyCache = reactive({})
+
+// Key model cache to avoid duplicate requests for same model id/type
+const keyModelCache = reactive({})
+
+function fetchLevelData(levelId) {
+  if (!levelId) {
+    return Promise.reject(new Error('Missing level id'))
+  }
+
+  const cached = levelCache[levelId]
+  if (cached?.promise) {
+    return cached.promise
+  }
+
+  const promise = api.get(`/api/v1/hiera/levels/${levelId}`, null, true)
+  levelCache[levelId] = { promise }
+
+  promise
+    .then((data) => {
+      levelCache[levelId] = { data }
+    })
+    .catch((error) => {
+      levelCache[levelId] = { error }
+      throw error
+    })
+
+  return promise
+}
+
+function fetchKeyData(keyId) {
+  if (!keyId) {
+    return Promise.reject(new Error('Missing key id'))
+  }
+
+  const cached = keyCache[keyId]
+  if (cached?.promise) {
+    return cached.promise
+  }
+
+  const promise = api.get(`/api/v1/hiera/keys/${keyId}`, null, true)
+  keyCache[keyId] = { promise }
+
+  promise
+    .then((data) => {
+      keyCache[keyId] = { data }
+    })
+    .catch((error) => {
+      keyCache[keyId] = { error }
+      throw error
+    })
+
+  return promise
+}
+
+function fetchKeyModelData(modelType, modelId) {
+  if (!modelType || !modelId) {
+    return Promise.reject(new Error('Missing key model info'))
+  }
+
+  const cacheKey = `${modelType}:${modelId}`
+  const cached = keyModelCache[cacheKey]
+  if (cached?.promise) {
+    return cached.promise
+  }
+
+  const promise = api.get(`/api/v1/hiera/key_models/${modelType}/${modelId}`, null, true)
+  keyModelCache[cacheKey] = { promise }
+
+  promise
+    .then((data) => {
+      keyModelCache[cacheKey] = { data }
+    })
+    .catch((error) => {
+      keyModelCache[cacheKey] = { error }
+      throw error
+    })
+
+  return promise
+}
+
 // Fetch available levels
 async function fetchAvailableLevels(search) {
   loadingLevels.value = true
@@ -173,7 +258,7 @@ async function fetchAvailableLevels(search) {
     if (search) {
       params.level_id = search
     }
-    const data = await api.get('/api/v1/hiera/levels/', params, true)
+    const data = await api.get('/api/v1/hiera/levels', params, true)
     if (data && data.result) {
       availableLevels.value = data.result.map(item => item.id)
     }
@@ -196,7 +281,7 @@ async function fetchAvailableKeys(search) {
     if (search) {
       params.key_id = search
     }
-    const data = await api.get('/api/v1/hiera/keys/', params, true)
+    const data = await api.get('/api/v1/hiera/keys', params, true)
     if (data && data.result) {
       availableKeys.value = data.result.map(item => item.id)
     }
@@ -329,7 +414,7 @@ watch(() => formData.level_id, async (newLevelId) => {
     // Fetch level data and auto-fill priority
     if (newLevelId && newLevelId !== '') {
       try {
-        const levelData = await api.get(`/api/v1/hiera/levels/${newLevelId}`, null, true)
+        const levelData = await fetchLevelData(newLevelId)
         if (levelData && levelData.priority !== null && levelData.priority !== undefined) {
           formData.priority = levelData.priority
         }
@@ -389,67 +474,26 @@ watch(() => formData.key_id, async (newKeyId) => {
   const isNew = isNewLevel && isNewData && isNewKey
 
   try {
-    const keyData = await api.get(`/api/v1/hiera/keys/${newKeyId}`, null, true)
+    const keyData = await fetchKeyData(newKeyId)
     if (keyData && keyData.key_model_id) {
       keyModelId.value = keyData.key_model_id
 
       // Determine if static or dynamic based on prefix
-      if (keyData.key_model_id.startsWith('static_')) {
+      if (keyData.key_model_id.startsWith('static:')) {
         keyModelType.value = 'static'
-        try {
-          const modelData = await api.get(`/api/v1/hiera/key_models/static/${keyData.key_model_id}`, null, true)
-          if (modelData && modelData.model) {
-            keyModelSchema.value = modelData.model
-            // Update default data value when creating new entry
-            if (isNew) {
-              formData.dataJson = defaultDataValue.value
-            }
-          }
-        } catch (e) {
-          keyModelSchema.value = null
-        }
-      } else if (keyData.key_model_id.startsWith('dynamic_')) {
-        keyModelType.value = 'dynamic'
-        try {
-          const modelData = await api.get(`/api/v1/hiera/key_models/dynamic/${keyData.key_model_id}`, null, true)
-          if (modelData && modelData.model) {
-            keyModelSchema.value = modelData.model
-            // Update default data value when creating new entry
-            if (isNew) {
-              formData.dataJson = defaultDataValue.value
-            }
-          }
-        } catch (e) {
-          keyModelSchema.value = null
-        }
       } else {
-        // Fallback: try dynamic first, then static
-        try {
-          const modelData = await api.get(`/api/v1/hiera/key_models/dynamic/${keyData.key_model_id}`, null, true)
-          if (modelData && modelData.model) {
-            keyModelSchema.value = modelData.model
-            keyModelType.value = 'dynamic'
-            // Update default data value when creating new entry
-            if (isNew) {
-              formData.dataJson = defaultDataValue.value
-            }
-          }
-        } catch (e) {
-          try {
-            const modelData = await api.get(`/api/v1/hiera/key_models/static/${keyData.key_model_id}`, null, true)
-            if (modelData && modelData.model) {
-              keyModelSchema.value = modelData.model
-              keyModelType.value = 'static'
-              // Update default data value when creating new entry
-              if (isNew) {
-                formData.dataJson = defaultDataValue.value
-              }
-            }
-          } catch (e2) {
-            keyModelSchema.value = null
-            keyModelType.value = null
+          keyModelType.value = 'dynamic'
+        }
+      try {
+        const modelData = await fetchKeyModelData(keyModelType.value, keyData.key_model_id)
+        if (modelData && modelData.model) {
+          keyModelSchema.value = modelData.model
+          if (isNew) {
+            formData.dataJson = defaultDataValue.value
           }
         }
+      } catch (e) {
+        keyModelSchema.value = null
       }
     }
   } catch (e) {
@@ -474,7 +518,7 @@ async function validateLevelId(value) {
   }
 
   try {
-    await api.get(`/api/v1/hiera/levels/${value}`, null, true)
+    await fetchLevelData(value)
     return true
   } catch (e) {
     return 'Level does not exist'
@@ -496,7 +540,7 @@ async function validateKeyId(value) {
   }
 
   try {
-    await api.get(`/api/v1/hiera/keys/${value}`, null, true)
+    await fetchKeyData(value)
     return true
   } catch (e) {
     return 'Key does not exist'
