@@ -8,9 +8,9 @@ const routeNodesGroupsSearch = {
       href: '/nodes_groups',
       requireAdmin: true,
       icon: 'mdi-account-multiple',
-      group: 'Administration',
-      groupOrder: 3,
-      order: 3
+      group: 'Nodes',
+      groupOrder: 1,
+      order: 2
     },
     breadCrumb: [
       {
