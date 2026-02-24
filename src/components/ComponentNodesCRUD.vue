@@ -27,20 +27,143 @@
           label="Disabled"
         ></v-switch>
       </v-card-text>
-      <v-divider v-if="!formDataReadOnly"></v-divider>
-      <v-card-actions v-if="!formDataReadOnly">
-        <v-btn variant="text" @click="formReset">Reset</v-btn>
-        <v-spacer></v-spacer>
-        <v-btn
-          v-if="formButtonDeleteShow"
-          color="red"
-          variant="text"
-          @click="formDelete"
-          >Delete</v-btn
-        >
-        <v-btn color="primary" variant="text" @click="formSubmit">Submit</v-btn>
-      </v-card-actions>
     </v-form>
+  </v-card>
+  <v-expansion-panels
+    class="mt-4"
+    v-model="tableExpPanFactsOverride"
+    @update:model-value="updateUrlQuery"
+    multiple
+  >
+    <v-expansion-panel value="facts_override">
+      <v-expansion-panel-title>
+        <v-icon class="me-2">mdi-file-edit</v-icon>
+        Facts Override
+      </v-expansion-panel-title>
+      <v-expansion-panel-text>
+        <v-data-table
+          :headers="formDataReadOnly ? tableFactsOverrideHeadersReadOnly : tableFactsOverrideHeaders"
+          :items="tableFactsOverrideItems"
+          :items-per-page-options="[5, 10, 25, 50]"
+          class="elevation-1"
+          density="compact"
+        >
+          <template v-slot:top>
+            <v-toolbar flat>
+              <v-toolbar-title>Override Facts</v-toolbar-title>
+              <v-spacer></v-spacer>
+              <v-text-field
+                v-model="tableFactsOverrideSearchKey"
+                @update:model-value="updateUrlQuery"
+                append-inner-icon="mdi-magnify"
+                label="Search keys..."
+                single-line
+                hide-details
+                clearable
+                class="mx-2"
+                style="max-width: 250px"
+              ></v-text-field>
+              <v-text-field
+                v-model="tableFactsOverrideSearchValue"
+                @update:model-value="updateUrlQuery"
+                append-inner-icon="mdi-magnify"
+                label="Search values..."
+                single-line
+                hide-details
+                clearable
+                class="mx-2"
+                style="max-width: 250px"
+              ></v-text-field>
+              <v-dialog v-if="!formDataReadOnly" v-model="dialogFactsOverride" max-width="500px">
+                <template v-slot:activator="{ props }">
+                  <v-btn
+                    color="primary"
+                    dark
+                    v-bind="props"
+                    prepend-icon="mdi-plus"
+                  >
+                    Add Override
+                  </v-btn>
+                </template>
+                <v-card>
+                  <v-card-title>
+                    <span class="text-h5">{{ formFactsOverrideTitle }}</span>
+                  </v-card-title>
+                  <v-card-text>
+                    <v-container>
+                      <v-row>
+                        <v-col cols="12">
+                          <v-text-field
+                            v-model="editedFactsOverride.key"
+                            :readonly="editedFactsOverrideIndex !== -1"
+                            label="Key"
+                            :rules="[v => !!v || 'Key is required']"
+                          ></v-text-field>
+                        </v-col>
+                        <v-col cols="12">
+                          <v-text-field
+                            v-model="editedFactsOverride.value"
+                            label="Value"
+                            :rules="[v => !!v || 'Value is required']"
+                          ></v-text-field>
+                        </v-col>
+                      </v-row>
+                    </v-container>
+                  </v-card-text>
+                  <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn
+                      color="blue-darken-1"
+                      variant="text"
+                      @click="closeFactsOverride"
+                    >
+                      Cancel
+                    </v-btn>
+                    <v-btn
+                      color="blue-darken-1"
+                      variant="text"
+                      @click="saveFactsOverride"
+                    >
+                      Save
+                    </v-btn>
+                  </v-card-actions>
+                </v-card>
+              </v-dialog>
+            </v-toolbar>
+          </template>
+          <template v-if="!formDataReadOnly" v-slot:item.actions="{ item }">
+            <v-icon
+              size="small"
+              class="me-2"
+              @click="editFactsOverrideItem(item)"
+            >
+              mdi-pencil
+            </v-icon>
+            <v-icon
+              size="small"
+              @click="deleteFactsOverrideItem(item)"
+            >
+              mdi-delete
+            </v-icon>
+          </template>
+        </v-data-table>
+      </v-expansion-panel-text>
+    </v-expansion-panel>
+  </v-expansion-panels>
+  <v-card v-if="!formDataReadOnly">
+    <v-divider></v-divider>
+    <v-card-actions>
+      <v-btn variant="text" @click="formReset">Reset</v-btn>
+      <v-spacer></v-spacer>
+      <v-btn
+        v-if="formButtonDeleteShow"
+        color="red"
+        variant="text"
+        @click="formDelete"
+        >Delete</v-btn
+      >
+      <v-btn color="primary" variant="text" @click="formSubmit">Submit</v-btn>
+    </v-card-actions>
   </v-card>
   <v-expansion-panels
     class="mt-4"
@@ -152,14 +275,14 @@
 </template>
 
 <script setup>
-import { syncExpPanelToUrl } from '@/common/url_state_sync'
-import { syncPaginationToUrl } from '@/common/url_state_sync'
-import { syncSimpleStringToUrl } from '@/common/url_state_sync'
-import { syncSortToUrl } from '@/common/url_state_sync'
-
+import {
+  syncExpPanelToUrl,
+  syncPaginationToUrl,
+  syncSimpleStringToUrl,
+  syncSortToUrl
+} from '@/common/url_state_sync'
 import { reactive, ref, onMounted, nextTick, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router/dist/vue-router'
-
 import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
 
 import api from '@/api/common'
@@ -177,11 +300,19 @@ const tableFactsSearchKey = ref(route.query.search_key_facts || '')
 const tableFactsSearchValue = ref(route.query.search_value_facts || '')
 const tableFactsPage = ref(Number(route.query.page_facts) || 1)
 const tableFactsItemsPerPage = ref(Number(route.query.limit_facts) || 10)
+const tableFactsOverrideSearchKey = ref(route.query.search_key_facts_override || '')
+const tableFactsOverrideSearchValue = ref(route.query.search_value_facts_override || '')
 const tableFactsSortBy = reactive([])
 const tableExpPanName = 'default'
 const tableExpPan = ref(
   route.query['exp_pan_' + tableExpPanName]
     ? route.query['exp_pan_' + tableExpPanName].split(',')
+    : []
+)
+const tableExpPanFactsOverrideName = 'facts_override'
+const tableExpPanFactsOverride = ref(
+  route.query['exp_pan_' + tableExpPanFactsOverrideName]
+    ? route.query['exp_pan_' + tableExpPanFactsOverrideName].split(',')
     : []
 )
 
@@ -213,36 +344,94 @@ const tableFactsHeaders = [
   }
 ]
 
-const tableFactsItems = computed(() => {
-  if (!formData.facts) return []
+const tableFactsOverrideHeadersReadOnly = [
+  {
+    title: 'Key',
+    key: 'key',
+    sortable: true,
+    width: '40%'
+  },
+  {
+    title: 'Value',
+    key: 'value',
+    sortable: true,
+    width: '60%'
+  }
+]
 
-  return formData.facts.filter((fact) => {
+const tableFactsOverrideHeaders = [
+  {
+    title: 'Key',
+    key: 'key',
+    sortable: true,
+    width: '40%'
+  },
+  {
+    title: 'Value',
+    key: 'value',
+    sortable: true,
+    width: '50%'
+  },
+  {
+    title: 'Actions',
+    key: 'actions',
+    sortable: false,
+    width: '10%'
+  }
+]
+
+function filterItemsByKeyValue(items, keySearch, valueSearch, valueFormatter = (v) => v) {
+  return items.filter((item) => {
     const keyMatch =
-      !tableFactsSearchKey.value ||
-      fact.key.toLowerCase().includes(tableFactsSearchKey.value.toLowerCase())
+      !keySearch.value ||
+      item.key.toLowerCase().includes(keySearch.value.toLowerCase())
 
     const valueMatch =
-      !tableFactsSearchValue.value ||
-      formatValue(fact.value)
-        .toLowerCase()
-        .includes(tableFactsSearchValue.value.toLowerCase())
+      !valueSearch.value ||
+      valueFormatter(item.value).toLowerCase().includes(valueSearch.value.toLowerCase())
 
     return keyMatch && valueMatch
   })
+}
+
+const tableFactsOverrideItems = computed(() => {
+  if (!formData.facts_override) return []
+
+  const items = Object.entries(formData.facts_override).map(([key, value]) => ({
+    key,
+    value
+  }))
+
+  return filterItemsByKeyValue(items, tableFactsOverrideSearchKey, tableFactsOverrideSearchValue)
+})
+
+const dialogFactsOverride = ref(false)
+const editedFactsOverrideIndex = ref(-1)
+const editedFactsOverride = reactive({
+  key: '',
+  value: ''
+})
+const defaultFactsOverride = {
+  key: '',
+  value: ''
+}
+
+const formFactsOverrideTitle = computed(() => {
+  return editedFactsOverrideIndex.value === -1 ? 'New Override' : 'Edit Override'
+})
+
+const tableFactsItems = computed(() => {
+  if (!formData.facts) return []
+  return filterItemsByKeyValue(formData.facts, tableFactsSearchKey, tableFactsSearchValue, formatValue)
 })
 
 function dialogDeleteEvent(action) {
-  if (action === 'cancel') {
-    dialogDeleteShow.value = false
-    dialogDeleteMsg.value = ''
-  } else {
-    dialogDeleteShow.value = false
-    dialogDeleteMsg.value = ''
-    let url = `/api/v1/nodes/${route.params.node}`
-    api.delete(url).then(() => {
-      router.push({
-        name: 'NodesSearch'
-      })
+  dialogDeleteShow.value = false
+  dialogDeleteMsg.value = ''
+
+  if (action !== 'cancel') {
+    api.delete(`/api/v1/nodes/${route.params.node}`).then(() => {
+      router.push({ name: 'NodesSearch' })
     })
   }
 }
@@ -298,62 +487,43 @@ function formatValue(value) {
 }
 
 function buildFactKeyQuery(item) {
-  let query = {
-    fact_id: item.key
-  }
-  return query
+  return { fact_id: item.key }
 }
 
 function buildFactValueQuery(item) {
-  let query = {}
-
-  const currentFacts = []
-  if (route.query.fact) {
-    if (Array.isArray(route.query.fact)) {
-      currentFacts.push(...route.query.fact)
-    } else {
-      currentFacts.push(route.query.fact)
-    }
-  }
+  const currentFacts = Array.isArray(route.query.fact)
+    ? route.query.fact
+    : route.query.fact ? [route.query.fact] : []
 
   const newFactParam = `${item.key}:eq:str:${item.value}`
-  const allFacts = [newFactParam, ...currentFacts]
-
-  if (allFacts.length > 0) {
-    query.fact = allFacts
-  }
-  return query
+  return { fact: [newFactParam, ...currentFacts] }
 }
 
 function getFactKeyHref(item) {
-  const query = buildFactKeyQuery(item)
   return router.resolve({
     name: 'NodesDistinctFactValues',
-    query: query
+    query: buildFactKeyQuery(item)
   }).href
 }
 
 function onFactKeyClick(item) {
-  const query = buildFactKeyQuery(item)
   router.push({
     name: 'NodesDistinctFactValues',
-    query: query
+    query: buildFactKeyQuery(item)
   })
 }
 
 function getFactValueHref(item) {
-  const query = buildFactValueQuery(item)
   return router.resolve({
     name: 'NodesSearch',
-    query: query
+    query: buildFactValueQuery(item)
   }).href
 }
 
 function onFactValueClick(item) {
-  const query = buildFactValueQuery(item)
   router.push({
     name: 'NodesSearch',
-    query: query
+    query: buildFactValueQuery(item)
   })
 }
 
@@ -376,7 +546,8 @@ function formSubmit(event) {
   let method = 'put'
   let url = `/api/v1/nodes/${route.params.node}`
   let data = {
-    disabled: formData.disabled
+    disabled: formData.disabled,
+    facts_override: formData.facts_override || {}
   }
   api.request(method, url, data).then(() => {
     formDataReadOnly.value = true
@@ -394,6 +565,7 @@ function formGetNodeData() {
       formData['change_last'] = data['change_last']
       formData['change_report'] = data['change_report']
       formData['facts'] = flattenFacts(data['facts'])
+      formData['facts_override'] = data['facts_override'] || {}
       formData['report'] = data['report']
     }
   })
@@ -407,6 +579,7 @@ function handleFactsTableUpdate(options) {
 function updateUrlQuery() {
   let query = {}
   syncExpPanelToUrl(query, tableExpPanName, tableExpPan.value)
+  syncExpPanelToUrl(query, tableExpPanFactsOverrideName, tableExpPanFactsOverride.value)
   syncPaginationToUrl(
     query,
     tableFactsPage.value,
@@ -420,12 +593,50 @@ function updateUrlQuery() {
     'search_value_facts',
     tableFactsSearchValue.value
   )
+  syncSimpleStringToUrl(query, 'search_key_facts_override', tableFactsOverrideSearchKey.value)
+  syncSimpleStringToUrl(
+    query,
+    'search_value_facts_override',
+    tableFactsOverrideSearchValue.value
+  )
 
   router.replace({
     name: route.name,
     params: route.params,
     query: query
   })
+}
+
+function editFactsOverrideItem(item) {
+  editedFactsOverrideIndex.value = tableFactsOverrideItems.value.findIndex(
+    (i) => i.key === item.key
+  )
+  Object.assign(editedFactsOverride, item)
+  dialogFactsOverride.value = true
+}
+
+function deleteFactsOverrideItem(item) {
+  if (!formData.facts_override) return
+  delete formData.facts_override[item.key]
+}
+
+function closeFactsOverride() {
+  dialogFactsOverride.value = false
+  nextTick(() => {
+    Object.assign(editedFactsOverride, defaultFactsOverride)
+    editedFactsOverrideIndex.value = -1
+  })
+}
+
+function saveFactsOverride() {
+  if (!editedFactsOverride.key || !editedFactsOverride.value) return
+
+  if (!formData.facts_override) {
+    formData.facts_override = {}
+  }
+
+  formData.facts_override[editedFactsOverride.key] = editedFactsOverride.value
+  closeFactsOverride()
 }
 
 onMounted(async () => {
