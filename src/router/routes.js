@@ -13,6 +13,7 @@ import routesNodesReports from './routes_nodes_reports.js'
 import routesTeams from './routes_teams.js'
 import routesUsers from './routes_users.js'
 import routesUsersCredentials from './routes_users_credentials'
+import routesNodesCredentials from './routes_nodes_credentials'
 
 const routes = [
   ...routesLogin,
@@ -25,6 +26,7 @@ const routes = [
   ...routesNodes,
   ...routesNodesGroups,
   ...routesNodesReports,
+  ...routesNodesCredentials,
   ...routesTeams,
   ...routesUsers,
   ...routesUsersCredentials,

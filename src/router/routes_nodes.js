@@ -10,7 +10,7 @@ const routeNodesDistinctFactValues = {
       icon: 'mdi-account-multiple',
       group: 'Nodes',
       groupOrder: 1,
-      order: 2
+      order: 3
     },
     breadCrumb: [
       {
@@ -110,6 +110,16 @@ const routeNodesCrud = {
             },
             hide() {
               return false
+            }
+          },
+          {
+            title: 'Credentials',
+            to: {
+              name: 'NodesCredentialsSearch',
+              params: { node: route.params.node }
+            },
+            hide(route) {
+              return route.params.node === '_new'
             }
           }
         ]
