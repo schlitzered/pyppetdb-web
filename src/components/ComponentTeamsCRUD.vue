@@ -34,10 +34,11 @@
           :items="usersChoices"
           :readonly="formDataReadOnly"
           @input="getUsers"
+          @update:model-value="resetUsersSearch"
           :loading="usersSearchLoading"
           label="Users"
           chips
-          closable-chips
+          :closable-chips="!formDataReadOnly"
           multiple
         >
         </v-autocomplete>
@@ -209,5 +210,12 @@ function getUsers() {
     }
   })
   usersSearchLoading.value = false
+}
+
+function resetUsersSearch() {
+  nextTick(() => {
+    usersSearch.value = ''
+    getUsers()
+  })
 }
 </script>

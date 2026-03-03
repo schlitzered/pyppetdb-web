@@ -28,10 +28,11 @@
           :items="teamsChoices"
           :readonly="formDataReadOnly"
           @input="getTeams"
+          @update:model-value="resetTeamsSearch"
           :loading="teamsSearchLoading"
           label="Teams"
           chips
-          closable-chips
+          :closable-chips="!formDataReadOnly"
           multiple
         >
         </v-autocomplete>
@@ -278,5 +279,12 @@ function getTeams() {
     }
   })
   teamsSearchLoading.value = false
+}
+
+function resetTeamsSearch() {
+  nextTick(() => {
+    teamsSearch.value = ''
+    getTeams()
+  })
 }
 </script>
