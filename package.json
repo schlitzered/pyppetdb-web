@@ -1,6 +1,6 @@
 {
   "name": "pyppetdb-web",
-  "version": "0.0.0",
+  "version": "x.x.x",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
