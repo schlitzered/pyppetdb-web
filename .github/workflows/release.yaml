@@ -27,9 +27,14 @@ jobs:
           npm install
           npm run build
 
-      - name: Zip and Release
+      - name: Create Release Archive
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          tar -czf pyppetdb-web-${VERSION}.tar.gz -C dist .
+
+      - name: Upload Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/**
+          files: pyppetdb-web-*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
