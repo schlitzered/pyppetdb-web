@@ -49,6 +49,14 @@
                     @update:modelValue="getSearchData"
                   >
                   </v-select>
+                  <v-text-field
+                    v-model="formSearchBy.outdated_threshold"
+                    label="Outdated Threshold (ISO Timestamp)"
+                    placeholder="YYYY-MM-DDTHH:MM:SS"
+                    :rules="[validateISOTimestamp]"
+                    :error-messages="outdatedThresholdError"
+                    @update:modelValue="handleOutdatedThresholdChange"
+                  ></v-text-field>
                 </v-row>
               </v-expansion-panel-text>
             </v-expansion-panel>
@@ -140,14 +148,27 @@
               </v-chip>
             </v-col>
             <v-col cols="3">
-              <v-chip 
-                color="info" 
-                variant="outlined" 
+              <v-chip
+                color="info"
+                variant="outlined"
                 size="large"
                 class="cursor-pointer"
               >
                 <v-icon start>mdi-help-circle</v-icon>
                 Unreported: {{ tableItemsMeta.status_unreported }}
+              </v-chip>
+            </v-col>
+          </v-row>
+          <v-row class="mt-1">
+            <v-col cols="3">
+              <v-chip
+                color="grey"
+                variant="outlined"
+                size="large"
+                class="cursor-pointer"
+              >
+                <v-icon start>mdi-clock-alert-outline</v-icon>
+                Outdated: {{ tableItemsMeta.status_outdated }}
               </v-chip>
             </v-col>
           </v-row>
@@ -177,11 +198,14 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import { useDataTable } from '@/common/datatable_generic'
 import { factFieldProcessor } from '@/common/field_processors'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+
+const outdatedThresholdError = ref('')
 
 const tableConfig = {
   apiEndpoint: '/api/v1/nodes',
@@ -193,6 +217,10 @@ const tableConfig = {
     { key: 'environment', type: 'string' },
     {
       key: 'report_status',
+      type: 'string'
+    },
+    {
+      key: 'outdated_threshold',
       type: 'string'
     },
     {
@@ -272,5 +300,41 @@ function filterByStatus(status) {
     formSearchBy.report_status = status
   }
   getSearchData()
+}
+
+function validateISOTimestamp(value) {
+  if (!value) return true // Empty is valid
+
+  // ISO 8601 timestamp regex pattern
+  const isoPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})?$/
+
+  if (!isoPattern.test(value)) {
+    return 'Invalid ISO timestamp format (e.g., 2024-01-01T12:00:00Z)'
+  }
+
+  // Try to parse as Date to ensure it's valid
+  const date = new Date(value)
+  if (isNaN(date.getTime())) {
+    return 'Invalid date/time value'
+  }
+
+  return true
+}
+
+function handleOutdatedThresholdChange(value) {
+  outdatedThresholdError.value = ''
+
+  // Only trigger search if empty or valid
+  if (!value) {
+    getSearchData()
+    return
+  }
+
+  const validationResult = validateISOTimestamp(value)
+  if (validationResult === true) {
+    getSearchData()
+  } else {
+    outdatedThresholdError.value = validationResult
+  }
 }
 </script>
