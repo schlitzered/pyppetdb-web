@@ -111,16 +111,6 @@ const routeNodesCrud = {
             hide() {
               return false
             }
-          },
-          {
-            title: 'Credentials',
-            to: {
-              name: 'NodesCredentialsSearch',
-              params: { node: route.params.node }
-            },
-            hide(route) {
-              return route.params.node === '_new'
-            }
           }
         ]
       }

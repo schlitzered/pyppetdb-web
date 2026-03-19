@@ -24,22 +24,22 @@
         <v-text-field
           v-model="formData.name"
           :readonly="formDataReadOnly"
-          :rules="[() => !!formData.id || 'This field is required']"
+          :rules="[() => !!formData.name || 'This field is required']"
           append-inner-icon="mdi-account"
           label="User Name"
         ></v-text-field>
         <v-text-field
           v-model="formData.email"
           :readonly="formDataReadOnly"
-          :rules="[() => !!formData.id || 'This field is required']"
+          :rules="[() => !!formData.email || 'This field is required']"
           append-inner-icon="mdi-mail"
           label="Email"
         ></v-text-field>
         <v-text-field
           v-model="formData.password"
-          v-if="formInputPasswordChangeable"
+          v-if="formInputPasswordChangeable && !formDataReadOnly"
           :readonly="formDataReadOnly"
-          :rules="[() => !!formData.id || 'This field is required']"
+          :rules="[() => (route.params.user !== '_new' || !!formData.password) || 'This field is required']"
           :append-inner-icon="formInputPasswordShow ? 'mdi-eye' : 'mdi-eye-off'"
           :type="formInputPasswordShow ? 'text' : 'password'"
           label="Password"
@@ -76,9 +76,7 @@ import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
 
 import api from '@/api/common'
 import { loginDataStore } from '@/store/login_data'
-import { apiErrorStore } from '@/store/api_error'
 
-const apiError = apiErrorStore()
 const loginData = loginDataStore()
 
 const route = useRoute()
@@ -203,6 +201,7 @@ function formGetData() {
         formData['backend_ref'] = data['backend_ref']
         formData['email'] = data['email']
         formData['name'] = data['name']
+        formInputPasswordChangeable.value = data['backend'] === 'internal'
       }
     })
   }
