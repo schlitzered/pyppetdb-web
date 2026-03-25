@@ -31,6 +31,11 @@
                 label="Filter Team ID"
                 @update:modelValue="getSearchData"
               ></v-text-field>
+              <v-text-field
+                v-model="formSearchBy.permissions"
+                label="Filter Permissions (Regex)"
+                @update:modelValue="getSearchData"
+              ></v-text-field>
             </v-expansion-panel-text>
           </v-expansion-panel>
         </v-expansion-panels>
@@ -60,7 +65,10 @@ const tableConfig = {
   apiEndpoint: '/api/v1/teams',
   routeName: 'TeamsSearch',
   fields: ['id', 'ldap_group'],
-  searchFormSchema: [{ key: 'team_id', type: 'string' }]
+  searchFormSchema: [
+    { key: 'team_id', type: 'string' },
+    { key: 'permissions', type: 'string' }
+  ]
 }
 
 const {

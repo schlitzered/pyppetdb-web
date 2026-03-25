@@ -42,6 +42,16 @@
           multiple
         >
         </v-autocomplete>
+        <v-autocomplete
+          v-model="formData.permissions"
+          :items="permissionsChoices"
+          :readonly="formDataReadOnly"
+          label="Permissions"
+          chips
+          :closable-chips="!formDataReadOnly"
+          multiple
+        >
+        </v-autocomplete>
       </v-card-text>
       <v-divider v-if="!formDataReadOnly"></v-divider>
       <v-card-actions v-if="!formDataReadOnly">
@@ -107,6 +117,8 @@ const usersChoices = ref([])
 const usersSearch = ref('')
 const usersSearchLoading = ref(true)
 
+const permissionsChoices = ref([])
+
 function initializeFormState() {
   if (route.params.team !== '_new') {
     formInputIdReadOnly.value = true
@@ -153,7 +165,8 @@ function formSubmit(event) {
   let url = `/api/v1/teams/${formData.id}`
   let data = {
     ldap_group: formData.ldap_group,
-    users: formData.users
+    users: formData.users,
+    permissions: formData.permissions
   }
   if (route.params.team === '_new') {
     method = 'post'
@@ -181,17 +194,56 @@ function formGetData() {
     formData['id'] = ''
     formData['ldap_group'] = ''
     formData['users'] = []
+    formData['permissions'] = []
   } else {
     api.get(`/api/v1/teams/${route.params.team}`).then((data) => {
       if (data) {
         formData['id'] = data['id']
         formData['ldap_group'] = data['ldap_group']
-        formData['users'] = data['users']
+        formData['users'] = data['users'] || []
+        formData['permissions'] = data['permissions'] || []
       }
     })
   }
   getUsers()
+  getPermissionsChoices()
   usersSearchLoading.value = false
+}
+
+function getPermissionsChoices() {
+  const staticPermissions = [
+    'CA:SPACES:CREATE',
+    'CA:SPACES:UPDATE',
+    'CA:SPACES:DELETE',
+    'CA:AUTHORITIES:CREATE',
+    'CA:AUTHORITIES:UPDATE',
+    'CA:AUTHORITIES:DELETE'
+  ]
+  permissionsChoices.value = [...staticPermissions]
+
+  api.get('/api/v1/ca/spaces', { limit: 1000, fields: ['id'] }).then((data) => {
+    if (data && data.result) {
+      data.result.forEach((space) => {
+        const perm = `CA:SPACES:${space.id}:CERTS:UPDATE`
+        if (!permissionsChoices.value.includes(perm)) {
+          permissionsChoices.value.push(perm)
+        }
+      })
+    }
+  })
+
+  api
+    .get('/api/v1/ca/authorities', { limit: 1000, fields: ['id'] })
+    .then((data) => {
+      if (data && data.result) {
+        data.result.forEach((authority) => {
+          const perm = `CA:AUTHORITIES:${authority.id}:CERTS:UPDATE`
+          if (!permissionsChoices.value.includes(perm)) {
+            permissionsChoices.value.push(perm)
+          }
+        })
+      }
+    })
 }
 
 function getUsers() {
