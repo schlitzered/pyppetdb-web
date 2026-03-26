@@ -65,7 +65,7 @@ const tableConfig = {
   fields: [], // Add your desired fields here
   searchFormSchema: [{ key: 'report_status', type: 'string' }],
   dataTransformers: {
-    'report.metrics': (metrics, item) => {
+    'report.metrics': (metrics) => {
       if (Array.isArray(metrics)) {
         const metricsDict = {}
         metrics.forEach((metric) => {

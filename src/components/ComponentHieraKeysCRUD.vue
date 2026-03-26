@@ -153,7 +153,7 @@ async function fetchAvailableModels(search) {
     } else {
       availableModels.value = []
     }
-  } catch (e) {
+  } catch {
     availableModels.value = []
   } finally {
     loadingModels.value = false
@@ -181,7 +181,7 @@ async function validateModelId(value) {
   try {
     await api.get(endpoint, null, true)
     return true
-  } catch (e) {
+  } catch {
     return 'Key model does not exist'
   }
 }

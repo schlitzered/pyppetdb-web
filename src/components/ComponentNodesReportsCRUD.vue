@@ -180,13 +180,9 @@ import { reactive, ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router/dist/vue-router'
 
 import api from '@/api/common'
-import { apiErrorStore } from '@/store/api_error'
 import { syncSimpleStringToUrl } from '@/common/url_state_sync'
 import { syncExpPanelToUrl } from '@/common/url_state_sync'
 import { syncPaginationToUrl } from '@/common/url_state_sync'
-import { syncSortToUrl } from '@/common/url_state_sync'
-
-const apiError = apiErrorStore()
 
 const route = useRoute()
 const router = useRouter()

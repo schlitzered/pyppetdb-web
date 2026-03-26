@@ -61,7 +61,6 @@ import { useRoute, useRouter } from 'vue-router/dist/vue-router'
 import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
 
 import api from '@/api/common'
-import { apiErrorStore } from '@/store/api_error'
 
 const props = defineProps({
   modelType: {
@@ -70,8 +69,6 @@ const props = defineProps({
     validator: (value) => ['static', 'dynamic'].includes(value)
   }
 })
-
-const apiError = apiErrorStore()
 
 const route = useRoute()
 const router = useRouter()
@@ -179,7 +176,7 @@ function validateSchema(schema, path = 'root', isRoot = true) {
     // Validate each property
     for (const [fieldName, fieldSchema] of Object.entries(schema.properties)) {
       const fieldPath = `${path}.properties.${fieldName}`
-      const fieldError = validateFieldSchema(fieldSchema, fieldPath, false)
+      const fieldError = validateFieldSchema(fieldSchema, fieldPath)
       if (fieldError !== true) {
         return fieldError
       }
@@ -204,7 +201,7 @@ function validateSchema(schema, path = 'root', isRoot = true) {
   return true
 }
 
-function validateFieldSchema(fieldSchema, path, isRoot = false) {
+function validateFieldSchema(fieldSchema, path) {
   if (typeof fieldSchema !== 'object' || fieldSchema === null || Array.isArray(fieldSchema)) {
     return `${path}: Field schema must be an object`
   }
@@ -225,7 +222,7 @@ function validateFieldSchema(fieldSchema, path, isRoot = false) {
     // Validate regex pattern
     try {
       new RegExp(fieldSchema.pattern)
-    } catch (e) {
+    } catch {
       return `${path}.pattern: Invalid regex pattern`
     }
     return true
@@ -250,7 +247,7 @@ function validateFieldSchema(fieldSchema, path, isRoot = false) {
   // Validate array type
   if (type === 'array') {
     if (fieldSchema.items) {
-      const itemError = validateFieldSchema(fieldSchema.items, `${path}.items`, false)
+      const itemError = validateFieldSchema(fieldSchema.items, `${path}.items`)
       if (itemError !== true) {
         return itemError
       }
@@ -271,7 +268,7 @@ const modelValidationRules = computed(() => [
     let parsed
     try {
       parsed = JSON.parse(value)
-    } catch (e) {
+    } catch {
       return 'Invalid JSON format'
     }
 
@@ -348,7 +345,7 @@ function formSubmit(event) {
   let modelData
   try {
     modelData = JSON.parse(formData.model)
-  } catch (e) {
+  } catch {
     return
   }
 

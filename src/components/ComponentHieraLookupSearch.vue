@@ -117,7 +117,7 @@ async function fetchAvailableKeys(search) {
     } else {
       availableKeys.value = []
     }
-  } catch (e) {
+  } catch {
     availableKeys.value = []
   } finally {
     loadingKeys.value = false
@@ -149,7 +149,7 @@ async function fetchFactFieldsFromLevels() {
         }
       })
     }
-  } catch (e) {
+  } catch {
     factFields.value = []
   } finally {
     loadingLevels.value = false
@@ -203,7 +203,7 @@ async function fetchFactSuggestions(factName, search) {
     } else {
       factSuggestions[factName] = []
     }
-  } catch (e) {
+  } catch {
     factSuggestions[factName] = []
   } finally {
     loadingFactSuggestions[factName] = false

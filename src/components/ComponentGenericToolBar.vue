@@ -23,7 +23,7 @@
           </v-list>
         </v-menu>
       </div>
-      <div v-for="item in navItems">
+      <div v-for="(item, index) in navItems" :key="index">
         <v-btn @click="onBtnClick(item)" :to="item.link"
           >{{ item.title }}
         </v-btn>

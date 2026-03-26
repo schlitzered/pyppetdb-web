@@ -117,9 +117,6 @@ import Ajv from 'ajv'
 import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
 
 import api from '@/api/common'
-import { apiErrorStore } from '@/store/api_error'
-
-const apiError = apiErrorStore()
 
 const route = useRoute()
 const router = useRouter()
@@ -262,7 +259,7 @@ async function fetchAvailableLevels(search) {
     if (data && data.result) {
       availableLevels.value = data.result.map(item => item.id)
     }
-  } catch (e) {
+  } catch {
     availableLevels.value = []
   } finally {
     loadingLevels.value = false
@@ -285,7 +282,7 @@ async function fetchAvailableKeys(search) {
     if (data && data.result) {
       availableKeys.value = data.result.map(item => item.id)
     }
-  } catch (e) {
+  } catch {
     availableKeys.value = []
   } finally {
     loadingKeys.value = false
@@ -348,7 +345,7 @@ async function fetchFactSuggestions(factName, search) {
     } else {
       factSuggestions[factName] = []
     }
-  } catch (e) {
+  } catch {
     factSuggestions[factName] = []
   } finally {
     loadingFactSuggestions[factName] = false
@@ -363,14 +360,6 @@ function cleanFactValue(value) {
     return value.slice(0, -suffix.length)
   }
   return value
-}
-
-// Validate fact value (soft validation - warning only)
-function validateFactValue(factName, value) {
-  if (!value) {
-    return 'This field is required'
-  }
-  return true
 }
 
 // Auto-generate data_id based on level_id and fact values
@@ -418,7 +407,7 @@ watch(() => formData.level_id, async (newLevelId) => {
         if (levelData && levelData.priority !== null && levelData.priority !== undefined) {
           formData.priority = levelData.priority
         }
-      } catch (e) {
+      } catch {
         // Level doesn't exist yet, validation will handle it
       }
     }
@@ -492,11 +481,11 @@ watch(() => formData.key_id, async (newKeyId) => {
             formData.dataJson = defaultDataValue.value
           }
         }
-      } catch (e) {
+      } catch {
         keyModelSchema.value = null
       }
     }
-  } catch (e) {
+  } catch {
     keyModelSchema.value = null
     keyModelId.value = null
     keyModelType.value = null
@@ -520,7 +509,7 @@ async function validateLevelId(value) {
   try {
     await fetchLevelData(value)
     return true
-  } catch (e) {
+  } catch {
     return 'Level does not exist'
   }
 }
@@ -542,7 +531,7 @@ async function validateKeyId(value) {
   try {
     await fetchKeyData(value)
     return true
-  } catch (e) {
+  } catch {
     return 'Key does not exist'
   }
 }
@@ -555,7 +544,7 @@ function validateData(value) {
   let parsed
   try {
     parsed = JSON.parse(value)
-  } catch (e) {
+  } catch {
     return 'Invalid JSON format'
   }
 
@@ -646,7 +635,7 @@ function formSubmit(event) {
       facts[field] = cleanFactValue(factValues[field])
     })
     data = JSON.parse(formData.dataJson)
-  } catch (e) {
+  } catch {
     return
   }
 

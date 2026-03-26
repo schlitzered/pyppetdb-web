@@ -163,7 +163,6 @@ const {
   tablePage,
   tableItemsPerPage,
   tableItemsPerPageOptions,
-  tableTotalItems,
   tableSortBy,
   tableExpPan,
   formSearchBy,

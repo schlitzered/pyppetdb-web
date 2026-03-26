@@ -150,7 +150,6 @@ const tableConfig = {
 
 const {
   tableItems,
-  tableItemsMeta,
   tableLoading,
   tablePage,
   tableItemsPerPage,

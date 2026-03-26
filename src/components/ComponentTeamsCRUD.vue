@@ -77,11 +77,6 @@ import { useRoute, useRouter } from 'vue-router/dist/vue-router'
 import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
 
 import api from '@/api/common'
-import { apiErrorStore } from '@/store/api_error'
-import { loginDataStore } from '@/store/login_data'
-
-const apiError = apiErrorStore()
-const loginData = loginDataStore()
 
 const route = useRoute()
 const router = useRouter()
