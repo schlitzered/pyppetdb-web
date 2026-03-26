@@ -2,11 +2,12 @@
 <script setup>
 import api from '@/api/common'
 import { loginDataStore } from '@/store/login_data'
-import { onMounted } from 'vue'
+import { onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 const loginData = loginDataStore()
 const route = useRoute()
+const intervalId = ref(null)
 
 function upDateUserData() {
   api.get('/api/v1/users/_self').then((data) => {
@@ -23,13 +24,19 @@ onMounted(async () => {
     loginData.resetTimestamp()
     loginData.resetUserData()
   }
-  setInterval(() => {
+  intervalId.value = setInterval(() => {
     if (!route.name.startsWith('Login')) {
       if (loginData.isTimestampOlderThan(60)) {
         loginData.setTimestamp()
         upDateUserData()
       }
     }
-  }, 1000) // check every 60 seconds
+  }, 60000) // check every 60 seconds
+})
+
+onBeforeUnmount(() => {
+  if (intervalId.value) {
+    clearInterval(intervalId.value)
+  }
 })
 </script>

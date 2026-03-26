@@ -1,0 +1,47 @@
+/* Global link styles for router-links and regular links */
+a,
+.router-link-active,
+.router-link-exact-active {
+  text-decoration: none;
+  color: inherit;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+a:visited {
+  color: inherit;
+}
+
+/* Specific styles for navigation and breadcrumb links */
+.nav-link,
+.breadcrumb-link {
+  text-decoration: none;
+  color: inherit;
+  display: inline-block;
+}
+
+.nav-link:hover,
+.breadcrumb-link:hover {
+  text-decoration: underline;
+}
+
+.nav-link:visited,
+.breadcrumb-link:visited {
+  color: inherit;
+}
+
+/* Table links - keep them as links but inherit color */
+.v-table a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.v-table a:hover {
+  text-decoration: underline;
+}
+
+.v-table a:visited {
+  color: inherit;
+}

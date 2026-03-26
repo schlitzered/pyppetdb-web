@@ -33,7 +33,7 @@
 <script setup>
 import { useDataTable } from '@/common/datatable_generic'
 import { useRouter } from 'vue-router'
-import { useRoute } from 'vue-router/dist/vue-router'
+import { useRoute } from 'vue-router'
 
 const router = useRouter()
 const route = useRoute()

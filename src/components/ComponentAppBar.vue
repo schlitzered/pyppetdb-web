@@ -3,12 +3,28 @@
   <v-app-bar
     v-if="route.name !== 'Login'"
     app
-    efixed
+    fixed
     elevation="10"
     extension-height="64"
   >
     <v-app-bar-nav-icon @click="toggleDrawer"></v-app-bar-nav-icon>
-    <v-breadcrumbs :items="getBreadCrumbs"> </v-breadcrumbs>
+    <v-breadcrumbs>
+      <template v-for="(item, index) in getBreadCrumbs" :key="index">
+        <v-breadcrumbs-item :disabled="!item.to">
+          <router-link
+            v-if="item.to"
+            :to="item.to"
+            class="breadcrumb-link"
+          >
+            {{ item.title }}
+          </router-link>
+          <span v-else>{{ item.title }}</span>
+        </v-breadcrumbs-item>
+        <v-breadcrumbs-divider v-if="index < getBreadCrumbs.length - 1">
+          /
+        </v-breadcrumbs-divider>
+      </template>
+    </v-breadcrumbs>
     <v-spacer></v-spacer>
     <v-switch
       v-model="isDark"
@@ -18,7 +34,7 @@
       @update:modelValue="toggleTheme"
       class="mr-4"
     ></v-switch>
-    <v-btn href="/docs">API</v-btn>
+    <v-btn href="/docs" target="_blank" rel="noopener noreferrer">API</v-btn>
     <v-menu open-on-hover>
       <template v-slot:activator="{ props }">
         <v-btn icon="mdi-account" v-bind="props"> </v-btn>
@@ -42,7 +58,7 @@
 
 <script setup>
 import { computed, inject, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router/dist/vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useTheme } from 'vuetify'
 
 import { loginDataStore } from '@/store/login_data'

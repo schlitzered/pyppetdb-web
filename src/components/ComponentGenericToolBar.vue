@@ -34,7 +34,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router/dist/vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { loginDataStore } from '@/store/login_data'
 
 const loginData = loginDataStore()
@@ -46,7 +46,7 @@ const navItems = computed(() => {
   let user_is_admin = loginData.getUserDataIsAdmin
   if (route.meta.toolBar) {
     route.meta.toolBar.call(this, route).items.forEach((item) => {
-      if (item.hide.call(this, route)) {
+      if (item.hide?.call(this, route)) {
         return
       }
       if ((item.requireAdmin && user_is_admin) || !item.requireAdmin) {

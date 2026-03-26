@@ -282,7 +282,7 @@ import {
   syncSortToUrl
 } from '@/common/url_state_sync'
 import { reactive, ref, onMounted, nextTick, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router/dist/vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
 
 import api from '@/api/common'

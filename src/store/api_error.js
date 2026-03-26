@@ -21,8 +21,8 @@ export const apiErrorStore = defineStore('apiError', () => {
 
   function set(error) {
     dialogShow.value = true
-    dialogError.value = error.response.data
-    dialogHTTPStatus.value = error.response.status
+    dialogError.value = error.response?.data || 'An error occurred'
+    dialogHTTPStatus.value = error.response?.status || 500
   }
 
   function setRedirect(data) {

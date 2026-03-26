@@ -36,10 +36,21 @@
         <v-list-item
           v-for="item in group.items"
           :key="item.to"
-          :title="item.name"
-          :href="item.href"
-          @click.prevent="onBtnClick(item)"
         >
+          <router-link
+            v-if="item.to"
+            :to="{ name: item.to }"
+            class="nav-link"
+          >
+            {{ item.name }}
+          </router-link>
+          <a
+            v-else-if="item.href"
+            :href="item.href"
+            class="nav-link"
+          >
+            {{ item.name }}
+          </a>
         </v-list-item>
       </v-list-group>
     </v-list>
@@ -48,7 +59,7 @@
 
 <script setup>
 import { computed, inject, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router/dist/vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { loginDataStore } from '@/store/login_data'
 
@@ -116,14 +127,6 @@ const groupedNavItems = computed(() => {
 
   return result
 })
-
-function onBtnClick(event) {
-  if (event.name !== route.name) {
-    router.push({ name: event.to }).catch((err) => {
-      console.log(err)
-    })
-  }
-}
 
 function getGroupIcon(groupName) {
   const icons = {

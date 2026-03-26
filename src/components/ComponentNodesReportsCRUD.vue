@@ -177,7 +177,7 @@
 
 <script setup>
 import { reactive, ref, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router/dist/vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import api from '@/api/common'
 import { syncSimpleStringToUrl } from '@/common/url_state_sync'

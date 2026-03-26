@@ -19,7 +19,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { apiErrorStore } from '@/store/api_error'
-import { useRouter } from 'vue-router/dist/vue-router'
+import { useRouter } from 'vue-router'
 
 const router = useRouter()
 

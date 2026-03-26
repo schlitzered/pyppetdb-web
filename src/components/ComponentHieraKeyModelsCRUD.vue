@@ -56,7 +56,7 @@
 
 <script setup>
 import { reactive, ref, nextTick, computed, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router/dist/vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
 
