@@ -36,6 +36,12 @@
                 label="Filter Common Name"
                 @update:modelValue="getSearchData"
               ></v-text-field>
+              <v-select
+                v-model="formSearchBy.status"
+                :items="tableStatusDropdownOptions"
+                label="Filter Status"
+                @update:modelValue="getSearchData"
+              ></v-select>
             </v-expansion-panel-text>
           </v-expansion-panel>
         </v-expansion-panels>
@@ -70,7 +76,8 @@ const tableConfig = {
   fields: ['id', 'cn', 'status', 'created'],
   searchFormSchema: [
     { key: 'cert_id', type: 'string' },
-    { key: 'cn', type: 'string' }
+    { key: 'cn', type: 'string' },
+    { key: 'status', type: 'string' }
   ]
 }
 
@@ -94,6 +101,14 @@ const tableHeaders = [
   { title: 'Common Name', key: 'cn', sortable: false },
   { title: 'Status', key: 'status', sortable: false },
   { title: 'Created', key: 'created', sortable: false }
+]
+
+const tableStatusDropdownOptions = [
+  { title: 'Unset', value: '' },
+  { title: 'Requested', value: 'requested' },
+  { title: 'Signed', value: 'signed' },
+  { title: 'Revoked', value: 'revoked' },
+  { title: 'Expired', value: 'expired' }
 ]
 
 function onRowClick(item, item_data) {
