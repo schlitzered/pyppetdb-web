@@ -31,29 +31,29 @@
   </v-card>
   <v-expansion-panels
     class="mt-4"
-    v-model="tableExpPanFactsOverride"
+    v-model="tableExpPanFactsInject"
     @update:model-value="updateUrlQuery"
     multiple
   >
-    <v-expansion-panel value="facts_override">
+    <v-expansion-panel value="facts_inject">
       <v-expansion-panel-title>
         <v-icon class="me-2">mdi-file-edit</v-icon>
-        Facts Override
+        Facts Inject
       </v-expansion-panel-title>
       <v-expansion-panel-text>
         <v-data-table
-          :headers="formDataReadOnly ? tableFactsOverrideHeadersReadOnly : tableFactsOverrideHeaders"
-          :items="tableFactsOverrideItems"
+          :headers="formDataReadOnly ? tableFactsInjectHeadersReadOnly : tableFactsInjectHeaders"
+          :items="tableFactsInjectItems"
           :items-per-page-options="[5, 10, 25, 50]"
           class="elevation-1"
           density="compact"
         >
           <template v-slot:top>
             <v-toolbar flat>
-              <v-toolbar-title>Override Facts</v-toolbar-title>
+              <v-toolbar-title>Inject Facts</v-toolbar-title>
               <v-spacer></v-spacer>
               <v-text-field
-                v-model="tableFactsOverrideSearchKey"
+                v-model="tableFactsInjectSearchKey"
                 @update:model-value="updateUrlQuery"
                 append-inner-icon="mdi-magnify"
                 label="Search keys..."
@@ -64,7 +64,7 @@
                 style="max-width: 250px"
               ></v-text-field>
               <v-text-field
-                v-model="tableFactsOverrideSearchValue"
+                v-model="tableFactsInjectSearchValue"
                 @update:model-value="updateUrlQuery"
                 append-inner-icon="mdi-magnify"
                 label="Search values..."
@@ -74,7 +74,7 @@
                 class="mx-2"
                 style="max-width: 250px"
               ></v-text-field>
-              <v-dialog v-if="!formDataReadOnly" v-model="dialogFactsOverride" max-width="500px">
+              <v-dialog v-if="!formDataReadOnly" v-model="dialogFactsInject" max-width="500px">
                 <template v-slot:activator="{ props }">
                   <v-btn
                     color="primary"
@@ -82,27 +82,27 @@
                     v-bind="props"
                     prepend-icon="mdi-plus"
                   >
-                    Add Override
+                    Add Inject
                   </v-btn>
                 </template>
                 <v-card>
                   <v-card-title>
-                    <span class="text-h5">{{ formFactsOverrideTitle }}</span>
+                    <span class="text-h5">{{ formFactsInjectTitle }}</span>
                   </v-card-title>
                   <v-card-text>
                     <v-container>
                       <v-row>
                         <v-col cols="12">
                           <v-text-field
-                            v-model="editedFactsOverride.key"
-                            :readonly="editedFactsOverrideIndex !== -1"
+                            v-model="editedFactsInject.key"
+                            :readonly="editedFactsInjectIndex !== -1"
                             label="Key"
                             :rules="[v => !!v || 'Key is required']"
                           ></v-text-field>
                         </v-col>
                         <v-col cols="12">
                           <v-text-field
-                            v-model="editedFactsOverride.value"
+                            v-model="editedFactsInject.value"
                             label="Value"
                             :rules="[v => !!v || 'Value is required']"
                           ></v-text-field>
@@ -115,14 +115,14 @@
                     <v-btn
                       color="blue-darken-1"
                       variant="text"
-                      @click="closeFactsOverride"
+                      @click="closeFactsInject"
                     >
                       Cancel
                     </v-btn>
                     <v-btn
                       color="blue-darken-1"
                       variant="text"
-                      @click="saveFactsOverride"
+                      @click="saveFactsInject"
                     >
                       Save
                     </v-btn>
@@ -135,13 +135,13 @@
             <v-icon
               size="small"
               class="me-2"
-              @click="editFactsOverrideItem(item)"
+              @click="editFactsInjectItem(item)"
             >
               mdi-pencil
             </v-icon>
             <v-icon
               size="small"
-              @click="deleteFactsOverrideItem(item)"
+              @click="deleteFactsInjectItem(item)"
             >
               mdi-delete
             </v-icon>
@@ -300,8 +300,8 @@ const tableFactsSearchKey = ref(route.query.search_key_facts || '')
 const tableFactsSearchValue = ref(route.query.search_value_facts || '')
 const tableFactsPage = ref(Number(route.query.page_facts) || 1)
 const tableFactsItemsPerPage = ref(Number(route.query.limit_facts) || 10)
-const tableFactsOverrideSearchKey = ref(route.query.search_key_facts_override || '')
-const tableFactsOverrideSearchValue = ref(route.query.search_value_facts_override || '')
+const tableFactsInjectSearchKey = ref(route.query.search_key_facts_inject || '')
+const tableFactsInjectSearchValue = ref(route.query.search_value_facts_inject || '')
 const tableFactsSortBy = reactive([])
 const tableExpPanName = 'default'
 const tableExpPan = ref(
@@ -309,10 +309,10 @@ const tableExpPan = ref(
     ? route.query['exp_pan_' + tableExpPanName].split(',')
     : []
 )
-const tableExpPanFactsOverrideName = 'facts_override'
-const tableExpPanFactsOverride = ref(
-  route.query['exp_pan_' + tableExpPanFactsOverrideName]
-    ? route.query['exp_pan_' + tableExpPanFactsOverrideName].split(',')
+const tableExpPanFactsInjectName = 'facts_inject'
+const tableExpPanFactsInject = ref(
+  route.query['exp_pan_' + tableExpPanFactsInjectName]
+    ? route.query['exp_pan_' + tableExpPanFactsInjectName].split(',')
     : []
 )
 
@@ -344,7 +344,7 @@ const tableFactsHeaders = [
   }
 ]
 
-const tableFactsOverrideHeadersReadOnly = [
+const tableFactsInjectHeadersReadOnly = [
   {
     title: 'Key',
     key: 'key',
@@ -359,7 +359,7 @@ const tableFactsOverrideHeadersReadOnly = [
   }
 ]
 
-const tableFactsOverrideHeaders = [
+const tableFactsInjectHeaders = [
   {
     title: 'Key',
     key: 'key',
@@ -394,30 +394,30 @@ function filterItemsByKeyValue(items, keySearch, valueSearch, valueFormatter = (
   })
 }
 
-const tableFactsOverrideItems = computed(() => {
-  if (!formData.facts_override) return []
+const tableFactsInjectItems = computed(() => {
+  if (!formData.facts_inject) return []
 
-  const items = Object.entries(formData.facts_override).map(([key, value]) => ({
+  const items = Object.entries(formData.facts_inject).map(([key, value]) => ({
     key,
     value
   }))
 
-  return filterItemsByKeyValue(items, tableFactsOverrideSearchKey, tableFactsOverrideSearchValue)
+  return filterItemsByKeyValue(items, tableFactsInjectSearchKey, tableFactsInjectSearchValue)
 })
 
-const dialogFactsOverride = ref(false)
-const editedFactsOverrideIndex = ref(-1)
-const editedFactsOverride = reactive({
+const dialogFactsInject = ref(false)
+const editedFactsInjectIndex = ref(-1)
+const editedFactsInject = reactive({
   key: '',
   value: ''
 })
-const defaultFactsOverride = {
+const defaultFactsInject = {
   key: '',
   value: ''
 }
 
-const formFactsOverrideTitle = computed(() => {
-  return editedFactsOverrideIndex.value === -1 ? 'New Override' : 'Edit Override'
+const formFactsInjectTitle = computed(() => {
+  return editedFactsInjectIndex.value === -1 ? 'New Inject' : 'Edit Inject'
 })
 
 const tableFactsItems = computed(() => {
@@ -547,7 +547,7 @@ function formSubmit(event) {
   let url = `/api/v1/nodes/${route.params.node}`
   let data = {
     disabled: formData.disabled,
-    facts_override: formData.facts_override || {}
+    facts_inject: formData.facts_inject || {}
   }
   api.request(method, url, data).then(() => {
     formDataReadOnly.value = true
@@ -565,7 +565,7 @@ function formGetNodeData() {
       formData['change_last'] = data['change_last']
       formData['change_report'] = data['change_report']
       formData['facts'] = flattenFacts(data['facts'])
-      formData['facts_override'] = data['facts_override'] || {}
+      formData['facts_inject'] = data['facts_inject'] || {}
       formData['report'] = data['report']
     }
   })
@@ -579,7 +579,7 @@ function handleFactsTableUpdate(options) {
 function updateUrlQuery() {
   let query = {}
   syncExpPanelToUrl(query, tableExpPanName, tableExpPan.value)
-  syncExpPanelToUrl(query, tableExpPanFactsOverrideName, tableExpPanFactsOverride.value)
+  syncExpPanelToUrl(query, tableExpPanFactsInjectName, tableExpPanFactsInject.value)
   syncPaginationToUrl(
     query,
     tableFactsPage.value,
@@ -593,11 +593,11 @@ function updateUrlQuery() {
     'search_value_facts',
     tableFactsSearchValue.value
   )
-  syncSimpleStringToUrl(query, 'search_key_facts_override', tableFactsOverrideSearchKey.value)
+  syncSimpleStringToUrl(query, 'search_key_facts_inject', tableFactsInjectSearchKey.value)
   syncSimpleStringToUrl(
     query,
-    'search_value_facts_override',
-    tableFactsOverrideSearchValue.value
+    'search_value_facts_inject',
+    tableFactsInjectSearchValue.value
   )
 
   router.replace({
@@ -607,36 +607,36 @@ function updateUrlQuery() {
   })
 }
 
-function editFactsOverrideItem(item) {
-  editedFactsOverrideIndex.value = tableFactsOverrideItems.value.findIndex(
+function editFactsInjectItem(item) {
+  editedFactsInjectIndex.value = tableFactsInjectItems.value.findIndex(
     (i) => i.key === item.key
   )
-  Object.assign(editedFactsOverride, item)
-  dialogFactsOverride.value = true
+  Object.assign(editedFactsInject, item)
+  dialogFactsInject.value = true
 }
 
-function deleteFactsOverrideItem(item) {
-  if (!formData.facts_override) return
-  delete formData.facts_override[item.key]
+function deleteFactsInjectItem(item) {
+  if (!formData.facts_inject) return
+  delete formData.facts_inject[item.key]
 }
 
-function closeFactsOverride() {
-  dialogFactsOverride.value = false
+function closeFactsInject() {
+  dialogFactsInject.value = false
   nextTick(() => {
-    Object.assign(editedFactsOverride, defaultFactsOverride)
-    editedFactsOverrideIndex.value = -1
+    Object.assign(editedFactsInject, defaultFactsInject)
+    editedFactsInjectIndex.value = -1
   })
 }
 
-function saveFactsOverride() {
-  if (!editedFactsOverride.key || !editedFactsOverride.value) return
+function saveFactsInject() {
+  if (!editedFactsInject.key || !editedFactsInject.value) return
 
-  if (!formData.facts_override) {
-    formData.facts_override = {}
+  if (!formData.facts_inject) {
+    formData.facts_inject = {}
   }
 
-  formData.facts_override[editedFactsOverride.key] = editedFactsOverride.value
-  closeFactsOverride()
+  formData.facts_inject[editedFactsInject.key] = editedFactsInject.value
+  closeFactsInject()
 }
 
 onMounted(async () => {
