@@ -13,6 +13,10 @@ import routesNodesReports from './routes_nodes_reports.js'
 import routesTeams from './routes_teams.js'
 import routesUsers from './routes_users.js'
 import routesUsersCredentials from './routes_users_credentials'
+import routesCAAuthorities from './routes_ca_authorities.js'
+import routesCAAuthoritiesCerts from './routes_ca_authorities_certs.js'
+import routesCASpaces from './routes_ca_spaces.js'
+import routesCASpacesCerts from './routes_ca_spaces_certs.js'
 
 const routes = [
   ...routesLogin,
@@ -28,6 +32,10 @@ const routes = [
   ...routesTeams,
   ...routesUsers,
   ...routesUsersCredentials,
+  ...routesCAAuthorities,
+  ...routesCAAuthoritiesCerts,
+  ...routesCASpaces,
+  ...routesCASpacesCerts,
   {
     path: '/',
     component: () => import('@/layouts/default/LayoutDefault.vue'),

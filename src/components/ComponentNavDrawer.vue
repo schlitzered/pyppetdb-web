@@ -56,7 +56,7 @@ const route = useRoute()
 const router = useRouter()
 const drawer = inject('drawer')
 const rail = ref(false)
-const openedGroups = ref(['Nodes', 'Hiera', 'Administration'])
+const openedGroups = ref(['Nodes', 'Hiera', 'Administration', 'CA'])
 
 const loginData = loginDataStore()
 
@@ -129,7 +129,8 @@ function getGroupIcon(groupName) {
   const icons = {
     Nodes: 'mdi-server',
     Hiera: 'mdi-file-tree',
-    Administration: 'mdi-cog'
+    Administration: 'mdi-cog',
+    CA: 'mdi-shield-account'
   }
   return icons[groupName] || 'mdi-folder'
 }
