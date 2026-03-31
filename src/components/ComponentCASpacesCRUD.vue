@@ -36,7 +36,9 @@
           append-inner-icon="mdi-text"
           label="Description"
         ></v-text-field>
-        <v-list v-if="formData.ca_id_history && formData.ca_id_history.length > 0">
+        <v-list
+          v-if="formData.ca_id_history && formData.ca_id_history.length > 0"
+        >
           <v-list-subheader>CA History</v-list-subheader>
           <v-list-item
             v-for="ca in formData.ca_id_history"
@@ -106,12 +108,14 @@ const caChoicesLoading = ref(false)
 
 function getCAChoices() {
   caChoicesLoading.value = true
-  api.get('/api/v1/ca/authorities', { limit: 1000, fields: ['id'] }).then((data) => {
-    if (data && data.result) {
-      caChoices.value = data.result.map((ca) => ca.id)
-    }
-    caChoicesLoading.value = false
-  })
+  api
+    .get('/api/v1/ca/authorities', { limit: 1000, fields: ['id'] })
+    .then((data) => {
+      if (data && data.result) {
+        caChoices.value = data.result.map((ca) => ca.id)
+      }
+      caChoicesLoading.value = false
+    })
 }
 
 function initializeFormState() {
@@ -132,9 +136,12 @@ function initializeFormState() {
 
 initializeFormState()
 
-watch(() => route.params.space_id, () => {
-  initializeFormState()
-})
+watch(
+  () => route.params.space_id,
+  () => {
+    initializeFormState()
+  }
+)
 
 function formDelete() {
   dialogDeleteShow.value = true

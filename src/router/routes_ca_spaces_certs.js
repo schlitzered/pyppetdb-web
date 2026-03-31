@@ -14,7 +14,10 @@ const routeCASpacesCertsSearch = {
         },
         {
           title: route.params.space_id,
-          to: { name: 'CASpacesCRUD', params: { space_id: route.params.space_id } }
+          to: {
+            name: 'CASpacesCRUD',
+            params: { space_id: route.params.space_id }
+          }
         },
         {
           title: 'Certificates'
@@ -53,11 +56,17 @@ const routeCASpacesCertsCRUD = {
         },
         {
           title: route.params.space_id,
-          to: { name: 'CASpacesCRUD', params: { space_id: route.params.space_id } }
+          to: {
+            name: 'CASpacesCRUD',
+            params: { space_id: route.params.space_id }
+          }
         },
         {
           title: 'Certificates',
-          to: { name: 'CASpacesCertsSearch', params: { space_id: route.params.space_id } }
+          to: {
+            name: 'CASpacesCertsSearch',
+            params: { space_id: route.params.space_id }
+          }
         },
         {
           title: route.params.cert_id

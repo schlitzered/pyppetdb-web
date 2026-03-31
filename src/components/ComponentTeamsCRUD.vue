@@ -136,9 +136,12 @@ function initializeFormState() {
 initializeFormState()
 
 // Watch for route parameter changes
-watch(() => route.params.team, () => {
-  initializeFormState()
-})
+watch(
+  () => route.params.team,
+  () => {
+    initializeFormState()
+  }
+)
 
 function formDelete() {
   dialogDeleteShow.value = true

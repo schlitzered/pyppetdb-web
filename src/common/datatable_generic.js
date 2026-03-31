@@ -130,9 +130,9 @@ export function useDataTable(config) {
   function getSearchDataTableEvent(event) {
     event.searchBy = getParamsSearchBy()
     event.sortBy = [...event.sortBy]
-    
+
     const sortByChanged = !areArraysEqual(tableSortBy, event.sortBy)
-    
+
     if (sortByChanged) {
       nextTick(() => {
         tableSortBy.length = 0
@@ -143,7 +143,7 @@ export function useDataTable(config) {
         }
       })
     }
-    
+
     getSearchData(event)
   }
 
@@ -268,12 +268,12 @@ function buildSearchParams(form, schema) {
 
 function areArraysEqual(arr1, arr2) {
   if (arr1.length !== arr2.length) return false
-  
+
   for (let i = 0; i < arr1.length; i++) {
     if (arr1[i].key !== arr2[i].key || arr1[i].order !== arr2[i].order) {
       return false
     }
   }
-  
+
   return true
 }

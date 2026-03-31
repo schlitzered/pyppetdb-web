@@ -77,7 +77,7 @@ const {
   formSearchBy,
   getSearchData,
   getSearchDataTableEvent,
-  getSearchDataExpPanelEvent,
+  getSearchDataExpPanelEvent
 } = useDataTable(tableConfig)
 
 const tableHeaders = [{ title: 'Node Group ID', key: 'id', sortable: true }]

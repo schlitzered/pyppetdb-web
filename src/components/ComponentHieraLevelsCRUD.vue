@@ -24,7 +24,13 @@
         <v-text-field
           v-model.number="formData.priority"
           :readonly="formDataReadOnly"
-          :rules="[() => formData.priority !== null && formData.priority !== undefined && formData.priority !== '' || 'This field is required']"
+          :rules="[
+            () =>
+              (formData.priority !== null &&
+                formData.priority !== undefined &&
+                formData.priority !== '') ||
+              'This field is required'
+          ]"
           type="number"
           append-inner-icon="mdi-numeric"
           label="Priority"
@@ -113,9 +119,12 @@ function initializeFormState() {
 initializeFormState()
 
 // Watch for route parameter changes
-watch(() => route.params.level_id, () => {
-  initializeFormState()
-})
+watch(
+  () => route.params.level_id,
+  () => {
+    initializeFormState()
+  }
+)
 
 function formDelete() {
   dialogDeleteShow.value = true

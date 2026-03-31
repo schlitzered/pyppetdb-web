@@ -43,8 +43,10 @@
       <template v-slot:item.id="{ item }">
         <a
           :href="
-            router.resolve({ name: 'HieraLevelsCRUD', params: { level_id: item.id } })
-              .href
+            router.resolve({
+              name: 'HieraLevelsCRUD',
+              params: { level_id: item.id }
+            }).href
           "
           @click.left.prevent
         >

@@ -14,7 +14,10 @@ const routeCAAuthoritiesCertsSearch = {
         },
         {
           title: route.params.ca_id,
-          to: { name: 'CAAuthoritiesCRUD', params: { ca_id: route.params.ca_id } }
+          to: {
+            name: 'CAAuthoritiesCRUD',
+            params: { ca_id: route.params.ca_id }
+          }
         },
         {
           title: 'Certificates'
@@ -53,11 +56,17 @@ const routeCAAuthoritiesCertsCRUD = {
         },
         {
           title: route.params.ca_id,
-          to: { name: 'CAAuthoritiesCRUD', params: { ca_id: route.params.ca_id } }
+          to: {
+            name: 'CAAuthoritiesCRUD',
+            params: { ca_id: route.params.ca_id }
+          }
         },
         {
           title: 'Certificates',
-          to: { name: 'CAAuthoritiesCertsSearch', params: { ca_id: route.params.ca_id } }
+          to: {
+            name: 'CAAuthoritiesCertsSearch',
+            params: { ca_id: route.params.ca_id }
+          }
         },
         {
           title: route.params.cert_id
@@ -80,6 +89,9 @@ const routeCAAuthoritiesCertsCRUD = {
   ]
 }
 
-const routesCAAuthoritiesCerts = [routeCAAuthoritiesCertsSearch, routeCAAuthoritiesCertsCRUD]
+const routesCAAuthoritiesCerts = [
+  routeCAAuthoritiesCertsSearch,
+  routeCAAuthoritiesCertsCRUD
+]
 
 export default routesCAAuthoritiesCerts

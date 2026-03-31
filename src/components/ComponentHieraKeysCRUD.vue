@@ -135,9 +135,10 @@ async function fetchAvailableModels(search) {
 
   loadingModels.value = true
   try {
-    const endpoint = modelType.value === 'static'
-      ? '/api/v1/hiera/key_models/static'
-      : '/api/v1/hiera/key_models/dynamic'
+    const endpoint =
+      modelType.value === 'static'
+        ? '/api/v1/hiera/key_models/static'
+        : '/api/v1/hiera/key_models/dynamic'
 
     const params = {
       limit: 10,
@@ -149,7 +150,7 @@ async function fetchAvailableModels(search) {
     }
     const data = await api.get(endpoint, params, true)
     if (data && data.result) {
-      availableModels.value = data.result.map(item => item.id)
+      availableModels.value = data.result.map((item) => item.id)
     } else {
       availableModels.value = []
     }
@@ -215,9 +216,12 @@ function initializeFormState() {
 initializeFormState()
 
 // Watch for route parameter changes
-watch(() => route.params.key_id, () => {
-  initializeFormState()
-})
+watch(
+  () => route.params.key_id,
+  () => {
+    initializeFormState()
+  }
+)
 
 function formDelete() {
   dialogDeleteShow.value = true
@@ -276,24 +280,27 @@ function formGetData() {
     })
   } else {
     isLoadingData.value = true
-    api.get(`/api/v1/hiera/keys/${route.params.key_id}`).then((data) => {
-      if (data) {
-        // Set model type FIRST based on key_model_id prefix
-        modelType.value = getModelTypeFromId(data['key_model_id'])
-        // Then set the form data
-        formData['id'] = data['id']
-        formData['key_model_id'] = data['key_model_id']
-        formData['description'] = data['description']
-        formData['deprecated'] = data['deprecated']
-      }
-      nextTick(() => {
-        isLoadingData.value = false
+    api
+      .get(`/api/v1/hiera/keys/${route.params.key_id}`)
+      .then((data) => {
+        if (data) {
+          // Set model type FIRST based on key_model_id prefix
+          modelType.value = getModelTypeFromId(data['key_model_id'])
+          // Then set the form data
+          formData['id'] = data['id']
+          formData['key_model_id'] = data['key_model_id']
+          formData['description'] = data['description']
+          formData['deprecated'] = data['deprecated']
+        }
+        nextTick(() => {
+          isLoadingData.value = false
+        })
       })
-    }).catch(() => {
-      nextTick(() => {
-        isLoadingData.value = false
+      .catch(() => {
+        nextTick(() => {
+          isLoadingData.value = false
+        })
       })
-    })
   }
 }
 </script>

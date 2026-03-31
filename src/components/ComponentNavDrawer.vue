@@ -8,12 +8,10 @@
     <template v-slot:prepend>
       <v-list-item>
         <template v-slot:append>
-          <v-btn
-            icon
-            variant="text"
-            @click.stop="rail = !rail"
-          >
-            <v-icon>{{ rail ? 'mdi-chevron-right' : 'mdi-chevron-left' }}</v-icon>
+          <v-btn icon variant="text" @click.stop="rail = !rail">
+            <v-icon>{{
+              rail ? 'mdi-chevron-right' : 'mdi-chevron-left'
+            }}</v-icon>
           </v-btn>
         </template>
       </v-list-item>
@@ -33,22 +31,11 @@
           ></v-list-item>
         </template>
 
-        <v-list-item
-          v-for="item in group.items"
-          :key="item.to"
-        >
-          <router-link
-            v-if="item.to"
-            :to="{ name: item.to }"
-            class="nav-link"
-          >
+        <v-list-item v-for="item in group.items" :key="item.to">
+          <router-link v-if="item.to" :to="{ name: item.to }" class="nav-link">
             {{ item.name }}
           </router-link>
-          <a
-            v-else-if="item.href"
-            :href="item.href"
-            class="nav-link"
-          >
+          <a v-else-if="item.href" :href="item.href" class="nav-link">
             {{ item.name }}
           </a>
         </v-list-item>

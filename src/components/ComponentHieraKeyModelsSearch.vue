@@ -38,8 +38,10 @@
       <template v-slot:item.id="{ item }">
         <a
           :href="
-            router.resolve({ name: crudRouteName, params: { key_model_id: item.id } })
-              .href
+            router.resolve({
+              name: crudRouteName,
+              params: { key_model_id: item.id }
+            }).href
           "
           @click.left.prevent
         >

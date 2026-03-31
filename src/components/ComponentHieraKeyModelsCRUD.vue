@@ -39,7 +39,9 @@
       </v-card-text>
       <v-divider v-if="!formDataReadOnly || formButtonDeleteShow"></v-divider>
       <v-card-actions v-if="!formDataReadOnly || formButtonDeleteShow">
-        <v-btn v-if="!formDataReadOnly" variant="text" @click="formReset">Reset</v-btn>
+        <v-btn v-if="!formDataReadOnly" variant="text" @click="formReset"
+          >Reset</v-btn
+        >
         <v-spacer></v-spacer>
         <v-btn
           v-if="formButtonDeleteShow"
@@ -48,7 +50,13 @@
           @click="formDelete"
           >Delete
         </v-btn>
-        <v-btn v-if="!formDataReadOnly" color="primary" variant="text" @click="formSubmit">Submit</v-btn>
+        <v-btn
+          v-if="!formDataReadOnly"
+          color="primary"
+          variant="text"
+          @click="formSubmit"
+          >Submit</v-btn
+        >
       </v-card-actions>
     </v-form>
   </v-card>
@@ -169,7 +177,10 @@ function validateSchema(schema, path = 'root', isRoot = true) {
 
   // If it has properties, validate them
   if (schema.properties) {
-    if (typeof schema.properties !== 'object' || Array.isArray(schema.properties)) {
+    if (
+      typeof schema.properties !== 'object' ||
+      Array.isArray(schema.properties)
+    ) {
       return `${path}.properties: Must be an object`
     }
 
@@ -202,7 +213,11 @@ function validateSchema(schema, path = 'root', isRoot = true) {
 }
 
 function validateFieldSchema(fieldSchema, path) {
-  if (typeof fieldSchema !== 'object' || fieldSchema === null || Array.isArray(fieldSchema)) {
+  if (
+    typeof fieldSchema !== 'object' ||
+    fieldSchema === null ||
+    Array.isArray(fieldSchema)
+  ) {
     return `${path}: Field schema must be an object`
   }
 
@@ -234,7 +249,14 @@ function validateFieldSchema(fieldSchema, path) {
     return `${path}: Missing "type" field`
   }
 
-  const validTypes = ['string', 'integer', 'number', 'boolean', 'object', 'array']
+  const validTypes = [
+    'string',
+    'integer',
+    'number',
+    'boolean',
+    'object',
+    'array'
+  ]
   if (!validTypes.includes(type)) {
     return `${path}.type: Invalid type "${type}". Must be one of: ${validTypes.join(', ')}`
   }
@@ -252,7 +274,10 @@ function validateFieldSchema(fieldSchema, path) {
         return itemError
       }
     }
-    if (fieldSchema.uniqueItems !== undefined && typeof fieldSchema.uniqueItems !== 'boolean') {
+    if (
+      fieldSchema.uniqueItems !== undefined &&
+      typeof fieldSchema.uniqueItems !== 'boolean'
+    ) {
       return `${path}.uniqueItems: Must be a boolean`
     }
   }
@@ -312,9 +337,12 @@ function initializeFormState() {
 initializeFormState()
 
 // Watch for route parameter changes
-watch(() => route.params.key_model_id, () => {
-  initializeFormState()
-})
+watch(
+  () => route.params.key_model_id,
+  () => {
+    initializeFormState()
+  }
+)
 
 function formDelete() {
   dialogDeleteShow.value = true

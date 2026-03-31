@@ -11,11 +11,7 @@
     <v-breadcrumbs>
       <template v-for="(item, index) in getBreadCrumbs" :key="index">
         <v-breadcrumbs-item :disabled="!item.to">
-          <router-link
-            v-if="item.to"
-            :to="item.to"
-            class="breadcrumb-link"
-          >
+          <router-link v-if="item.to" :to="item.to" class="breadcrumb-link">
             {{ item.title }}
           </router-link>
           <span v-else>{{ item.title }}</span>

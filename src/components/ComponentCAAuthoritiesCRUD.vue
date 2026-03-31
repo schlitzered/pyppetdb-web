@@ -34,7 +34,9 @@
         ></v-text-field>
 
         <v-autocomplete
-          v-if="route.params.ca_id === '_new' && caCreationMode === 'internal_sub'"
+          v-if="
+            route.params.ca_id === '_new' && caCreationMode === 'internal_sub'
+          "
           v-model="formData.parent_id"
           :readonly="formDataReadOnly"
           :items="caChoices"
@@ -47,13 +49,20 @@
         <v-text-field
           v-model="formData.cn"
           :readonly="route.params.ca_id !== '_new' || formDataReadOnly"
-          :rules="[() => (caCreationMode === 'external' || !!formData.cn) || 'This field is required']"
+          :rules="[
+            () =>
+              caCreationMode === 'external' ||
+              !!formData.cn ||
+              'This field is required'
+          ]"
           append-inner-icon="mdi-text"
           label="Common Name"
           v-if="caCreationMode !== 'external'"
         ></v-text-field>
 
-        <template v-if="caCreationMode !== 'external' && route.params.ca_id === '_new'">
+        <template
+          v-if="caCreationMode !== 'external' && route.params.ca_id === '_new'"
+        >
           <v-text-field
             v-model="formData.organization"
             :readonly="formDataReadOnly"
@@ -126,7 +135,12 @@
           append-inner-icon="mdi-certificate"
           label="Certificate (PEM)"
           v-if="route.params.ca_id !== '_new' || caCreationMode === 'external'"
-          :rules="[() => (caCreationMode !== 'external' || !!formData.certificate) || 'This field is required']"
+          :rules="[
+            () =>
+              caCreationMode !== 'external' ||
+              !!formData.certificate ||
+              'This field is required'
+          ]"
         ></v-textarea>
 
         <v-textarea
@@ -135,7 +149,12 @@
           append-inner-icon="mdi-key"
           label="Private Key (PEM)"
           v-if="route.params.ca_id === '_new' && caCreationMode === 'external'"
-          :rules="[() => (caCreationMode !== 'external' || !!formData.private_key) || 'This field is required']"
+          :rules="[
+            () =>
+              caCreationMode !== 'external' ||
+              !!formData.private_key ||
+              'This field is required'
+          ]"
         ></v-textarea>
 
         <v-textarea
@@ -156,7 +175,10 @@
           label="Status"
         ></v-text-field>
 
-        <v-divider v-if="route.params.ca_id !== '_new' && formData.crl" class="my-4"></v-divider>
+        <v-divider
+          v-if="route.params.ca_id !== '_new' && formData.crl"
+          class="my-4"
+        ></v-divider>
         <template v-if="route.params.ca_id !== '_new' && formData.crl">
           <v-text-field
             v-model="formData.crl.generation"
@@ -178,7 +200,10 @@
           ></v-text-field>
         </template>
 
-        <v-divider v-if="route.params.ca_id !== '_new'" class="my-4"></v-divider>
+        <v-divider
+          v-if="route.params.ca_id !== '_new'"
+          class="my-4"
+        ></v-divider>
         <div v-if="route.params.ca_id !== '_new'" class="d-flex flex-wrap ga-2">
           <v-btn
             prepend-icon="mdi-download"
@@ -227,7 +252,13 @@
           @click="formRevoke"
           >Revoke
         </v-btn>
-        <v-btn color="primary" variant="text" @click="formSubmit" v-if="route.params.ca_id === '_new'">Submit</v-btn>
+        <v-btn
+          color="primary"
+          variant="text"
+          @click="formSubmit"
+          v-if="route.params.ca_id === '_new'"
+          >Submit</v-btn
+        >
       </v-card-actions>
     </v-form>
   </v-card>
@@ -269,8 +300,8 @@ function dialogWarningEvent(action) {
         formGetData()
       })
     } else if (pendingAction.value === 'delete') {
-      let url = '/api/v1/ca/authorities'
-      api.delete(url, { params: { ca_id: formData.id } }).then(() => {
+      let url = `/api/v1/ca/authorities/${formData.id}`
+      api.delete(url).then(() => {
         router.push({ name: 'CAAuthoritiesSearch' })
       })
     }
@@ -289,12 +320,14 @@ const caChoicesLoading = ref(false)
 
 function getCAChoices() {
   caChoicesLoading.value = true
-  api.get('/api/v1/ca/authorities', { limit: 1000, fields: ['id'] }).then((data) => {
-    if (data && data.result) {
-      caChoices.value = data.result.map((ca) => ca.id)
-    }
-    caChoicesLoading.value = false
-  })
+  api
+    .get('/api/v1/ca/authorities', { limit: 1000, fields: ['id'] })
+    .then((data) => {
+      if (data && data.result) {
+        caChoices.value = data.result.map((ca) => ca.id)
+      }
+      caChoicesLoading.value = false
+    })
 }
 
 function initializeFormState() {
@@ -313,9 +346,12 @@ function initializeFormState() {
 
 initializeFormState()
 
-watch(() => route.params.ca_id, () => {
-  initializeFormState()
-})
+watch(
+  () => route.params.ca_id,
+  () => {
+    initializeFormState()
+  }
+)
 
 function formRevoke() {
   pendingAction.value = 'revoke'
@@ -339,15 +375,27 @@ function downloadFile(content, fileName, contentType) {
 }
 
 function downloadCert() {
-  downloadFile(formData.certificate, `${formData.id}_cert.pem`, 'application/x-pem-file')
+  downloadFile(
+    formData.certificate,
+    `${formData.id}_cert.pem`,
+    'application/x-pem-file'
+  )
 }
 
 function downloadCRL() {
-  downloadFile(formData.crl.crl_pem, `${formData.id}_crl.pem`, 'application/x-pem-file')
+  downloadFile(
+    formData.crl.crl_pem,
+    `${formData.id}_crl.pem`,
+    'application/x-pem-file'
+  )
 }
 
 function downloadChain() {
-  downloadFile(formData.chain.join('\n'), `${formData.id}_chain.pem`, 'application/x-pem-file')
+  downloadFile(
+    formData.chain.join('\n'),
+    `${formData.id}_chain.pem`,
+    'application/x-pem-file'
+  )
 }
 
 function formReset(event) {
@@ -363,19 +411,29 @@ function formSubmit(event) {
   event.preventDefault()
   let url = `/api/v1/ca/authorities/${formData.id}`
   let data = {
-    parent_id: caCreationMode.value === 'internal_sub' ? formData.parent_id : null,
+    parent_id:
+      caCreationMode.value === 'internal_sub' ? formData.parent_id : null,
     cn: caCreationMode.value === 'external' ? null : formData.cn,
-    organization: caCreationMode.value === 'external' ? null : formData.organization,
-    organizational_unit: caCreationMode.value === 'external' ? null : formData.organizational_unit,
+    organization:
+      caCreationMode.value === 'external' ? null : formData.organization,
+    organizational_unit:
+      caCreationMode.value === 'external' ? null : formData.organizational_unit,
     country: caCreationMode.value === 'external' ? null : formData.country,
     state: caCreationMode.value === 'external' ? null : formData.state,
     locality: caCreationMode.value === 'external' ? null : formData.locality,
-    validity_days: caCreationMode.value === 'external' ? null : formData.validity_days,
-    certificate: caCreationMode.value === 'external' ? formData.certificate : null,
-    private_key: caCreationMode.value === 'external' ? formData.private_key : null,
-    external_chain: (caCreationMode.value === 'external' && formData.external_chain_raw) 
-      ? formData.external_chain_raw.split('-----END CERTIFICATE-----').filter(c => c.trim()).map(c => c + '-----END CERTIFICATE-----') 
-      : null
+    validity_days:
+      caCreationMode.value === 'external' ? null : formData.validity_days,
+    certificate:
+      caCreationMode.value === 'external' ? formData.certificate : null,
+    private_key:
+      caCreationMode.value === 'external' ? formData.private_key : null,
+    external_chain:
+      caCreationMode.value === 'external' && formData.external_chain_raw
+        ? formData.external_chain_raw
+            .split('-----END CERTIFICATE-----')
+            .filter((c) => c.trim())
+            .map((c) => c + '-----END CERTIFICATE-----')
+        : null
   }
   api.post(url, data).then((response) => {
     if (response && response.id) {

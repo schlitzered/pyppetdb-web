@@ -34,7 +34,11 @@
           clearable
           @update:search="(search) => fetchFactSuggestions(field, search)"
           @focus="fetchFactSuggestions(field, '')"
-          @update:model-value="(val) => { facts[field] = cleanFactValue(val) }"
+          @update:model-value="
+            (val) => {
+              facts[field] = cleanFactValue(val)
+            }
+          "
         ></v-autocomplete>
 
         <v-divider class="my-4"></v-divider>
@@ -64,10 +68,7 @@
     </v-card-text>
 
     <v-card-text v-if="lookupError">
-      <v-alert
-        type="error"
-        variant="outlined"
-      >
+      <v-alert type="error" variant="outlined">
         {{ lookupError }}
       </v-alert>
     </v-card-text>
@@ -113,7 +114,7 @@ async function fetchAvailableKeys(search) {
     }
     const data = await api.get('/api/v1/hiera/keys/', params, true)
     if (data && data.result) {
-      availableKeys.value = data.result.map(item => item.id)
+      availableKeys.value = data.result.map((item) => item.id)
     } else {
       availableKeys.value = []
     }
@@ -133,7 +134,7 @@ async function fetchFactFieldsFromLevels() {
       const uniquePlaceholders = new Set()
       const regex = /\{([^}]+)\}/g
 
-      data.result.forEach(level => {
+      data.result.forEach((level) => {
         let match
         while ((match = regex.exec(level.id)) !== null) {
           uniquePlaceholders.add(match[1])
@@ -143,7 +144,7 @@ async function fetchFactFieldsFromLevels() {
       factFields.value = Array.from(uniquePlaceholders).sort()
 
       // Initialize fact values
-      factFields.value.forEach(field => {
+      factFields.value.forEach((field) => {
         if (!(field in facts)) {
           facts[field] = ''
         }
@@ -197,9 +198,13 @@ async function fetchFactSuggestions(factName, search) {
     if (search) {
       params.value = search
     }
-    const data = await api.get('/api/v1/nodes/_distinct_fact_values', params, true)
+    const data = await api.get(
+      '/api/v1/nodes/_distinct_fact_values',
+      params,
+      true
+    )
     if (data && data.result) {
-      factSuggestions[factName] = data.result.map(item => item.value)
+      factSuggestions[factName] = data.result.map((item) => item.value)
     } else {
       factSuggestions[factName] = []
     }
@@ -234,7 +239,8 @@ function performLookup() {
     params.fact = factsArray
   }
 
-  api.get(`/api/v1/hiera/lookup/${lookupKeyId.value}`, params)
+  api
+    .get(`/api/v1/hiera/lookup/${lookupKeyId.value}`, params)
     .then((data) => {
       if (data) {
         lookupResult.value = data

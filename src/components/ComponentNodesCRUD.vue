@@ -42,7 +42,11 @@
       </v-expansion-panel-title>
       <v-expansion-panel-text>
         <v-data-table
-          :headers="formDataReadOnly ? tableFactsInjectHeadersReadOnly : tableFactsInjectHeaders"
+          :headers="
+            formDataReadOnly
+              ? tableFactsInjectHeadersReadOnly
+              : tableFactsInjectHeaders
+          "
           :items="tableFactsInjectItems"
           :items-per-page-options="[5, 10, 25, 50]"
           class="elevation-1"
@@ -74,7 +78,11 @@
                 class="mx-2"
                 style="max-width: 250px"
               ></v-text-field>
-              <v-dialog v-if="!formDataReadOnly" v-model="dialogFactsInject" max-width="500px">
+              <v-dialog
+                v-if="!formDataReadOnly"
+                v-model="dialogFactsInject"
+                max-width="500px"
+              >
                 <template v-slot:activator="{ props }">
                   <v-btn
                     color="primary"
@@ -97,14 +105,14 @@
                             v-model="editedFactsInject.key"
                             :readonly="editedFactsInjectIndex !== -1"
                             label="Key"
-                            :rules="[v => !!v || 'Key is required']"
+                            :rules="[(v) => !!v || 'Key is required']"
                           ></v-text-field>
                         </v-col>
                         <v-col cols="12">
                           <v-text-field
                             v-model="editedFactsInject.value"
                             label="Value"
-                            :rules="[v => !!v || 'Value is required']"
+                            :rules="[(v) => !!v || 'Value is required']"
                           ></v-text-field>
                         </v-col>
                       </v-row>
@@ -139,10 +147,7 @@
             >
               mdi-pencil
             </v-icon>
-            <v-icon
-              size="small"
-              @click="deleteFactsInjectItem(item)"
-            >
+            <v-icon size="small" @click="deleteFactsInjectItem(item)">
               mdi-delete
             </v-icon>
           </template>
@@ -301,7 +306,9 @@ const tableFactsSearchValue = ref(route.query.search_value_facts || '')
 const tableFactsPage = ref(Number(route.query.page_facts) || 1)
 const tableFactsItemsPerPage = ref(Number(route.query.limit_facts) || 10)
 const tableFactsInjectSearchKey = ref(route.query.search_key_facts_inject || '')
-const tableFactsInjectSearchValue = ref(route.query.search_value_facts_inject || '')
+const tableFactsInjectSearchValue = ref(
+  route.query.search_value_facts_inject || ''
+)
 const tableFactsSortBy = reactive([])
 const tableExpPanName = 'default'
 const tableExpPan = ref(
@@ -380,7 +387,12 @@ const tableFactsInjectHeaders = [
   }
 ]
 
-function filterItemsByKeyValue(items, keySearch, valueSearch, valueFormatter = (v) => v) {
+function filterItemsByKeyValue(
+  items,
+  keySearch,
+  valueSearch,
+  valueFormatter = (v) => v
+) {
   return items.filter((item) => {
     const keyMatch =
       !keySearch.value ||
@@ -388,7 +400,9 @@ function filterItemsByKeyValue(items, keySearch, valueSearch, valueFormatter = (
 
     const valueMatch =
       !valueSearch.value ||
-      valueFormatter(item.value).toLowerCase().includes(valueSearch.value.toLowerCase())
+      valueFormatter(item.value)
+        .toLowerCase()
+        .includes(valueSearch.value.toLowerCase())
 
     return keyMatch && valueMatch
   })
@@ -402,7 +416,11 @@ const tableFactsInjectItems = computed(() => {
     value
   }))
 
-  return filterItemsByKeyValue(items, tableFactsInjectSearchKey, tableFactsInjectSearchValue)
+  return filterItemsByKeyValue(
+    items,
+    tableFactsInjectSearchKey,
+    tableFactsInjectSearchValue
+  )
 })
 
 const dialogFactsInject = ref(false)
@@ -422,7 +440,12 @@ const formFactsInjectTitle = computed(() => {
 
 const tableFactsItems = computed(() => {
   if (!formData.facts) return []
-  return filterItemsByKeyValue(formData.facts, tableFactsSearchKey, tableFactsSearchValue, formatValue)
+  return filterItemsByKeyValue(
+    formData.facts,
+    tableFactsSearchKey,
+    tableFactsSearchValue,
+    formatValue
+  )
 })
 
 function dialogDeleteEvent(action) {
@@ -493,7 +516,9 @@ function buildFactKeyQuery(item) {
 function buildFactValueQuery(item) {
   const currentFacts = Array.isArray(route.query.fact)
     ? route.query.fact
-    : route.query.fact ? [route.query.fact] : []
+    : route.query.fact
+      ? [route.query.fact]
+      : []
 
   const newFactParam = `${item.key}:eq:str:${item.value}`
   return { fact: [newFactParam, ...currentFacts] }
@@ -579,7 +604,11 @@ function handleFactsTableUpdate(options) {
 function updateUrlQuery() {
   let query = {}
   syncExpPanelToUrl(query, tableExpPanName, tableExpPan.value)
-  syncExpPanelToUrl(query, tableExpPanFactsInjectName, tableExpPanFactsInject.value)
+  syncExpPanelToUrl(
+    query,
+    tableExpPanFactsInjectName,
+    tableExpPanFactsInject.value
+  )
   syncPaginationToUrl(
     query,
     tableFactsPage.value,
@@ -593,7 +622,11 @@ function updateUrlQuery() {
     'search_value_facts',
     tableFactsSearchValue.value
   )
-  syncSimpleStringToUrl(query, 'search_key_facts_inject', tableFactsInjectSearchKey.value)
+  syncSimpleStringToUrl(
+    query,
+    'search_key_facts_inject',
+    tableFactsInjectSearchKey.value
+  )
   syncSimpleStringToUrl(
     query,
     'search_value_facts_inject',

@@ -39,7 +39,12 @@
           v-model="formData.password"
           v-if="formInputPasswordChangeable && !formDataReadOnly"
           :readonly="formDataReadOnly"
-          :rules="[() => (route.params.user !== '_new' || !!formData.password) || 'This field is required']"
+          :rules="[
+            () =>
+              route.params.user !== '_new' ||
+              !!formData.password ||
+              'This field is required'
+          ]"
           :append-inner-icon="formInputPasswordShow ? 'mdi-eye' : 'mdi-eye-off'"
           :type="formInputPasswordShow ? 'text' : 'password'"
           label="Password"
@@ -133,9 +138,12 @@ function initializeFormState() {
 initializeFormState()
 
 // Watch for route parameter changes
-watch(() => route.params.user, () => {
-  initializeFormState()
-})
+watch(
+  () => route.params.user,
+  () => {
+    initializeFormState()
+  }
+)
 
 function formDelete() {
   dialogDeleteShow.value = true

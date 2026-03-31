@@ -129,9 +129,12 @@ function initializeFormState() {
 
 initializeFormState()
 
-watch(() => route.params.cert_id, () => {
-  initializeFormState()
-})
+watch(
+  () => route.params.cert_id,
+  () => {
+    initializeFormState()
+  }
+)
 
 function formReset(event) {
   event.preventDefault()
@@ -143,10 +146,14 @@ function formReset(event) {
 }
 
 function formGetData() {
-  api.get(`/api/v1/ca/authorities/${route.params.ca_id}/certs/${route.params.cert_id}`).then((data) => {
-    if (data) {
-      Object.assign(formData, data)
-    }
-  })
+  api
+    .get(
+      `/api/v1/ca/authorities/${route.params.ca_id}/certs/${route.params.cert_id}`
+    )
+    .then((data) => {
+      if (data) {
+        Object.assign(formData, data)
+      }
+    })
 }
 </script>
