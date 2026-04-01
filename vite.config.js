@@ -14,7 +14,7 @@ export default defineConfig({
     }),
     // https://github.com/vuetifyjs/vuetify-loader/tree/next/packages/vite-plugin
     vuetify({
-      autoImport: true,
+      autoImport: !process.env.VITEST,
     }),
   ],
   define: { "process.env": {} },
@@ -23,6 +23,11 @@ export default defineConfig({
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
     extensions: [".js", ".json", ".jsx", ".mjs", ".ts", ".tsx", ".vue"],
+  },
+  test: {
+    environment: "jsdom",
+    globals: true,
+    exclude: ["tests/e2e/**", "node_modules/**"],
   },
   server: {
     port: 3000,
