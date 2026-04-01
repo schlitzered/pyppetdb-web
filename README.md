@@ -1,5 +1,6 @@
 # pyppetdb-web
 
+
 A modern Vue 3 web application for managing PyppetDB, a PuppetDB replacement.
 
 ## Features
