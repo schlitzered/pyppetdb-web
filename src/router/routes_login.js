@@ -2,6 +2,7 @@ const routeLogin = {
   path: '/login',
   component: () => import('@/layouts/default/LayoutDefault.vue'),
   meta: {
+    hideNav: true,
     breadCrumb: [
       {
         title: 'Login',
@@ -22,6 +23,7 @@ const routeLogout = {
   path: '/login_logout',
   component: () => import('@/layouts/default/LayoutDefault.vue'),
   meta: {
+    hideNav: true,
     breadCrumb: [
       {
         title: 'Login Logout',
@@ -42,6 +44,7 @@ const routeLoginError = {
   path: '/login_error',
   component: () => import('@/layouts/default/LayoutDefault.vue'),
   meta: {
+    hideNav: true,
     breadCrumb: [
       {
         title: 'Login Error',

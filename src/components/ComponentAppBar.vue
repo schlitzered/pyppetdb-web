@@ -1,7 +1,7 @@
 <template>
   <!-- AppBar -->
   <v-app-bar
-    v-if="route.name !== 'Login'"
+    v-if="!route.meta.hideNav"
     app
     fixed
     elevation="10"

@@ -1,6 +1,6 @@
 <template>
   <v-navigation-drawer
-    v-if="route.name !== 'Login'"
+    v-if="!route.meta.hideNav"
     v-model="drawer"
     :rail="rail"
     permanent
