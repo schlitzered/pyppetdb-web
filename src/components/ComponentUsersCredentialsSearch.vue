@@ -53,8 +53,11 @@ const {
   tableItemsPerPageOptions,
   tableTotalItems,
   tableSortBy,
-  getSearchDataTableEvent
+  getSearchDataTableEvent,
+  reload
 } = useDataTable(tableConfig)
+
+defineExpose({ reload })
 
 const tableHeaders = [
   { title: 'User Credential ID', key: 'id', sortable: true },

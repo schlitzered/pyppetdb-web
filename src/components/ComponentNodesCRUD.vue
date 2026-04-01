@@ -292,6 +292,7 @@ import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
 
 import api from '@/api/common'
 import { apiErrorStore } from '@/store/api_error'
+import { useCrudReload } from '@/common/crud_generic'
 
 const apiError = apiErrorStore()
 
@@ -579,6 +580,9 @@ function formSubmit(event) {
     formGetNodeData()
   })
 }
+
+const { reload } = useCrudReload(formGetNodeData)
+defineExpose({ reload })
 
 function formGetNodeData() {
   api.get(`/api/v1/nodes/${route.params.node}`).then((data) => {

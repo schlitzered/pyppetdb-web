@@ -87,6 +87,7 @@ import { useRoute } from 'vue-router'
 import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
 
 import api from '@/api/common'
+import { useCrudReload } from '@/common/crud_generic'
 
 const route = useRoute()
 
@@ -144,6 +145,9 @@ function formReset(event) {
     form.value.resetValidation()
   })
 }
+
+const { reload } = useCrudReload(formGetData)
+defineExpose({ reload })
 
 function formGetData() {
   api

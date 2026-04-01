@@ -4,6 +4,8 @@
       <v-toolbar-title>
         {{ navTitle }}
       </v-toolbar-title>
+      <v-spacer></v-spacer>
+      <v-btn icon="mdi-reload" @click="$emit('reload')"></v-btn>
       <div v-if="navItems.length">
         <v-menu open-on-hover>
           <template v-slot:activator="{ props }">
@@ -36,6 +38,8 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { loginDataStore } from '@/store/login_data'
+
+defineEmits(['reload'])
 
 const loginData = loginDataStore()
 const route = useRoute()

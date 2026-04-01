@@ -69,6 +69,7 @@ import { useRoute, useRouter } from 'vue-router'
 import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
 
 import api from '@/api/common'
+import { useCrudReload } from '@/common/crud_generic'
 
 const props = defineProps({
   modelType: {
@@ -395,6 +396,9 @@ function formSubmit(event) {
     }
   })
 }
+
+const { reload } = useCrudReload(formGetData)
+defineExpose({ reload })
 
 function formGetData() {
   if (route.params.key_model_id === '_new') {

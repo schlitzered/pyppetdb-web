@@ -91,8 +91,11 @@ const {
   formSearchBy,
   getSearchData,
   getSearchDataTableEvent,
-  getSearchDataExpPanelEvent
+  getSearchDataExpPanelEvent,
+  reload
 } = useDataTable(tableConfig)
+
+defineExpose({ reload })
 
 const tableHeaders = [
   { title: 'Report ID', key: 'id', sortable: true },

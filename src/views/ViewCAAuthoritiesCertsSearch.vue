@@ -1,11 +1,14 @@
 <template>
   <v-container fluid class="pa-0">
-    <ComponentGenericToolBar />
-    <ComponentCAAuthoritiesCertsSearch />
+    <ComponentGenericToolBar @reload="searchComponent.reload()" />
+    <ComponentCAAuthoritiesCertsSearch ref="searchComponent" />
   </v-container>
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import ComponentGenericToolBar from '@/components/ComponentGenericToolBar.vue'
 import ComponentCAAuthoritiesCertsSearch from '@/components/ComponentCAAuthoritiesCertsSearch.vue'
+
+const searchComponent = ref(null)
 </script>

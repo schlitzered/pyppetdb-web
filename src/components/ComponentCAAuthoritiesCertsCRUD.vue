@@ -83,6 +83,7 @@
 <script setup>
 import { reactive, ref, nextTick, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useCrudReload } from '@/common/crud_generic'
 
 import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
 
@@ -144,6 +145,9 @@ function formReset(event) {
     form.value.resetValidation()
   })
 }
+
+const { reload } = useCrudReload(formGetData)
+defineExpose({ reload })
 
 function formGetData() {
   api

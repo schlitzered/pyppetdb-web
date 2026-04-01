@@ -55,7 +55,7 @@ export function useDataTable(config) {
     return buildSearchParams(formSearchBy, searchFormSchema)
   }
 
-  function getSearchData(event) {
+  function getSearchData(event, force = false) {
     let query = {}
 
     if (event.itemsPerPage === -1) {
@@ -88,7 +88,7 @@ export function useDataTable(config) {
       query: query
     })
 
-    if (JSON.stringify(_params) === JSON.stringify(oldUrlParams)) {
+    if (!force && JSON.stringify(_params) === JSON.stringify(oldUrlParams)) {
       return
     }
     oldUrlParams = _params
@@ -106,7 +106,7 @@ export function useDataTable(config) {
     })
   }
 
-  function getSearchDataInputEvent() {
+  function getSearchDataInputEvent(force = false) {
     let _event = {
       page: 1,
       itemsPerPage: tableItemsPerPage.value,
@@ -114,7 +114,7 @@ export function useDataTable(config) {
       searchBy: getParamsSearchBy()
     }
     tablePage.value = 1
-    getSearchData(_event)
+    getSearchData(_event, force)
   }
 
   function getSearchDataExpPanelEvent() {
@@ -162,7 +162,8 @@ export function useDataTable(config) {
     getSearchData: getSearchDataInputEvent,
     getSearchDataTableEvent,
     getSearchDataExpPanelEvent,
-    getParamsSearchBy
+    getParamsSearchBy,
+    reload: () => getSearchDataInputEvent(true)
   }
 }
 

@@ -68,6 +68,7 @@
 <script setup>
 import { reactive, ref, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useCrudReload } from '@/common/crud_generic'
 
 import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
 
@@ -181,6 +182,9 @@ function formSubmit(event) {
     }
   })
 }
+
+const { reload } = useCrudReload(formGetData)
+defineExpose({ reload })
 
 function formGetData() {
   if (route.params.space_id === '_new') {

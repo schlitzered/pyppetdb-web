@@ -93,8 +93,11 @@ const {
   formSearchBy,
   getSearchData,
   getSearchDataTableEvent,
-  getSearchDataExpPanelEvent
+  getSearchDataExpPanelEvent,
+  reload
 } = useDataTable(tableConfig)
+
+defineExpose({ reload })
 
 const tableHeaders = [
   { title: 'Cert ID', key: 'id', sortable: true },

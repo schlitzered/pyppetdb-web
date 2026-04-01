@@ -80,6 +80,7 @@ import { useRoute, useRouter } from 'vue-router'
 import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
 
 import api from '@/api/common'
+import { useCrudReload } from '@/common/crud_generic'
 import { loginDataStore } from '@/store/login_data'
 
 const loginData = loginDataStore()
@@ -186,6 +187,9 @@ function formSubmit(event) {
     }
   })
 }
+
+const { reload } = useCrudReload(formGetData)
+defineExpose({ reload })
 
 function formGetData() {
   formData['password'] = ''

@@ -180,6 +180,7 @@ import { reactive, ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import api from '@/api/common'
+import { useCrudReload } from '@/common/crud_generic'
 import { syncSimpleStringToUrl } from '@/common/url_state_sync'
 import { syncExpPanelToUrl } from '@/common/url_state_sync'
 import { syncPaginationToUrl } from '@/common/url_state_sync'
@@ -416,6 +417,9 @@ function updateUrlQuery() {
     query: query
   })
 }
+
+const { reload } = useCrudReload(formGetData)
+defineExpose({ reload })
 
 function formGetData() {
   api

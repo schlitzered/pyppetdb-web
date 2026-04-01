@@ -253,6 +253,8 @@ function performLookup() {
     })
 }
 
+defineExpose({ reload: performLookup })
+
 function formatResult(result) {
   if (typeof result === 'object') {
     return JSON.stringify(result, null, 2)
