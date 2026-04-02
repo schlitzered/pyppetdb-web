@@ -2,7 +2,7 @@
   <ComponentDialogWarning
     :msg="dialogDeleteMsg"
     :show="dialogDeleteShow"
-    @reponse="(action) => dialogDeleteEvent(action)"
+    @response="(action) => dialogDeleteEvent(action)"
   />
   <v-card>
     <v-form ref="form" v-model="formDataValid">
