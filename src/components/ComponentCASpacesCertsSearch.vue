@@ -73,7 +73,7 @@ const route = useRoute()
 const tableConfig = {
   apiEndpoint: `/api/v1/ca/spaces/${route.params.space_id}/certs`,
   routeName: 'CASpacesCertsSearch',
-  fields: ['id', 'cn', 'status', 'created'],
+  fields: ['id', 'cn', 'status', 'created', 'not_before', 'not_after'],
   searchFormSchema: [
     { key: 'cert_id', type: 'string' },
     { key: 'cn', type: 'string' },
@@ -101,9 +101,11 @@ defineExpose({ reload })
 
 const tableHeaders = [
   { title: 'Cert ID', key: 'id', sortable: true },
-  { title: 'Common Name', key: 'cn', sortable: false },
-  { title: 'Status', key: 'status', sortable: false },
-  { title: 'Created', key: 'created', sortable: false }
+  { title: 'Common Name', key: 'cn', sortable: true },
+  { title: 'Status', key: 'status', sortable: true },
+  { title: 'Not Before', key: 'not_before', sortable: true },
+  { title: 'Not After', key: 'not_after', sortable: true },
+  { title: 'Created', key: 'created', sortable: true }
 ]
 
 const tableStatusDropdownOptions = [

@@ -276,6 +276,34 @@
         </v-data-table>
       </v-expansion-panel-text>
     </v-expansion-panel>
+    <v-expansion-panel value="remote">
+      <v-expansion-panel-title>
+        <v-icon class="me-2">mdi-remote</v-icon>
+        Remote Information
+      </v-expansion-panel-title>
+      <v-expansion-panel-text>
+        <v-row>
+          <v-col cols="12" sm="6">
+            <strong>Connected:</strong>
+            <v-icon
+              :color="formData.remote_agent?.connected ? 'success' : 'error'"
+              class="me-1"
+            >
+              {{
+                formData.remote_agent?.connected
+                  ? 'mdi-check-circle'
+                  : 'mdi-close-circle'
+              }}
+            </v-icon>
+            {{ formData.remote_agent?.connected ? 'Yes' : 'No' }}
+          </v-col>
+          <v-col cols="12" sm="6">
+            <strong>Via:</strong>
+            {{ formData.remote_agent?.via || 'N/A' }}
+          </v-col>
+        </v-row>
+      </v-expansion-panel-text>
+    </v-expansion-panel>
   </v-expansion-panels>
 </template>
 
@@ -596,6 +624,10 @@ function formGetNodeData() {
       formData['facts'] = flattenFacts(data['facts'])
       formData['facts_inject'] = data['facts_inject'] || {}
       formData['report'] = data['report']
+      formData['remote_agent'] = data['remote_agent'] || {
+        connected: false,
+        via: ''
+      }
     }
   })
 }
