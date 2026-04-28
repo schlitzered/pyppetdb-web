@@ -17,7 +17,8 @@ export function useDataTable(config) {
     defaultItemsPerPage = 10,
     tableExpPanName = 'default',
     dataTransformers = {},
-    dataTableType = 'server' // 'server', 'client', 'virtual', etc.
+    dataTableType = 'server', // 'server', 'client', 'virtual', etc.
+    defaultSortBy = []
   } = config
 
   const route = useRoute()
@@ -46,6 +47,10 @@ export function useDataTable(config) {
       key: route.query.sort,
       order: route.query.sort_order === 'ascending' ? 'asc' : 'desc'
     })
+  } else if (defaultSortBy && defaultSortBy.length > 0) {
+    for (const item of defaultSortBy) {
+      tableSortBy.push(item)
+    }
   }
 
   const formSearchBy = reactive(createSearchForm(searchFormSchema))
