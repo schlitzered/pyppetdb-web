@@ -542,9 +542,11 @@ function formGetData() {
         
         const addTempNames = (p) => {
           const withTemp = {}
-          Object.entries(p).forEach(([k, v]) => {
-            withTemp[k] = { ...v, _temp_name: k }
-          })
+          if (p) {
+            Object.entries(p).forEach(([k, v]) => {
+              withTemp[k] = { ...v, _temp_name: k }
+            })
+          }
           return withTemp
         }
 
