@@ -27,21 +27,10 @@
             </v-expansion-panel-title>
             <v-expansion-panel-text>
               <v-text-field
-                v-model="formSearchBy.cert_id"
-                label="Filter Cert ID"
+                v-model="formSearchBy._id"
+                label="Filter Definition ID"
                 @update:modelValue="getSearchData"
               ></v-text-field>
-              <v-text-field
-                v-model="formSearchBy.cn"
-                label="Filter Common Name"
-                @update:modelValue="getSearchData"
-              ></v-text-field>
-              <v-select
-                v-model="formSearchBy.status"
-                :items="tableStatusDropdownOptions"
-                label="Filter Status"
-                @update:modelValue="getSearchData"
-              ></v-select>
             </v-expansion-panel-text>
           </v-expansion-panel>
         </v-expansion-panels>
@@ -50,8 +39,8 @@
         <a
           :href="
             router.resolve({
-              name: 'CAAuthoritiesCertsCRUD',
-              params: { ca_id: route.params.ca_id, cert_id: item.id }
+              name: 'JobsDefinitionsCRUD',
+              params: { definition_id: item.id }
             }).href
           "
           @click.left.prevent
@@ -65,20 +54,15 @@
 
 <script setup>
 import { useDataTable } from '@/common/datatable_generic'
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
 
 const router = useRouter()
-const route = useRoute()
 
 const tableConfig = {
-  apiEndpoint: `/api/v1/ca/authorities/${route.params.ca_id}/certs`,
-  routeName: 'CAAuthoritiesCertsSearch',
-  fields: ['id', 'cn', 'status', 'created', 'not_before', 'not_after'],
-  searchFormSchema: [
-    { key: 'cert_id', type: 'string' },
-    { key: 'cn', type: 'string' },
-    { key: 'status', type: 'string' }
-  ]
+  apiEndpoint: '/api/v1/jobs/definitions',
+  routeName: 'JobsDefinitionsSearch',
+  fields: ['id', 'executable', 'user', 'group'],
+  searchFormSchema: [{ key: '_id', type: 'string' }]
 }
 
 const {
@@ -100,26 +84,16 @@ const {
 defineExpose({ reload })
 
 const tableHeaders = [
-  { title: 'Cert ID', key: 'id', sortable: true },
-  { title: 'Common Name', key: 'cn', sortable: true },
-  { title: 'Status', key: 'status', sortable: true },
-  { title: 'Not Before', key: 'not_before', sortable: true },
-  { title: 'Not After', key: 'not_after', sortable: true },
-  { title: 'Created', key: 'created', sortable: true }
-]
-
-const tableStatusDropdownOptions = [
-  { title: 'Unset', value: '' },
-  { title: 'Requested', value: 'requested' },
-  { title: 'Signed', value: 'signed' },
-  { title: 'Revoked', value: 'revoked' },
-  { title: 'Expired', value: 'expired' }
+  { title: 'Definition ID', key: 'id', sortable: true },
+  { title: 'Executable', key: 'executable', sortable: true },
+  { title: 'User', key: 'user', sortable: true },
+  { title: 'Group', key: 'group', sortable: true }
 ]
 
 function onRowClick(item, item_data) {
   router.push({
-    name: 'CAAuthoritiesCertsCRUD',
-    params: { ca_id: route.params.ca_id, cert_id: item_data.item.id }
+    name: 'JobsDefinitionsCRUD',
+    params: { definition_id: item_data.item.id }
   })
 }
 </script>

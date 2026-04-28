@@ -17,6 +17,8 @@ import routesCAAuthorities from './routes_ca_authorities.js'
 import routesCAAuthoritiesCerts from './routes_ca_authorities_certs.js'
 import routesCASpaces from './routes_ca_spaces.js'
 import routesCASpacesCerts from './routes_ca_spaces_certs.js'
+import routesPyppetdbNodes from './routes_pyppetdb_nodes.js'
+import routesJobs from './routes_jobs.js'
 
 const routes = [
   ...routesLogin,
@@ -36,6 +38,8 @@ const routes = [
   ...routesCAAuthoritiesCerts,
   ...routesCASpaces,
   ...routesCASpacesCerts,
+  ...routesPyppetdbNodes,
+  ...routesJobs,
   {
     path: '/',
     component: () => import('@/layouts/default/LayoutDefault.vue'),

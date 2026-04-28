@@ -33,31 +33,31 @@ export default defineConfig({
     port: 3000,
     proxy: {
       "/api/": {
-        target: "http://localhost:8000",
+        target: "https://localhost:8000",
         changeOrigin: false,
         secure: false,
         ws: true,
       },
       "/docs": {
-        target: "http://localhost:8000",
+        target: "https://localhost:8000",
         changeOrigin: false,
         secure: false,
         ws: true,
       },
       "/oauth": {
-        target: "http://localhost:8000",
+        target: "https://localhost:8000",
         changeOrigin: false,
         secure: false,
         ws: true,
       },
       "/openapi.json": {
-        target: "http://localhost:8000",
+        target: "https://localhost:8000",
         changeOrigin: false,
         secure: false,
         ws: true,
       },
       "/versions": {
-        target: "http://localhost:8000",
+        target: "https://localhost:8000",
         changeOrigin: false,
         secure: false,
         ws: true,
