@@ -4,6 +4,7 @@ import { defineStore } from 'pinia'
 export const loginDataStore = defineStore('loginData', () => {
   const timestamp = ref(0)
   const userData = ref({})
+  const isLoaded = ref(false)
 
   const isTimestampOlderThan = (seconds) => {
     const currentTimeStamp = Date.now()
@@ -28,11 +29,17 @@ export const loginDataStore = defineStore('loginData', () => {
 
   function setUserData(data) {
     userData.value = data
+    isLoaded.value = true
+  }
+
+  function resetIsLoaded() {
+    isLoaded.value = false
   }
 
   return {
     timestamp,
     userData,
+    isLoaded,
     isTimestampOlderThan,
     getUserData,
     getUserDataId,
@@ -40,6 +47,7 @@ export const loginDataStore = defineStore('loginData', () => {
     resetTimestamp,
     resetUserData,
     setTimestamp,
-    setUserData
+    setUserData,
+    resetIsLoaded
   }
 })

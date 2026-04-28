@@ -2,7 +2,7 @@
 <script setup>
 import api from '@/api/common'
 import { loginDataStore } from '@/store/login_data'
-import { onMounted, onBeforeUnmount, ref } from 'vue'
+import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 const loginData = loginDataStore()
@@ -14,18 +14,26 @@ function upDateUserData() {
     if (data) {
       loginData.setUserData(data)
     }
+  }).catch(() => {
+    loginData.resetIsLoaded()
   })
 }
 
-onMounted(async () => {
-  if (!route.name.startsWith('Login')) {
-    upDateUserData()
+watch(() => route.name, (newName) => {
+  if (newName && !newName.startsWith('Login')) {
+    if (!loginData.isLoaded) {
+      upDateUserData()
+    }
   } else {
     loginData.resetTimestamp()
     loginData.resetUserData()
+    loginData.resetIsLoaded()
   }
+}, { immediate: true })
+
+onMounted(async () => {
   intervalId.value = setInterval(() => {
-    if (!route.name.startsWith('Login')) {
+    if (route.name && !route.name.startsWith('Login')) {
       if (loginData.isTimestampOlderThan(60)) {
         loginData.setTimestamp()
         upDateUserData()

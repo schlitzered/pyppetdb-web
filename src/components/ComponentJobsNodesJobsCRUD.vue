@@ -409,31 +409,35 @@ defineExpose({ reload: formGetData })
 
 <style scoped>
 .log-container {
-  background-color: #fafafa;
+  background-color: rgb(var(--v-theme-surface));
+  color: rgb(var(--v-theme-on-surface));
   overflow-y: auto;
 }
 .log-line {
   font-family: monospace;
   white-space: pre-wrap;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
   padding: 2px 8px;
   display: flex;
 }
 .log-line.selected-line {
-  background-color: #fffbdd;
+  background-color: rgba(var(--v-theme-primary), 0.2);
 }
 .line-nr {
-  color: #888;
+  color: rgb(var(--v-theme-on-surface));
+  opacity: 0.6;
   width: 50px;
   flex-shrink: 0;
   cursor: pointer;
 }
 .line-nr:hover {
-  color: #1867c0;
+  color: rgb(var(--v-theme-primary));
+  opacity: 1;
   text-decoration: underline;
 }
 .timestamp {
-  color: #666;
+  color: rgb(var(--v-theme-on-surface));
+  opacity: 0.5;
   font-size: 0.85em;
   margin-right: 10px;
   flex-shrink: 0;
