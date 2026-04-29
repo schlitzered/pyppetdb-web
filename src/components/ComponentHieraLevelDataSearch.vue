@@ -131,7 +131,7 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 
 const tableConfig = {
-  apiEndpoint: '/api/v1/hiera/data/',
+  apiEndpoint: '/api/v1/hiera/data',
   routeName: 'HieraLevelDataSearch',
   fields: ['id', 'level_id', 'key_id', 'priority', 'facts', 'data'],
   searchFormSchema: [

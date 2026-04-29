@@ -14,6 +14,14 @@
           @keyup.enter="performLookup"
         ></v-autocomplete>
 
+        <v-switch
+          v-model="lookupMerge"
+          label="Merge data"
+          color="primary"
+          hide-details
+          inset
+        ></v-switch>
+
         <v-divider class="my-4"></v-divider>
 
         <h3 class="mb-3">Facts (Optional)</h3>
@@ -82,6 +90,7 @@ import api from '@/api/common'
 const form = ref(null)
 const formValid = ref(false)
 const lookupKeyId = ref('')
+const lookupMerge = ref(false)
 const facts = reactive({})
 const loading = ref(false)
 const lookupResult = ref(null)
@@ -112,7 +121,7 @@ async function fetchAvailableKeys(search) {
     if (search) {
       params.key_id = search
     }
-    const data = await api.get('/api/v1/hiera/keys/', params, true)
+    const data = await api.get('/api/v1/hiera/keys', params, true)
     if (data && data.result) {
       availableKeys.value = data.result.map((item) => item.id)
     } else {
@@ -129,7 +138,7 @@ async function fetchAvailableKeys(search) {
 async function fetchFactFieldsFromLevels() {
   loadingLevels.value = true
   try {
-    const data = await api.get('/api/v1/hiera/levels/', { limit: 1000 }, true)
+    const data = await api.get('/api/v1/hiera/levels', { limit: 1000 }, true)
     if (data && data.result) {
       const uniquePlaceholders = new Set()
       const regex = /\{([^}]+)\}/g
@@ -234,7 +243,9 @@ function performLookup() {
   })
 
   // Build query parameters
-  const params = {}
+  const params = {
+    merge: lookupMerge.value
+  }
   if (factsArray.length > 0) {
     params.fact = factsArray
   }
