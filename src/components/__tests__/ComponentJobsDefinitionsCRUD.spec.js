@@ -1,6 +1,22 @@
-import { describe, it, expect, vi } from 'vitest'
+/*
+ * Copyright 2026 Stephan Schultchen
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ComponentJobsDefinitionsCRUD from '../ComponentJobsDefinitionsCRUD.vue'
+import api from '@/api/common'
 
 // Mock dependencies globally
 vi.mock('vue-router', () => ({
@@ -10,7 +26,7 @@ vi.mock('vue-router', () => ({
   })),
   useRoute: vi.fn(() => ({
     name: '',
-    params: {},
+    params: { definition_id: 'test-def' },
     query: {},
     meta: {}
   })),
@@ -54,17 +70,16 @@ vi.mock('@/store/api_error', () => ({
 }))
 
 describe('ComponentJobsDefinitionsCRUD', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   it('mounts successfully', () => {
     const wrapper = mount(ComponentJobsDefinitionsCRUD, {
       global: {
         stubs: {
           'ComponentDialogWarning': true,
           'ComponentGenericToolBar': true,
-          'ComponentNodesSearch': true,
-          'ComponentNodesCrud': true,
-          'ComponentUsersSearch': true,
-          'ComponentUsersCrud': true,
-          // Add all standard Vuetify and custom components to be safe
           'v-card': true,
           'v-card-title': true,
           'v-card-text': true,
@@ -73,54 +88,60 @@ describe('ComponentJobsDefinitionsCRUD', () => {
           'v-switch': true,
           'v-text-field': true,
           'v-textarea': true,
-          'v-expansion-panels': true,
-          'v-expansion-panel': true,
-          'v-expansion-panel-title': true,
-          'v-expansion-panel-text': true,
-          'v-data-table': true,
-          'v-data-table-server': {
-             template: '<div><slot name="top" /><slot /></div>'
-          },
-          'v-toolbar': true,
-          'v-toolbar-title': true,
-          'v-spacer': true,
-          'v-btn': true,
-          'v-divider': true,
-          'v-icon': true,
-          'v-row': true,
-          'v-col': true,
           'v-select': true,
+          'v-divider': true,
+          'v-btn': true,
+          'v-spacer': true,
+          'v-combobox': true,
+          'v-label': true,
           'v-chip': true,
-          'v-menu': true,
-          'v-list': true,
-          'v-list-group': true,
-          'v-list-item': true,
-          'v-list-item-title': true,
-          'v-list-item-subtitle': true,
           'v-list-subheader': true,
-          'v-container': true,
-          'v-tooltip': true,
-          'v-app-bar': true,
-          'v-app-bar-title': true,
-          'v-app-bar-nav-icon': true,
-          'v-dialog': true,
-          'v-main': true,
-          'v-app': true,
-          'v-navigation-drawer': true,
-          'router-view': true,
-          'router-link': true,
-          'v-alert': true,
-          'v-progress-linear': true,
-          'v-progress-circular': true,
-          'v-footer': true,
-          'v-breadcrumbs': true,
-          'v-breadcrumbs-item': true,
-          'v-breadcrumbs-divider': true,
-          'v-infinite-scroll': true
+          'v-row': true,
+          'v-col': true
         }
       }
     })
     
     expect(wrapper.exists()).toBe(true)
+  })
+
+  it('handles dialogDeleteEvent correctly', async () => {
+    const wrapper = mount(ComponentJobsDefinitionsCRUD, {
+      global: {
+        stubs: {
+          'ComponentDialogWarning': true,
+          'v-card': true,
+          'v-card-text': true,
+          'v-card-actions': true,
+          'v-form': true,
+          'v-switch': true,
+          'v-text-field': true,
+          'v-textarea': true,
+          'v-select': true,
+          'v-divider': true,
+          'v-btn': true,
+          'v-spacer': true,
+          'v-combobox': true,
+          'v-label': true,
+          'v-chip': true,
+          'v-list-subheader': true,
+          'v-row': true,
+          'v-col': true
+        }
+      }
+    })
+
+    // Simulate clicking delete which calls formDelete
+    wrapper.vm.formDelete()
+    expect(wrapper.vm.dialogDeleteShow).toBe(true)
+
+    // Set formData.id
+    wrapper.vm.formData.id = 'test-def'
+
+    // Simulate dialog response with 'confirm'
+    await wrapper.vm.dialogDeleteEvent('confirm')
+    
+    expect(api.delete).toHaveBeenCalledWith('/api/v1/jobs/definitions/test-def')
+    expect(wrapper.vm.dialogDeleteShow).toBe(false)
   })
 })

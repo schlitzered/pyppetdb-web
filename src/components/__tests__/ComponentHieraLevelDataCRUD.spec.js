@@ -1,3 +1,18 @@
+/*
+ * Copyright 2026 Stephan Schultchen
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ComponentHieraLevelDataCRUD from '../ComponentHieraLevelDataCRUD.vue'
@@ -51,6 +66,17 @@ vi.mock('@/store/api_error', () => ({
   apiErrorStore: vi.fn(() => ({
     setRedirect: vi.fn()
   }))
+}))
+
+vi.mock('@jsonforms/vue', () => ({
+  JsonForms: {
+    name: 'JsonForms',
+    render: () => null
+  }
+}))
+
+vi.mock('@jsonforms/vue-vuetify', () => ({
+  vuetifyRenderers: []
 }))
 
 describe('ComponentHieraLevelDataCRUD', () => {
@@ -116,7 +142,11 @@ describe('ComponentHieraLevelDataCRUD', () => {
           'v-breadcrumbs': true,
           'v-breadcrumbs-item': true,
           'v-breadcrumbs-divider': true,
-          'v-infinite-scroll': true
+          'v-infinite-scroll': true,
+          'v-btn-toggle': true,
+          'v-autocomplete': true,
+          'v-label': true,
+          'json-forms': true
         }
       }
     })

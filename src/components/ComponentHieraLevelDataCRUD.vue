@@ -1,3 +1,18 @@
+/*
+ * Copyright 2026 Stephan Schultchen
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 <template>
   <ComponentDialogWarning
     :msg="dialogDeleteMsg"
@@ -7,14 +22,20 @@
   <v-card>
     <v-form ref="form" v-model="formDataValid">
       <v-card-text>
+        <!-- Section 1: Top Switch -->
         <v-switch
+          key="hiera-field-modify-switch"
+          v-show="formButtonEditShow"
           v-model="formDataReadOnly"
-          v-if="formButtonEditShow"
           :true-value="false"
           :false-value="true"
           label="Modify"
+          class="mb-4"
         ></v-switch>
+
+        <!-- Section 2: Core Identification Fields -->
         <v-autocomplete
+          key="hiera-field-level-id"
           v-model="formData.level_id"
           :readonly="formInputLevelIdReadOnly"
           :rules="[validateLevelId]"
@@ -24,15 +45,19 @@
           label="Level ID"
           @update:search="fetchAvailableLevels"
           @focus="fetchAvailableLevels('')"
+          class="mb-4"
         ></v-autocomplete>
         <v-text-field
+          key="hiera-field-data-id"
           v-model="formData.id"
           :readonly="formInputDataIdReadOnly"
           :rules="[() => !!formData.id || 'This field is required']"
           append-inner-icon="mdi-identifier"
           label="Data ID"
+          class="mb-4"
         ></v-text-field>
         <v-autocomplete
+          key="hiera-field-key-id"
           v-model="formData.key_id"
           :readonly="formInputKeyIdReadOnly"
           :rules="[validateKeyId]"
@@ -42,8 +67,10 @@
           label="Key ID"
           @update:search="fetchAvailableKeys"
           @focus="fetchAvailableKeys('')"
+          class="mb-4"
         ></v-autocomplete>
         <v-text-field
+          key="hiera-field-priority"
           v-model.number="formData.priority"
           :readonly="formInputPriorityReadOnly"
           :rules="[
@@ -56,37 +83,89 @@
           type="number"
           append-inner-icon="mdi-numeric"
           label="Priority"
+          class="mb-4"
         ></v-text-field>
-        <v-autocomplete
-          v-for="field in factFields"
-          :key="field"
-          v-model="factValues[field]"
-          :readonly="formInputFactsReadOnly"
-          :label="`Fact: ${field}`"
-          :rules="[(v) => !!cleanFactValue(v) || 'This field is required']"
-          :items="getFactItems(field)"
-          :loading="loadingFactSuggestions[field]"
-          append-inner-icon="mdi-tag"
-          @update:search="(search) => fetchFactSuggestions(field, search)"
-          @focus="fetchFactSuggestions(field, '')"
-        ></v-autocomplete>
+
+        <!-- Section 3: Dynamic Fact Fields -->
+        <template v-for="field in factFields" :key="`hiera-fact-field-${field}`">
+          <v-autocomplete
+            v-model="factValues[field]"
+            :readonly="formInputFactsReadOnly"
+            :label="`Fact: ${field}`"
+            :rules="[(v) => !!cleanFactValue(v) || 'This field is required']"
+            :items="getFactItems(field)"
+            :loading="loadingFactSuggestions[field]"
+            append-inner-icon="mdi-tag"
+            @update:search="(search) => fetchFactSuggestions(field, search)"
+            @focus="fetchFactSuggestions(field, '')"
+            class="mb-4"
+          ></v-autocomplete>
+        </template>
+
+        <!-- Section 4: Data Editor Toggle Header -->
+        <div
+          v-if="keyModelSchema"
+          key="hiera-data-toggle-row"
+          class="d-flex align-center mb-2 mt-4"
+        >
+          <div class="v-label theme--light">
+            {{ `Data (${dataType})` }}
+          </div>
+          <v-spacer></v-spacer>
+          <v-btn-toggle
+            v-model="useSchemaForm"
+            density="compact"
+            mandatory
+            color="primary"
+            variant="outlined"
+          >
+            <v-btn :value="true" prepend-icon="mdi-form-select">Form</v-btn>
+            <v-btn :value="false" prepend-icon="mdi-code-json">JSON</v-btn>
+          </v-btn-toggle>
+        </div>
+
+        <!-- Section 5: Schema Form View -->
+        <div
+          v-if="keyModelSchema && useSchemaForm"
+          key="hiera-data-schema-form-container"
+          class="schema-form-container pa-4 border rounded mb-4"
+          :class="{ 'bg-grey-lighten-4': formDataReadOnly }"
+        >
+          <JsonForms
+            :data="schemaFormData"
+            :schema="resolvedSchema"
+            :renderers="renderers"
+            :readonly="formDataReadOnly"
+            @change="handleSchemaFormChange"
+          />
+        </div>
+
+        <!-- Section 6: Raw JSON View -->
         <v-textarea
+          v-if="!useSchemaForm || !keyModelSchema"
+          key="hiera-data-raw-json-textarea"
           v-model="formData.dataJson"
           :readonly="formDataReadOnly || !keyModelSchema"
           :rules="[validateData]"
           append-inner-icon="mdi-code-json"
-          :label="keyModelSchema ? `Data (${dataType})` : 'Data'"
+          :label="
+            !keyModelSchema ? 'Data' : `Data (${dataType}) - Raw JSON`
+          "
           :placeholder="
             keyModelSchema ? defaultDataValue : 'Waiting for valid key id...'
           "
           rows="8"
+          class="mb-4"
         ></v-textarea>
+
+        <!-- Section 7: Model Information -->
         <v-alert
           v-if="keyModelId && keyModelType"
+          key="hiera-data-model-alert"
           type="info"
           density="compact"
           variant="tonal"
-          class="mt-2"
+          class="mt-4"
         >
           Model:
           <router-link
@@ -130,6 +209,8 @@
 import { reactive, ref, nextTick, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Ajv from 'ajv'
+import { JsonForms } from '@jsonforms/vue'
+import { vuetifyRenderers } from '@jsonforms/vue-vuetify'
 
 import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
 
@@ -138,6 +219,156 @@ import { useCrudReload } from '@/common/crud_generic'
 
 const route = useRoute()
 const router = useRouter()
+
+const renderers = Object.freeze(vuetifyRenderers)
+const useSchemaForm = ref(true)
+const schemaFormData = ref({})
+
+// Guard to prevent circular updates
+let isSyncing = false
+
+// Helper to normalize schema for better JsonForms rendering
+// Specifically handles "anyOf": [{type: "X"}, {type: "null"}] patterns
+// and transforms them into standard types that renderers understand better
+function normalizeSchema(schema) {
+  if (!schema || typeof schema !== 'object' || Array.isArray(schema)) {
+    return schema
+  }
+
+  // Deep clone to avoid mutating the original ref
+  const newSchema = JSON.parse(JSON.stringify(schema))
+
+  const walk = (s) => {
+    if (!s || typeof s !== 'object' || Array.isArray(s)) return
+
+    const nullableFields = new Set()
+
+    // Handle properties and identify which ones are nullable
+    if (s.properties) {
+      for (const [key, propSchema] of Object.entries(s.properties)) {
+        let isNullable = false
+        if (Array.isArray(propSchema.anyOf)) {
+          isNullable = propSchema.anyOf.some((branch) => branch.type === 'null')
+        } else if (Array.isArray(propSchema.type)) {
+          isNullable = propSchema.type.includes('null')
+        }
+
+        if (isNullable) {
+          nullableFields.add(key)
+        }
+        walk(propSchema)
+      }
+    }
+
+    // Remove nullable fields from required array at this level
+    if (s.required && Array.isArray(s.required)) {
+      s.required = s.required.filter((field) => !nullableFields.has(field))
+      if (s.required.length === 0) {
+        delete s.required
+      }
+    }
+
+    // Handle anyOf with null for the current level
+    if (Array.isArray(s.anyOf)) {
+      const nonNullTypes = s.anyOf.filter((branch) => branch.type !== 'null')
+      const hasNull = s.anyOf.some((branch) => branch.type === 'null')
+
+      if (hasNull && nonNullTypes.length === 1) {
+        const actual = nonNullTypes[0]
+        delete s.anyOf
+
+        // Preserve metadata
+        const title = s.title
+        const description = s.description
+        const defValue = s.default
+
+        Object.assign(s, actual)
+
+        if (title) s.title = title
+        if (description) s.description = description
+        if (defValue !== undefined) s.default = defValue
+
+        // Support nullability in a way that doesn't trigger the "AnyOf" selection UI
+        if (Array.isArray(s.enum)) {
+          // For enums, use oneOf with const values for a clean dropdown with a null option
+          s.oneOf = s.enum.map((v) => ({
+            const: v,
+            title: v === null ? 'null' : String(v)
+          }))
+          if (!s.oneOf.some((o) => o.const === null)) {
+            s.oneOf.push({ const: null, title: 'null' })
+          }
+          delete s.enum
+          delete s.type
+        } else if (
+          s.type &&
+          !['object', 'array'].includes(s.type) &&
+          !Array.isArray(s.type)
+        ) {
+          // For simple primitives, nullable type array is usually handled well
+          s.type = [s.type, 'null']
+        }
+        // Note: we leave objects and arrays as type: 'object'/'array' to keep their renderers happy
+      }
+    }
+
+    // Recurse
+    if (s.properties) {
+      Object.values(s.properties).forEach(walk)
+    }
+    if (s.items) {
+      walk(s.items)
+    }
+    if (s.$defs) {
+      Object.values(s.$defs).forEach(walk)
+    }
+  }
+
+  walk(newSchema)
+  return newSchema
+}
+
+// Computed schema that includes $defs for resolving references
+const resolvedSchema = computed(() => {
+  if (
+    !keyModelSchema.value ||
+    !keyModelSchema.value.properties ||
+    !keyModelSchema.value.properties.data
+  ) {
+    return null
+  }
+
+  console.log('--- SCHEMA DEBUG DUMP ---')
+  console.log('Original Server Schema:\n', JSON.stringify(keyModelSchema.value, null, 2))
+
+  let baseSchema = keyModelSchema.value.properties.data
+  let finalSchema = null
+
+  // If the root is a reference, resolve it to provide a stable base schema to JsonForms
+  if (baseSchema.$ref && baseSchema.$ref.startsWith('#/$defs/')) {
+    const defName = baseSchema.$ref.split('/').pop()
+    if (keyModelSchema.value.$defs && keyModelSchema.value.$defs[defName]) {
+      finalSchema = {
+        ...keyModelSchema.value.$defs[defName],
+        $defs: keyModelSchema.value.$defs
+      }
+    }
+  }
+
+  if (!finalSchema) {
+    // Fallback: merge $defs into the sub-schema
+    finalSchema = {
+      ...baseSchema,
+      $defs: keyModelSchema.value.$defs
+    }
+  }
+
+  const result = normalizeSchema(finalSchema)
+  console.log('Transformed Schema (for JsonForms):\n', JSON.stringify(result, null, 2))
+  console.log('-------------------------')
+
+  return result
+})
 
 const dialogDeleteShow = ref(false)
 const dialogDeleteMsg = ref('')
@@ -169,6 +400,51 @@ const formInputDataIdReadOnly = ref(true)
 const formInputKeyIdReadOnly = ref(true)
 const formInputPriorityReadOnly = ref(true)
 const formInputFactsReadOnly = ref(true)
+
+// Sync formData.dataJson to schemaFormData
+watch(
+  () => formData.dataJson,
+  (newVal) => {
+    if (isSyncing) return
+    try {
+      if (newVal) {
+        const parsed = JSON.parse(newVal)
+        // Only update if it's different to avoid circular updates
+        if (JSON.stringify(parsed) !== JSON.stringify(schemaFormData.value)) {
+          isSyncing = true
+          schemaFormData.value = parsed
+          nextTick(() => {
+            isSyncing = false
+          })
+        }
+      }
+    } catch {
+      // Ignore invalid JSON during typing
+    }
+  }
+)
+
+// Handle changes from JsonForms
+function handleSchemaFormChange(event) {
+  if (isSyncing) return
+
+  const jsonString = JSON.stringify(event.data, null, 2)
+  if (formData.dataJson !== jsonString) {
+    isSyncing = true
+    formData.dataJson = jsonString
+    // Use spread only for objects to ensure a new reference, but handle primitives directly
+    if (typeof event.data === 'object' && event.data !== null) {
+      schemaFormData.value = Array.isArray(event.data)
+        ? [...event.data]
+        : { ...event.data }
+    } else {
+      schemaFormData.value = event.data
+    }
+    nextTick(() => {
+      isSyncing = false
+    })
+  }
+}
 
 // Autocomplete data
 const availableLevels = ref([])
@@ -661,7 +937,9 @@ function formReset(event) {
   formGetData()
   formDataValid.value = false
   nextTick(() => {
-    form.value.resetValidation()
+    if (form.value) {
+      form.value.resetValidation()
+    }
   })
 }
 
@@ -732,7 +1010,9 @@ function formGetData() {
   if (isNew) {
     formDataValid.value = false
     nextTick(() => {
-      form.value.resetValidation()
+      if (form.value) {
+        form.value.resetValidation()
+      }
     })
     formData['level_id'] = ''
     formData['id'] = ''

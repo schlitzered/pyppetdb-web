@@ -1,3 +1,18 @@
+/*
+ * Copyright 2026 Stephan Schultchen
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 <template>
   <ComponentDialogWarning
     :msg="dialogDeleteMsg"
@@ -154,7 +169,9 @@ function formReset(event) {
   formGetData()
   formDataValid.value = false
   nextTick(() => {
-    form.value.resetValidation()
+    if (form.value) {
+      form.value.resetValidation()
+    }
   })
 }
 
@@ -191,7 +208,9 @@ function formGetData() {
   if (route.params.team === '_new') {
     formDataValid.value = false
     nextTick(() => {
-      form.value.resetValidation()
+      if (form.value) {
+        form.value.resetValidation()
+      }
     })
     formData['id'] = ''
     formData['ldap_group'] = ''
@@ -219,7 +238,24 @@ function getPermissionsChoices() {
     'CA:SPACES:DELETE',
     'CA:AUTHORITIES:CREATE',
     'CA:AUTHORITIES:UPDATE',
-    'CA:AUTHORITIES:DELETE'
+    'CA:AUTHORITIES:DELETE',
+    'JOBS:JOB::CREATE',
+    'JOBS:DEFINITION::CREATE',
+    'JOBS:DEFINITION::UPDATE',
+    'JOBS:DEFINITION::DELETE',
+    'HIERA:KEY_MODELS_DYNAMIC::CREATE',
+    'HIERA:KEY_MODELS_DYNAMIC::DELETE',
+    'HIERA:KEY_MODELS::CREATE',
+    'HIERA:KEY_MODELS::UPDATE',
+    'HIERA:KEY_MODELS::DELETE',
+    'HIERA:LEVELS::CREATE',
+    'HIERA:LEVELS::UPDATE',
+    'HIERA:LEVELS::DELETE',
+    'HIERA:LEVEL_DATA::CREATE',
+    'HIERA:LEVEL_DATA::UPDATE',
+    'HIERA:LEVEL_DATA::DELETE',
+    'NODES:SECRETS_REDACTOR::CREATE',
+    'NODES:SECRETS_REDACTOR::DELETE'
   ]
   permissionsChoices.value = [...staticPermissions]
 
@@ -243,6 +279,35 @@ function getPermissionsChoices() {
           if (!permissionsChoices.value.includes(perm)) {
             permissionsChoices.value.push(perm)
           }
+        })
+      }
+    })
+
+  api
+    .get('/api/v1/jobs/definitions', { limit: 1000, fields: ['id'] })
+    .then((data) => {
+      if (data && data.result) {
+        data.result.forEach((definition) => {
+          const perm = `JOBS:JOB:${definition.id}:CREATE`
+          if (!permissionsChoices.value.includes(perm)) {
+            permissionsChoices.value.push(perm)
+          }
+        })
+      }
+    })
+
+  api
+    .get('/api/v1/hiera/keys', { limit: 1000, fields: ['id'] })
+    .then((data) => {
+      if (data && data.result) {
+        data.result.forEach((key) => {
+          const actions = ['CREATE', 'UPDATE', 'DELETE']
+          actions.forEach((action) => {
+            const perm = `HIERA:LEVEL_DATA:${key.id}:${action}`
+            if (!permissionsChoices.value.includes(perm)) {
+              permissionsChoices.value.push(perm)
+            }
+          })
         })
       }
     })
