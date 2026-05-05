@@ -22,6 +22,7 @@ const routeHieraLookupSearch = {
       to: 'HieraLookupSearch',
       href: '/hiera/lookup',
       requireAdmin: false,
+      requiredPermission: 'HIERA::GET',
       icon: 'mdi-magnify',
       group: 'Hiera',
       groupOrder: 2,

@@ -22,6 +22,7 @@ const routeHieraKeyModelsStaticSearch = {
       to: 'HieraKeyModelsStaticSearch',
       href: '/hiera/key_models/static',
       requireAdmin: false,
+      requiredPermission: 'HIERA::GET',
       icon: 'mdi-key-variant',
       group: 'Hiera',
       groupOrder: 2,

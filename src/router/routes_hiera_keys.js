@@ -24,6 +24,7 @@ const routeHieraKeysSearch = {
       to: 'HieraKeysSearch',
       href: '/hiera/keys',
       requireAdmin: false,
+      requiredPermission: 'HIERA::GET',
       icon: 'mdi-key',
       group: 'Hiera',
       groupOrder: 2,

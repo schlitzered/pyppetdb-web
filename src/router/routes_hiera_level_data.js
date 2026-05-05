@@ -24,6 +24,7 @@ const routeHieraLevelDataSearch = {
       to: 'HieraLevelDataSearch',
       href: '/hiera/data',
       requireAdmin: false,
+      requiredPermission: 'HIERA::GET',
       icon: 'mdi-database',
       group: 'Hiera',
       groupOrder: 2,

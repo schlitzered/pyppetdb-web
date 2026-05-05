@@ -24,6 +24,7 @@ const routeCASpacesSearch = {
       to: 'CASpacesSearch',
       href: '/ca/spaces',
       requireAdmin: false,
+      requiredPermission: 'CA::GET',
       icon: 'mdi-folder-key',
       group: 'CA',
       groupOrder: 4,

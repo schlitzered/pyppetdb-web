@@ -24,6 +24,7 @@ const routeCAAuthoritiesSearch = {
       to: 'CAAuthoritiesSearch',
       href: '/ca/authorities',
       requireAdmin: false,
+      requiredPermission: 'CA::GET',
       icon: 'mdi-shield-check',
       group: 'CA',
       groupOrder: 4,

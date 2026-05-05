@@ -24,6 +24,7 @@ const routeHieraLevelsSearch = {
       to: 'HieraLevelsSearch',
       href: '/hiera/levels',
       requireAdmin: false,
+      requiredPermission: 'HIERA::GET',
       icon: 'mdi-layers',
       group: 'Hiera',
       groupOrder: 2,

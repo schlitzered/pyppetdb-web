@@ -24,6 +24,7 @@ const routeHieraKeyModelsDynamicSearch = {
       to: 'HieraKeyModelsDynamicSearch',
       href: '/hiera/key_models/dynamic',
       requireAdmin: false,
+      requiredPermission: 'HIERA::GET',
       icon: 'mdi-key-plus',
       group: 'Hiera',
       groupOrder: 2,

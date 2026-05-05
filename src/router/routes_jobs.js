@@ -97,6 +97,7 @@ const routeJobsSearch = {
       to: 'JobsSearch',
       href: '/jobs/jobs',
       requireAdmin: false,
+      requiredPermission: 'JOBS::GET',
       icon: 'mdi-play-network',
       group: 'Jobs',
       groupOrder: 5,
