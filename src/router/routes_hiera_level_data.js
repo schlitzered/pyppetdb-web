@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { loginDataStore } from '@/store/login_data'
+
 const routeHieraLevelDataSearch = {
   path: '/hiera/data',
   component: () => import('@/layouts/default/LayoutDefault.vue'),
@@ -38,6 +40,7 @@ const routeHieraLevelDataSearch = {
       }
     ],
     toolBar() {
+      const loginData = loginDataStore()
       return {
         title: `Hiera Level Data`,
         items: [
@@ -48,7 +51,7 @@ const routeHieraLevelDataSearch = {
               params: { level_id: '_new', data_id: '_new', key_id: '_new' }
             },
             hide() {
-              return false
+              return !loginData.hasPermission('HIERA:LEVEL_DATA::CREATE')
             }
           }
         ]

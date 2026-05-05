@@ -287,9 +287,11 @@ import { useCrudReload } from '@/common/crud_generic'
 import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
 
 import api from '@/api/common'
+import { loginDataStore } from '@/store/login_data'
 
 const route = useRoute()
 const router = useRouter()
+const loginData = loginDataStore()
 
 const dialogWarningShow = ref(false)
 const dialogWarningMsg = ref('')
@@ -349,8 +351,8 @@ function getCAChoices() {
 function initializeFormState() {
   if (route.params.ca_id !== '_new') {
     formDataReadOnly.value = true
-    formButtonEditShow.value = true
-    formButtonDeleteShow.value = true
+    formButtonEditShow.value = loginData.hasPermission('CA:AUTHORITIES:UPDATE')
+    formButtonDeleteShow.value = loginData.hasPermission('CA:AUTHORITIES:DELETE')
   } else {
     formDataReadOnly.value = false
     formButtonDeleteShow.value = false

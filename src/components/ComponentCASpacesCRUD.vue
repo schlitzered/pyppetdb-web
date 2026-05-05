@@ -88,9 +88,11 @@ import { useCrudReload } from '@/common/crud_generic'
 import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
 
 import api from '@/api/common'
+import { loginDataStore } from '@/store/login_data'
 
 const route = useRoute()
 const router = useRouter()
+const loginData = loginDataStore()
 
 const dialogDeleteShow = ref(false)
 const dialogDeleteMsg = ref('')
@@ -138,8 +140,8 @@ function initializeFormState() {
   if (route.params.space_id !== '_new') {
     formInputIdReadOnly.value = true
     formDataReadOnly.value = true
-    formButtonEditShow.value = true
-    formButtonDeleteShow.value = true
+    formButtonEditShow.value = loginData.hasPermission('CA:SPACES:UPDATE')
+    formButtonDeleteShow.value = loginData.hasPermission('CA:SPACES:DELETE')
   } else {
     formInputIdReadOnly.value = false
     formDataReadOnly.value = false

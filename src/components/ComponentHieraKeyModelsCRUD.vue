@@ -85,6 +85,7 @@ import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
 
 import api from '@/api/common'
 import { useCrudReload } from '@/common/crud_generic'
+import { loginDataStore } from '@/store/login_data'
 
 const props = defineProps({
   modelType: {
@@ -96,6 +97,7 @@ const props = defineProps({
 
 const route = useRoute()
 const router = useRouter()
+const loginData = loginDataStore()
 
 const dialogDeleteShow = ref(false)
 const dialogDeleteMsg = ref('')
@@ -338,7 +340,9 @@ function initializeFormState() {
     formInputIdReadOnly.value = true
     formDataReadOnly.value = true
     formButtonEditShow.value = false
-    formButtonDeleteShow.value = true
+    formButtonDeleteShow.value = loginData.hasPermission(
+      'HIERA:KEY_MODELS_DYNAMIC::DELETE'
+    )
   } else if (route.params.key_model_id === '_new') {
     // Dynamic mode: new record
     formInputIdReadOnly.value = false

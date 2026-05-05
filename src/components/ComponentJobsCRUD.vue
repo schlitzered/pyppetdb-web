@@ -255,9 +255,11 @@ import { useRoute, useRouter } from 'vue-router'
 
 import api from '@/api/common'
 import { useCrudReload } from '@/common/crud_generic'
+import { loginDataStore } from '@/store/login_data'
 
 const route = useRoute()
 const router = useRouter()
+const loginData = loginDataStore()
 
 const form = ref(null)
 const formData = reactive({
@@ -326,8 +328,25 @@ const nodeFilterBlocks = ref([
   [{ fact: '', operator: 'eq', type: 'str', value: '' }]
 ])
 
+function hasJobCreatePermission(definitionId) {
+  if (loginData.hasPermission('JOBS:JOB::CREATE')) {
+    return true
+  }
+  if (
+    definitionId &&
+    loginData.hasPermission(`JOBS:JOB:${definitionId}:CREATE`)
+  ) {
+    return true
+  }
+  return false
+}
+
 const canSubmit = computed(() => {
-  return formData.definition_id && combinedNodes.value.filter(n => n.state !== 'original_only').length > 0
+  return (
+    formData.definition_id &&
+    combinedNodes.value.filter((n) => n.state !== 'original_only').length > 0 &&
+    hasJobCreatePermission(formData.definition_id)
+  )
 })
 
 function getStatusColor(status) {

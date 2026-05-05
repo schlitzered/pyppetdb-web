@@ -55,6 +55,7 @@ vi.mock('@/api/common', () => ({
 vi.mock('@/store/login_data', () => ({
   loginDataStore: vi.fn(() => ({
     getUserDataIsAdmin: true,
+    hasPermission: vi.fn(() => true),
     isLoaded: false,
     resetTimestamp: vi.fn(),
     resetUserData: vi.fn(),

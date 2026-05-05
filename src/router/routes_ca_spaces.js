@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { loginDataStore } from '@/store/login_data'
+
 const routeCASpacesSearch = {
   path: '/ca/spaces',
   component: () => import('@/layouts/default/LayoutDefault.vue'),
@@ -21,7 +23,7 @@ const routeCASpacesSearch = {
       name: 'CA Spaces',
       to: 'CASpacesSearch',
       href: '/ca/spaces',
-      requireAdmin: true,
+      requireAdmin: false,
       icon: 'mdi-folder-key',
       group: 'CA',
       groupOrder: 4,
@@ -38,6 +40,7 @@ const routeCASpacesSearch = {
       }
     ],
     toolBar() {
+      const loginData = loginDataStore()
       return {
         title: 'CA Spaces',
         items: [
@@ -45,7 +48,7 @@ const routeCASpacesSearch = {
             title: 'New Space',
             to: { name: 'CASpacesCRUD', params: { space_id: '_new' } },
             hide() {
-              return false
+              return !loginData.hasPermission('CA:SPACES:CREATE')
             }
           }
         ]

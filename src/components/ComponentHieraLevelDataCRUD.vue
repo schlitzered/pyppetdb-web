@@ -216,9 +216,11 @@ import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
 
 import api from '@/api/common'
 import { useCrudReload } from '@/common/crud_generic'
+import { loginDataStore } from '@/store/login_data'
 
 const route = useRoute()
 const router = useRouter()
+const loginData = loginDataStore()
 
 const renderers = Object.freeze(vuetifyRenderers)
 const useSchemaForm = ref(true)
@@ -226,6 +228,16 @@ const schemaFormData = ref({})
 
 // Guard to prevent circular updates
 let isSyncing = false
+
+function hasLevelDataPermission(action, keyId = null) {
+  if (loginData.hasPermission(`HIERA:LEVEL_DATA::${action}`)) {
+    return true
+  }
+  if (keyId && loginData.hasPermission(`HIERA:LEVEL_DATA:${keyId}:${action}`)) {
+    return true
+  }
+  return false
+}
 
 // Helper to normalize schema for better JsonForms rendering
 // Specifically handles "anyOf": [{type: "X"}, {type: "null"}] patterns
@@ -911,7 +923,14 @@ function initializeFormState() {
     formInputPriorityReadOnly.value = true
     formInputFactsReadOnly.value = true
     formDataReadOnly.value = true
-    formButtonEditShow.value = true
+    formButtonEditShow.value = hasLevelDataPermission(
+      'UPDATE',
+      route.params.key_id
+    )
+    formButtonDeleteShow.value = hasLevelDataPermission(
+      'DELETE',
+      route.params.key_id
+    )
   }
   formGetData()
 }
@@ -1038,6 +1057,8 @@ function formGetData() {
             factValues[key] = value
           })
         }
+        formButtonEditShow.value = hasLevelDataPermission('UPDATE', data.key_id)
+        formButtonDeleteShow.value = hasLevelDataPermission('DELETE', data.key_id)
       }
     })
   }

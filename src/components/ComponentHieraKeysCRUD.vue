@@ -91,9 +91,11 @@ import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
 
 import api from '@/api/common'
 import { useCrudReload } from '@/common/crud_generic'
+import { loginDataStore } from '@/store/login_data'
 
 const route = useRoute()
 const router = useRouter()
+const loginData = loginDataStore()
 
 const dialogDeleteShow = ref(false)
 const dialogDeleteMsg = ref('')
@@ -223,7 +225,8 @@ function initializeFormState() {
   } else {
     formInputIdReadOnly.value = true
     formDataReadOnly.value = true
-    formButtonEditShow.value = true
+    formButtonEditShow.value = loginData.hasPermission('HIERA:KEY_MODELS::UPDATE')
+    formButtonDeleteShow.value = loginData.hasPermission('HIERA:KEY_MODELS::DELETE')
   }
   formGetData()
 }

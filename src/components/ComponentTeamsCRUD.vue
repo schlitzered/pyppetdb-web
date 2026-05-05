@@ -237,12 +237,12 @@ function formGetData() {
 
 function getPermissionsChoices() {
   const staticPermissions = [
-    'CA:SPACES::CREATE',
-    'CA:SPACES::UPDATE',
-    'CA:SPACES::DELETE',
-    'CA:AUTHORITIES::CREATE',
-    'CA:AUTHORITIES::UPDATE',
-    'CA:AUTHORITIES::DELETE',
+    'CA:SPACES:CREATE',
+    'CA:SPACES:UPDATE',
+    'CA:SPACES:DELETE',
+    'CA:AUTHORITIES:CREATE',
+    'CA:AUTHORITIES:UPDATE',
+    'CA:AUTHORITIES:DELETE',
     'JOBS:JOB::CREATE',
     'JOBS:DEFINITION::CREATE',
     'JOBS:DEFINITION::UPDATE',
