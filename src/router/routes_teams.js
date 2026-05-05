@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { loginDataStore } from '@/store/login_data'
+
 const routeTeamsSearch = {
   path: '/teams',
   component: () => import('@/layouts/default/LayoutDefault.vue'),
@@ -21,7 +23,8 @@ const routeTeamsSearch = {
       name: 'Teams',
       to: 'TeamsSearch',
       href: '/teams',
-      requireAdmin: true,
+      requireAdmin: false,
+      requiredPermission: 'TEAMS::GET',
       icon: 'mdi-account-multiple',
       group: 'Administration',
       groupOrder: 3,
@@ -38,6 +41,7 @@ const routeTeamsSearch = {
       }
     ],
     toolBar() {
+      const loginData = loginDataStore()
       return {
         title: `Teams`,
         items: [
@@ -45,7 +49,7 @@ const routeTeamsSearch = {
             title: 'New Team',
             to: { name: 'TeamsCRUD', params: { team: '_new' } },
             hide() {
-              return false
+              return !loginData.hasPermission('TEAMS::CREATE')
             }
           }
         ]

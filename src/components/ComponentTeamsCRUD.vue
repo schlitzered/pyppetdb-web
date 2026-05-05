@@ -93,9 +93,11 @@ import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
 
 import api from '@/api/common'
 import { useCrudReload } from '@/common/crud_generic'
+import { loginDataStore } from '@/store/login_data'
 
 const route = useRoute()
 const router = useRouter()
+const loginData = loginDataStore()
 
 const dialogDeleteShow = ref(false)
 const dialogDeleteMsg = ref('')
@@ -120,7 +122,7 @@ const form = ref(null)
 const formData = reactive({})
 const formDataReadOnly = ref(true)
 const formDataValid = ref(false)
-const formButtonDeleteShow = ref(true)
+const formButtonDeleteShow = ref(false)
 const formButtonEditShow = ref(false)
 const formInputIdReadOnly = ref(true)
 
@@ -134,7 +136,8 @@ function initializeFormState() {
   if (route.params.team !== '_new') {
     formInputIdReadOnly.value = true
     formDataReadOnly.value = true
-    formButtonEditShow.value = true
+    formButtonEditShow.value = loginData.hasPermission('TEAMS::UPDATE')
+    formButtonDeleteShow.value = loginData.hasPermission('TEAMS::DELETE')
   } else if (route.params.team === '_new') {
     formInputIdReadOnly.value = false
     formDataReadOnly.value = false
@@ -144,6 +147,7 @@ function initializeFormState() {
     formInputIdReadOnly.value = true
     formDataReadOnly.value = true
     formButtonEditShow.value = false
+    formButtonDeleteShow.value = false
   }
   formGetData()
 }
@@ -233,12 +237,12 @@ function formGetData() {
 
 function getPermissionsChoices() {
   const staticPermissions = [
-    'CA:SPACES:CREATE',
-    'CA:SPACES:UPDATE',
-    'CA:SPACES:DELETE',
-    'CA:AUTHORITIES:CREATE',
-    'CA:AUTHORITIES:UPDATE',
-    'CA:AUTHORITIES:DELETE',
+    'CA:SPACES::CREATE',
+    'CA:SPACES::UPDATE',
+    'CA:SPACES::DELETE',
+    'CA:AUTHORITIES::CREATE',
+    'CA:AUTHORITIES::UPDATE',
+    'CA:AUTHORITIES::DELETE',
     'JOBS:JOB::CREATE',
     'JOBS:DEFINITION::CREATE',
     'JOBS:DEFINITION::UPDATE',
@@ -254,8 +258,30 @@ function getPermissionsChoices() {
     'HIERA:LEVEL_DATA::CREATE',
     'HIERA:LEVEL_DATA::UPDATE',
     'HIERA:LEVEL_DATA::DELETE',
+    'NODES::CREATE',
+    'NODES::UPDATE',
+    'NODES::DELETE',
+    'NODES:CATALOG_CACHE::DELETE',
+    'NODES:GROUPS::CREATE',
+    'NODES:GROUPS::UPDATE',
+    'NODES:GROUPS::DELETE',
+    'NODES:GROUPS::GET',
     'NODES:SECRETS_REDACTOR::CREATE',
-    'NODES:SECRETS_REDACTOR::DELETE'
+    'NODES:SECRETS_REDACTOR::DELETE',
+    'PYPPETDB:NODES::GET',
+    'PYPPETDB:NODES::DELETE',
+    'TEAMS::CREATE',
+    'TEAMS::UPDATE',
+    'TEAMS::DELETE',
+    'TEAMS::GET',
+    'USERS::CREATE',
+    'USERS::UPDATE',
+    'USERS::DELETE',
+    'USERS::GET',
+    'USERS:CREDENTIALS::CREATE',
+    'USERS:CREDENTIALS::UPDATE',
+    'USERS:CREDENTIALS::DELETE',
+    'USERS:CREDENTIALS::GET'
   ]
   permissionsChoices.value = [...staticPermissions]
 

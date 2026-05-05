@@ -78,10 +78,10 @@ const navItems = computed(() => {
   let user_is_admin = loginData.getUserDataIsAdmin
   router.getRoutes().forEach((item) => {
     if (item.meta.appBar) {
-      if (
-        (item.meta.appBar.requireAdmin && user_is_admin) ||
-        !item.meta.appBar.requireAdmin
-      ) {
+      const hasAdmin = (item.meta.appBar.requireAdmin && user_is_admin) || !item.meta.appBar.requireAdmin
+      const hasPerm = !item.meta.appBar.requiredPermission || loginData.hasPermission(item.meta.appBar.requiredPermission)
+      
+      if (hasAdmin && hasPerm) {
         items.push({
           name: item.meta.appBar.name,
           to: item.meta.appBar.to,

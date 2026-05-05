@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { loginDataStore } from '@/store/login_data'
+
 const routeUsersSearch = {
   path: '/users',
   component: () => import('@/layouts/default/LayoutDefault.vue'),
@@ -21,7 +23,8 @@ const routeUsersSearch = {
       name: 'Users',
       to: 'UsersSearch',
       href: '/users',
-      requireAdmin: true,
+      requireAdmin: false,
+      requiredPermission: 'USERS::GET',
       icon: 'mdi-account-multiple',
       group: 'Administration',
       groupOrder: 3,
@@ -38,6 +41,7 @@ const routeUsersSearch = {
       }
     ],
     toolBar() {
+      const loginData = loginDataStore()
       return {
         title: `Users`,
         items: [
@@ -45,7 +49,7 @@ const routeUsersSearch = {
             title: 'New User',
             to: { name: 'UsersCRUD', params: { user: '_new' } },
             hide() {
-              return false
+              return !loginData.hasPermission('USERS::CREATE')
             }
           }
         ]

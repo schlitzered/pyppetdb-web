@@ -203,9 +203,11 @@ import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
 
 import api from '@/api/common'
 import { useCrudReload } from '@/common/crud_generic'
+import { loginDataStore } from '@/store/login_data'
 
 const route = useRoute()
 const router = useRouter()
+const loginData = loginDataStore()
 
 const dialogDeleteShow = ref(false)
 const dialogDeleteMsg = ref('')
@@ -234,7 +236,7 @@ const formData = reactive({
 })
 const formDataReadOnly = ref(true)
 const formDataValid = ref(false)
-const formButtonDeleteShow = ref(true)
+const formButtonDeleteShow = ref(false)
 const formButtonEditShow = ref(false)
 const formInputIdReadOnly = ref(true)
 
@@ -264,7 +266,8 @@ function initializeFormState() {
   if (route.params.node_group !== '_new') {
     formInputIdReadOnly.value = true
     formDataReadOnly.value = true
-    formButtonEditShow.value = true
+    formButtonEditShow.value = loginData.hasPermission('NODES:GROUPS::UPDATE')
+    formButtonDeleteShow.value = loginData.hasPermission('NODES:GROUPS::DELETE')
   } else if (route.params.node_group === '_new') {
     formInputIdReadOnly.value = false
     formDataReadOnly.value = false
@@ -274,6 +277,7 @@ function initializeFormState() {
     formInputIdReadOnly.value = true
     formDataReadOnly.value = true
     formButtonEditShow.value = false
+    formButtonDeleteShow.value = false
   }
   formGetData()
 }

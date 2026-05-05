@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { loginDataStore } from '@/store/login_data'
+
 const routeUsersCredentialsSearch = {
   path: '/users/:user/credentials',
   component: () => import('@/layouts/default/LayoutDefault.vue'),
@@ -37,6 +39,7 @@ const routeUsersCredentialsSearch = {
       ]
     },
     toolBar(route) {
+      const loginData = loginDataStore()
       return {
         title: `User ${route.params.user} Credentials`,
         items: [
@@ -47,7 +50,7 @@ const routeUsersCredentialsSearch = {
               params: { user: route.params.user, credential: '_new' }
             },
             hide() {
-              return false
+              return !loginData.hasPermission('USERS:CREDENTIALS::CREATE')
             }
           }
         ]

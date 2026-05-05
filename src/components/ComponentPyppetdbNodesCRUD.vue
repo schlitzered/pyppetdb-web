@@ -36,7 +36,7 @@
         ></v-text-field>
       </v-card-text>
       <v-divider></v-divider>
-      <v-card-actions>
+      <v-card-actions v-if="loginData.hasPermission('PYPPETDB:NODES::DELETE')">
         <v-spacer></v-spacer>
         <v-btn color="red" variant="text" @click="formDelete">Delete</v-btn>
       </v-card-actions>
@@ -52,9 +52,11 @@ import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
 
 import api from '@/api/common'
 import { useCrudReload } from '@/common/crud_generic'
+import { loginDataStore } from '@/store/login_data'
 
 const route = useRoute()
 const router = useRouter()
+const loginData = loginDataStore()
 
 const dialogDeleteShow = ref(false)
 const dialogDeleteMsg = ref('')

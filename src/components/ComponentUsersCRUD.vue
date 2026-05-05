@@ -131,12 +131,12 @@ const formInputPasswordShow = ref(false)
 const formInputPasswordChangeable = ref(false)
 
 function initializeFormState() {
-  if (loginData.getUserDataIsAdmin && route.params.user !== '_new') {
+  if (route.params.user !== '_new') {
     formInputIdReadOnly.value = true
     formDataReadOnly.value = true
-    formButtonEditShow.value = true
-    formButtonDeleteShow.value = true
-  } else if (loginData.getUserDataIsAdmin && route.params.user === '_new') {
+    formButtonEditShow.value = loginData.hasPermission('USERS::UPDATE')
+    formButtonDeleteShow.value = loginData.hasPermission('USERS::DELETE')
+  } else if (route.params.user === '_new') {
     formInputIdReadOnly.value = false
     formDataReadOnly.value = false
     formButtonDeleteShow.value = false
@@ -145,7 +145,7 @@ function initializeFormState() {
     formInputIdReadOnly.value = true
     formDataReadOnly.value = true
     formButtonEditShow.value = false
-    formButtonDeleteShow.value = true
+    formButtonDeleteShow.value = false
   }
   formGetData()
 }

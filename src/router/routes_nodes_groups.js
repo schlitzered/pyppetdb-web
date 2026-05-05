@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { loginDataStore } from '@/store/login_data'
+
 const routeNodesGroupsSearch = {
   path: '/nodes_groups',
   component: () => import('@/layouts/default/LayoutDefault.vue'),
@@ -21,7 +23,8 @@ const routeNodesGroupsSearch = {
       name: 'NodesGroups',
       to: 'NodesGroupsSearch',
       href: '/nodes_groups',
-      requireAdmin: true,
+      requireAdmin: false,
+      requiredPermission: 'NODES:GROUPS::GET',
       icon: 'mdi-account-multiple',
       group: 'Nodes',
       groupOrder: 1,
@@ -38,6 +41,7 @@ const routeNodesGroupsSearch = {
       }
     ],
     toolBar() {
+      const loginData = loginDataStore()
       return {
         title: `NodesGroups`,
         items: [
@@ -45,7 +49,7 @@ const routeNodesGroupsSearch = {
             title: 'New Node Group',
             to: { name: 'NodesGroupsCRUD', params: { node_group: '_new' } },
             hide() {
-              return false
+              return !loginData.hasPermission('NODES:GROUPS::CREATE')
             }
           }
         ]

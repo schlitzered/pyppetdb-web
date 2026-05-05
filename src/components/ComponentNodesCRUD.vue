@@ -336,11 +336,13 @@ import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
 import api from '@/api/common'
 import { apiErrorStore } from '@/store/api_error'
 import { useCrudReload } from '@/common/crud_generic'
+import { loginDataStore } from '@/store/login_data'
 
 const apiError = apiErrorStore()
 
 const route = useRoute()
 const router = useRouter()
+const loginData = loginDataStore()
 
 const dialogDeleteShow = ref(false)
 const dialogDeleteMsg = ref('')
@@ -507,8 +509,8 @@ const form = ref(null)
 const formData = reactive({})
 const formDataReadOnly = ref(true)
 const formDataValid = ref(false)
-const formButtonDeleteShow = ref(true)
-const formButtonEditShow = ref(true)
+const formButtonDeleteShow = ref(false)
+const formButtonEditShow = ref(false)
 const formInputIdReadOnly = ref(true)
 const formInputIdShow = ref(true)
 
@@ -642,13 +644,14 @@ function formGetNodeData() {
       formData['facts_inject'] = data['facts_inject'] || {}
       formData['report'] = data['report']
       formData['remote_agent'] = data['remote_agent'] || {
-        connected: false,
-        via: ''
+      connected: false,
+      via: ''
       }
-    }
-  })
-}
-
+      formButtonEditShow.value = loginData.hasPermission('NODES::UPDATE')
+      formButtonDeleteShow.value = loginData.hasPermission('NODES::DELETE')
+      }
+      })
+      }
 function handleFactsTableUpdate(options) {
   tableFactsSortBy.splice(0, tableFactsSortBy.length, ...options.sortBy)
   updateUrlQuery()

@@ -82,9 +82,11 @@ import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
 
 import api from '@/api/common'
 import { useCrudReload } from '@/common/crud_generic'
+import { loginDataStore } from '@/store/login_data'
 
 const route = useRoute()
 const router = useRouter()
+const loginData = loginDataStore()
 
 const dialogDeleteShow = ref(false)
 const dialogDeleteMsg = ref('')
@@ -122,7 +124,12 @@ function initializeFormState() {
   if (route.params.credential !== '_new') {
     formInputIdReadOnly.value = true
     formDataReadOnly.value = true
-    formButtonEditShow.value = true
+    formButtonEditShow.value = loginData.hasPermission(
+      'USERS:CREDENTIALS::UPDATE'
+    )
+    formButtonDeleteShow.value = loginData.hasPermission(
+      'USERS:CREDENTIALS::DELETE'
+    )
   } else if (route.params.credential === '_new') {
     formDataReadOnly.value = false
     formButtonDeleteShow.value = false
@@ -133,6 +140,7 @@ function initializeFormState() {
     formInputIdReadOnly.value = true
     formDataReadOnly.value = true
     formButtonEditShow.value = false
+    formButtonDeleteShow.value = false
   }
   formGetData()
 }
