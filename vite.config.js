@@ -34,15 +34,30 @@ export default defineConfig({
   ],
   define: { "process.env": {} },
   resolve: {
-    alias: {
-      "@": fileURLToPath(new URL("./src", import.meta.url)),
-    },
+    alias: [
+      {
+        find: "@",
+        replacement: fileURLToPath(new URL("./src", import.meta.url)),
+      },
+      {
+        find: /^lodash\/(.*)$/,
+        replacement: "lodash/$1.js",
+      },
+    ],
     extensions: [".js", ".json", ".jsx", ".mjs", ".ts", ".tsx", ".vue"],
+  },
+  ssr: {
+    noExternal: ["lodash", "@jsonforms/vue-vuetify"],
   },
   test: {
     environment: "jsdom",
     globals: true,
     exclude: ["tests/e2e/**", "node_modules/**"],
+    server: {
+      deps: {
+        inline: ["vuetify"],
+      },
+    },
   },
   server: {
     port: 3000,
