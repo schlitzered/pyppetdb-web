@@ -1,18 +1,11 @@
-/*
- * Copyright 2026 Stephan Schultchen
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+/* * Copyright 2026 Stephan Schultchen * * Licensed under the Apache License,
+Version 2.0 (the "License"); * you may not use this file except in compliance
+with the License. * You may obtain a copy of the License at * *
+http://www.apache.org/licenses/LICENSE-2.0 * * Unless required by applicable law
+or agreed to in writing, software * distributed under the License is distributed
+on an "AS IS" BASIS, * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+express or implied. * See the License for the specific language governing
+permissions and * limitations under the License. */
 <template>
   <v-card>
     <v-form ref="form" v-model="formDataValid" @submit.prevent="formSubmit">
@@ -20,7 +13,7 @@
         <v-text-field
           v-model="formData.value"
           label="Secret String to Redact"
-          :rules="[v => !!v || 'Value is required']"
+          :rules="[(v) => !!v || 'Value is required']"
           :type="showValue ? 'text' : 'password'"
           :append-inner-icon="showValue ? 'mdi-eye' : 'mdi-eye-off'"
           @click:append-inner="showValue = !showValue"
@@ -36,7 +29,10 @@
           color="primary"
           variant="text"
           type="submit"
-          :disabled="!formDataValid || !loginData.hasPermission('NODES:SECRETS_REDACTOR::CREATE')"
+          :disabled="
+            !formDataValid ||
+            !loginData.hasPermission(PERMISSIONS.NODES.SECRETS_REDACTOR.CREATE)
+          "
         >
           Submit
         </v-btn>
@@ -46,6 +42,7 @@
 </template>
 
 <script setup>
+import { PERMISSIONS } from '@/common/permissions'
 import { reactive, ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/api/common'
@@ -74,8 +71,10 @@ function formReset() {
 function formSubmit() {
   if (!formDataValid.value) return
 
-  api.post('/api/v1/nodes_secrets_redactor', { value: formData.value }).then(() => {
-    router.push({ name: 'NodesSecretsRedactorSearch' })
-  })
+  api
+    .post('/api/v1/nodes_secrets_redactor', { value: formData.value })
+    .then(() => {
+      router.push({ name: 'NodesSecretsRedactorSearch' })
+    })
 }
 </script>

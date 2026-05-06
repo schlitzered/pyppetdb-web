@@ -1,18 +1,11 @@
-/*
- * Copyright 2026 Stephan Schultchen
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+/* * Copyright 2026 Stephan Schultchen * * Licensed under the Apache License,
+Version 2.0 (the "License"); * you may not use this file except in compliance
+with the License. * You may obtain a copy of the License at * *
+http://www.apache.org/licenses/LICENSE-2.0 * * Unless required by applicable law
+or agreed to in writing, software * distributed under the License is distributed
+on an "AS IS" BASIS, * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+express or implied. * See the License for the specific language governing
+permissions and * limitations under the License. */
 <template>
   <ComponentDialogWarning
     :msg="dialogDeleteMsg"
@@ -86,16 +79,20 @@
 </template>
 
 <script setup>
-import { reactive, ref, nextTick, watch } from 'vue'
+import { PERMISSIONS } from '@/common/permissions'
+import { reactive, ref, nextTick, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
 
 import api from '@/api/common'
 import { useCrudReload } from '@/common/crud_generic'
+import { loginDataStore } from '@/store/login_data'
+import { ALL_PERMISSIONS } from '@/common/permissions'
 
 const route = useRoute()
 const router = useRouter()
+const loginData = loginDataStore()
 
 const dialogDeleteShow = ref(false)
 const dialogDeleteMsg = ref('')
@@ -120,8 +117,14 @@ const form = ref(null)
 const formData = reactive({})
 const formDataReadOnly = ref(true)
 const formDataValid = ref(false)
-const formButtonDeleteShow = ref(true)
-const formButtonEditShow = ref(false)
+const formButtonDeleteShow = computed(() => {
+  if (route.params.team === '_new') return false
+  return loginData.hasPermission(PERMISSIONS.TEAMS.DELETE)
+})
+const formButtonEditShow = computed(() => {
+  if (route.params.team === '_new') return false
+  return loginData.hasPermission(PERMISSIONS.TEAMS.UPDATE)
+})
 const formInputIdReadOnly = ref(true)
 
 const usersChoices = ref([])
@@ -134,16 +137,12 @@ function initializeFormState() {
   if (route.params.team !== '_new') {
     formInputIdReadOnly.value = true
     formDataReadOnly.value = true
-    formButtonEditShow.value = true
   } else if (route.params.team === '_new') {
     formInputIdReadOnly.value = false
     formDataReadOnly.value = false
-    formButtonDeleteShow.value = false
-    formButtonEditShow.value = false
   } else {
     formInputIdReadOnly.value = true
     formDataReadOnly.value = true
-    formButtonEditShow.value = false
   }
   formGetData()
 }
@@ -189,7 +188,6 @@ function formSubmit(event) {
   }
   api.request(method, url, data).then(() => {
     if (route.params.team === '_new') {
-      formButtonDeleteShow.value = true
       router.push({
         name: 'TeamsCRUD',
         params: { team: formData.id }
@@ -232,37 +230,12 @@ function formGetData() {
 }
 
 function getPermissionsChoices() {
-  const staticPermissions = [
-    'CA:SPACES:CREATE',
-    'CA:SPACES:UPDATE',
-    'CA:SPACES:DELETE',
-    'CA:AUTHORITIES:CREATE',
-    'CA:AUTHORITIES:UPDATE',
-    'CA:AUTHORITIES:DELETE',
-    'JOBS:JOB::CREATE',
-    'JOBS:DEFINITION::CREATE',
-    'JOBS:DEFINITION::UPDATE',
-    'JOBS:DEFINITION::DELETE',
-    'HIERA:KEY_MODELS_DYNAMIC::CREATE',
-    'HIERA:KEY_MODELS_DYNAMIC::DELETE',
-    'HIERA:KEY_MODELS::CREATE',
-    'HIERA:KEY_MODELS::UPDATE',
-    'HIERA:KEY_MODELS::DELETE',
-    'HIERA:LEVELS::CREATE',
-    'HIERA:LEVELS::UPDATE',
-    'HIERA:LEVELS::DELETE',
-    'HIERA:LEVEL_DATA::CREATE',
-    'HIERA:LEVEL_DATA::UPDATE',
-    'HIERA:LEVEL_DATA::DELETE',
-    'NODES:SECRETS_REDACTOR::CREATE',
-    'NODES:SECRETS_REDACTOR::DELETE'
-  ]
-  permissionsChoices.value = [...staticPermissions]
+  permissionsChoices.value = [...ALL_PERMISSIONS]
 
   api.get('/api/v1/ca/spaces', { limit: 1000, fields: ['id'] }).then((data) => {
     if (data && data.result) {
       data.result.forEach((space) => {
-        const perm = `CA:SPACES:${space.id}:CERTS:UPDATE`
+        const perm = PERMISSIONS.CA.SPACES.CERTS.UPDATE(space.id)
         if (!permissionsChoices.value.includes(perm)) {
           permissionsChoices.value.push(perm)
         }
@@ -275,7 +248,7 @@ function getPermissionsChoices() {
     .then((data) => {
       if (data && data.result) {
         data.result.forEach((authority) => {
-          const perm = `CA:AUTHORITIES:${authority.id}:CERTS:UPDATE`
+          const perm = PERMISSIONS.CA.AUTHORITIES.CERTS.UPDATE(authority.id)
           if (!permissionsChoices.value.includes(perm)) {
             permissionsChoices.value.push(perm)
           }
@@ -288,7 +261,7 @@ function getPermissionsChoices() {
     .then((data) => {
       if (data && data.result) {
         data.result.forEach((definition) => {
-          const perm = `JOBS:JOB:${definition.id}:CREATE`
+          const perm = PERMISSIONS.JOBS.JOB.CREATE_SPECIFIC(definition.id)
           if (!permissionsChoices.value.includes(perm)) {
             permissionsChoices.value.push(perm)
           }
@@ -303,7 +276,9 @@ function getPermissionsChoices() {
         data.result.forEach((key) => {
           const actions = ['CREATE', 'UPDATE', 'DELETE']
           actions.forEach((action) => {
-            const perm = `HIERA:LEVEL_DATA:${key.id}:${action}`
+            const perm = PERMISSIONS.HIERA.LEVEL_DATA[action + '_SPECIFIC'](
+              key.id
+            )
             if (!permissionsChoices.value.includes(perm)) {
               permissionsChoices.value.push(perm)
             }

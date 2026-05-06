@@ -1,18 +1,11 @@
-/*
- * Copyright 2026 Stephan Schultchen
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+/* * Copyright 2026 Stephan Schultchen * * Licensed under the Apache License,
+Version 2.0 (the "License"); * you may not use this file except in compliance
+with the License. * You may obtain a copy of the License at * *
+http://www.apache.org/licenses/LICENSE-2.0 * * Unless required by applicable law
+or agreed to in writing, software * distributed under the License is distributed
+on an "AS IS" BASIS, * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+express or implied. * See the License for the specific language governing
+permissions and * limitations under the License. */
 <template>
   <v-card>
     <v-toolbar>
@@ -41,7 +34,7 @@
         </v-menu>
       </div>
       <div v-for="(item, index) in navItems" :key="index">
-        <v-btn @click="onBtnClick(item)" :to="item.link"
+        <v-btn @click="onBtnClick(item)" :to="item.to || item.link"
           >{{ item.title }}
         </v-btn>
       </div>
@@ -62,9 +55,14 @@ const router = useRouter()
 
 const navItems = computed(() => {
   let items = []
-  let user_is_admin = loginData.getUserDataIsAdmin
+  const user_is_admin = loginData.getUserDataIsAdmin
   if (route.meta.toolBar) {
-    route.meta.toolBar.call(this, route).items.forEach((item) => {
+    const toolBarInfo =
+      typeof route.meta.toolBar === 'function'
+        ? route.meta.toolBar(route)
+        : route.meta.toolBar
+
+    toolBarInfo.items.forEach((item) => {
       if (item.hide?.call(this, route)) {
         return
       }
@@ -82,7 +80,11 @@ const navItems = computed(() => {
 
 const navTitle = computed(() => {
   if (route.meta.toolBar) {
-    return route.meta.toolBar.call(this, route).title
+    const toolBarInfo =
+      typeof route.meta.toolBar === 'function'
+        ? route.meta.toolBar(route)
+        : route.meta.toolBar
+    return toolBarInfo.title
   } else {
     return ''
   }

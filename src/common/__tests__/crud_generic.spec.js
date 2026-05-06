@@ -20,7 +20,7 @@ describe('useCrudReload', () => {
   it('calls the fetch function when reload is called', () => {
     const fetchFn = vi.fn()
     const { reload } = useCrudReload(fetchFn)
-    
+
     reload()
     expect(fetchFn).toHaveBeenCalledTimes(1)
   })

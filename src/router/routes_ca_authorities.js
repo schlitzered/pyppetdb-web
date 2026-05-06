@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { loginDataStore } from '@/store/login_data'
+import { PERMISSIONS } from '@/common/permissions'
+
 const routeCAAuthoritiesSearch = {
   path: '/ca/authorities',
   component: () => import('@/layouts/default/LayoutDefault.vue'),
@@ -21,7 +24,8 @@ const routeCAAuthoritiesSearch = {
       name: 'CA Authorities',
       to: 'CAAuthoritiesSearch',
       href: '/ca/authorities',
-      requireAdmin: true,
+      requireAdmin: false,
+      requiredPermission: PERMISSIONS.CA.GET,
       icon: 'mdi-shield-check',
       group: 'CA',
       groupOrder: 4,
@@ -38,6 +42,7 @@ const routeCAAuthoritiesSearch = {
       }
     ],
     toolBar() {
+      const loginData = loginDataStore()
       return {
         title: 'CA Authorities',
         items: [
@@ -45,7 +50,7 @@ const routeCAAuthoritiesSearch = {
             title: 'New Authority',
             to: { name: 'CAAuthoritiesCRUD', params: { ca_id: '_new' } },
             hide() {
-              return false
+              return !loginData.hasPermission(PERMISSIONS.CA.AUTHORITIES.CREATE)
             }
           }
         ]

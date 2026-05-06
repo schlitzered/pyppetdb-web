@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { loginDataStore } from '@/store/login_data'
+import { PERMISSIONS } from '@/common/permissions'
+
 const routeHieraKeyModelsDynamicSearch = {
   path: '/hiera/key_models/dynamic',
   component: () => import('@/layouts/default/LayoutDefault.vue'),
@@ -22,6 +25,7 @@ const routeHieraKeyModelsDynamicSearch = {
       to: 'HieraKeyModelsDynamicSearch',
       href: '/hiera/key_models/dynamic',
       requireAdmin: false,
+      requiredPermission: PERMISSIONS.HIERA.GET,
       icon: 'mdi-key-plus',
       group: 'Hiera',
       groupOrder: 2,
@@ -38,6 +42,7 @@ const routeHieraKeyModelsDynamicSearch = {
       }
     ],
     toolBar() {
+      const loginData = loginDataStore()
       return {
         title: `Hiera Key Models Dynamic`,
         items: [
@@ -48,7 +53,9 @@ const routeHieraKeyModelsDynamicSearch = {
               params: { key_model_id: '_new' }
             },
             hide() {
-              return false
+              return !loginData.hasPermission(
+                PERMISSIONS.HIERA.KEY_MODELS_DYNAMIC.CREATE
+              )
             }
           }
         ]

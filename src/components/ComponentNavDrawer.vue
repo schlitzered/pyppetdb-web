@@ -1,18 +1,11 @@
-/*
- * Copyright 2026 Stephan Schultchen
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+/* * Copyright 2026 Stephan Schultchen * * Licensed under the Apache License,
+Version 2.0 (the "License"); * you may not use this file except in compliance
+with the License. * You may obtain a copy of the License at * *
+http://www.apache.org/licenses/LICENSE-2.0 * * Unless required by applicable law
+or agreed to in writing, software * distributed under the License is distributed
+on an "AS IS" BASIS, * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+express or implied. * See the License for the specific language governing
+permissions and * limitations under the License. */
 <template>
   <v-navigation-drawer
     v-if="!route.meta.hideNav"
@@ -75,21 +68,25 @@ const loginData = loginDataStore()
 
 const navItems = computed(() => {
   let items = []
-  let user_is_admin = loginData.getUserDataIsAdmin
   router.getRoutes().forEach((item) => {
-    if (item.meta.appBar) {
-      if (
-        (item.meta.appBar.requireAdmin && user_is_admin) ||
-        !item.meta.appBar.requireAdmin
-      ) {
+    if (item.meta && item.meta.appBar) {
+      const appBar = item.meta.appBar
+      const user_is_admin = loginData.getUserDataIsAdmin
+      const hasAdmin =
+        (appBar.requireAdmin && user_is_admin) || !appBar.requireAdmin
+      const hasPerm =
+        !appBar.requiredPermission ||
+        loginData.hasPermission(appBar.requiredPermission)
+
+      if (hasAdmin && hasPerm) {
         items.push({
-          name: item.meta.appBar.name,
-          to: item.meta.appBar.to,
-          icon: item.meta.appBar.icon,
-          href: item.meta.appBar.href,
-          group: item.meta.appBar.group || 'Other',
-          groupOrder: item.meta.appBar.groupOrder || 999,
-          order: item.meta.appBar.order || 999
+          name: appBar.name,
+          to: appBar.to || item.name,
+          icon: appBar.icon,
+          href: appBar.href,
+          group: appBar.group || 'Other',
+          groupOrder: appBar.groupOrder ?? 999,
+          order: appBar.order ?? 999
         })
       }
     }

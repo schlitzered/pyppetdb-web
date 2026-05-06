@@ -1,18 +1,11 @@
-/*
- * Copyright 2026 Stephan Schultchen
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+/* * Copyright 2026 Stephan Schultchen * * Licensed under the Apache License,
+Version 2.0 (the "License"); * you may not use this file except in compliance
+with the License. * You may obtain a copy of the License at * *
+http://www.apache.org/licenses/LICENSE-2.0 * * Unless required by applicable law
+or agreed to in writing, software * distributed under the License is distributed
+on an "AS IS" BASIS, * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+express or implied. * See the License for the specific language governing
+permissions and * limitations under the License. */
 <template>
   <ComponentDialogWarning
     :msg="dialogDeleteMsg"
@@ -59,7 +52,9 @@
         <v-icon
           size="small"
           @click="formDelete(item)"
-          :disabled="!loginData.hasPermission('NODES:SECRETS_REDACTOR::DELETE')"
+          :disabled="
+            !loginData.hasPermission(PERMISSIONS.NODES.SECRETS_REDACTOR.DELETE)
+          "
           color="red"
         >
           mdi-delete
@@ -70,6 +65,7 @@
 </template>
 
 <script setup>
+import { PERMISSIONS } from '@/common/permissions'
 import { ref } from 'vue'
 import { useDataTable } from '@/common/datatable_generic'
 import { loginDataStore } from '@/store/login_data'
@@ -127,9 +123,11 @@ function dialogDeleteEvent(action) {
   } else {
     dialogDeleteShow.value = false
     dialogDeleteMsg.value = ''
-    api.delete(`/api/v1/nodes_secrets_redactor/${itemToDelete.value.id}`).then(() => {
-      reload()
-    })
+    api
+      .delete(`/api/v1/nodes_secrets_redactor/${itemToDelete.value.id}`)
+      .then(() => {
+        reload()
+      })
     itemToDelete.value = null
   }
 }

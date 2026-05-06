@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { PERMISSIONS } from '@/common/permissions'
+
 const routePyppetdbNodesSearch = {
   path: '/pyppetdb_nodes',
   component: () => import('@/layouts/default/LayoutDefault.vue'),
@@ -21,7 +23,8 @@ const routePyppetdbNodesSearch = {
       name: 'PyppetdbNodes',
       to: 'PyppetdbNodesSearch',
       href: '/pyppetdb_nodes',
-      requireAdmin: true,
+      requireAdmin: false,
+      requiredPermission: PERMISSIONS.PYPPETDB.NODES.GET,
       icon: 'mdi-server',
       group: 'System',
       groupOrder: 10,

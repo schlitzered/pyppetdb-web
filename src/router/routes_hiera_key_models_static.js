@@ -1,3 +1,4 @@
+import { PERMISSIONS } from '@/common/permissions'
 /*
  * Copyright 2026 Stephan Schultchen
  *
@@ -22,6 +23,7 @@ const routeHieraKeyModelsStaticSearch = {
       to: 'HieraKeyModelsStaticSearch',
       href: '/hiera/key_models/static',
       requireAdmin: false,
+      requiredPermission: PERMISSIONS.HIERA.GET,
       icon: 'mdi-key-variant',
       group: 'Hiera',
       groupOrder: 2,

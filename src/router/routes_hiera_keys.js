@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { loginDataStore } from '@/store/login_data'
+import { PERMISSIONS } from '@/common/permissions'
+
 const routeHieraKeysSearch = {
   path: '/hiera/keys',
   component: () => import('@/layouts/default/LayoutDefault.vue'),
@@ -22,6 +25,7 @@ const routeHieraKeysSearch = {
       to: 'HieraKeysSearch',
       href: '/hiera/keys',
       requireAdmin: false,
+      requiredPermission: PERMISSIONS.HIERA.GET,
       icon: 'mdi-key',
       group: 'Hiera',
       groupOrder: 2,
@@ -38,6 +42,7 @@ const routeHieraKeysSearch = {
       }
     ],
     toolBar() {
+      const loginData = loginDataStore()
       return {
         title: `Hiera Keys`,
         items: [
@@ -45,7 +50,9 @@ const routeHieraKeysSearch = {
             title: 'New Key',
             to: { name: 'HieraKeysCRUD', params: { key_id: '_new' } },
             hide() {
-              return false
+              return !loginData.hasPermission(
+                PERMISSIONS.HIERA.KEY_MODELS.CREATE
+              )
             }
           }
         ]

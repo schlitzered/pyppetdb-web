@@ -1,18 +1,11 @@
-/*
- * Copyright 2026 Stephan Schultchen
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+/* * Copyright 2026 Stephan Schultchen * * Licensed under the Apache License,
+Version 2.0 (the "License"); * you may not use this file except in compliance
+with the License. * You may obtain a copy of the License at * *
+http://www.apache.org/licenses/LICENSE-2.0 * * Unless required by applicable law
+or agreed to in writing, software * distributed under the License is distributed
+on an "AS IS" BASIS, * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+express or implied. * See the License for the specific language governing
+permissions and * limitations under the License. */
 <template>
   <ComponentDialogWarning
     :msg="dialogDeleteMsg"
@@ -39,42 +32,54 @@
 
         <!-- WYSIWYG Token Editor for Executable -->
         <div class="mb-4">
-           <v-combobox
-             v-if="!formDataReadOnly"
-             v-model="executableTokens"
-             v-model:search="executableInput"
-             label="Executable & Arguments"
-             :placeholder="placeholderExecutable"
-             multiple
-             chips
-             closable-chips
-             :error-messages="executableError"
-             @keydown="handleExecutableKeyDown"
-             hint="Each chip is a single argument. Security: & | ; are forbidden."
-             persistent-hint
-           >
-             <template v-slot:selection="{ item, index }">
-               <v-chip color="primary" variant="flat" size="small" closable @click:close="executableTokens.splice(index, 1)">
-                 {{ item.title }}
-               </v-chip>
-             </template>
-           </v-combobox>
-           <div v-else>
-             <v-label class="text-subtitle-2">Executable & Arguments</v-label>
-             <div class="pa-2 border rounded bg-grey-lighten-4 min-height-48 d-flex flex-wrap align-center">
-               <v-chip
-                 v-for="(token, idx) in executableTokens"
-                 :key="idx"
-                 size="small"
-                 color="primary"
-                 variant="outlined"
-                 class="ma-1"
-               >
-                 {{ token }}
-               </v-chip>
-               <span v-if="executableTokens.length === 0" class="text-caption text-grey ml-2">No executable defined</span>
-             </div>
-           </div>
+          <v-combobox
+            v-if="!formDataReadOnly"
+            v-model="executableTokens"
+            v-model:search="executableInput"
+            label="Executable & Arguments"
+            :placeholder="placeholderExecutable"
+            multiple
+            chips
+            closable-chips
+            :error-messages="executableError"
+            @keydown="handleExecutableKeyDown"
+            hint="Each chip is a single argument. Security: & | ; are forbidden."
+            persistent-hint
+          >
+            <template v-slot:selection="{ item, index }">
+              <v-chip
+                color="primary"
+                variant="flat"
+                size="small"
+                closable
+                @click:close="executableTokens.splice(index, 1)"
+              >
+                {{ item.title }}
+              </v-chip>
+            </template>
+          </v-combobox>
+          <div v-else>
+            <v-label class="text-subtitle-2">Executable & Arguments</v-label>
+            <div
+              class="pa-2 border rounded bg-grey-lighten-4 min-height-48 d-flex flex-wrap align-center"
+            >
+              <v-chip
+                v-for="(token, idx) in executableTokens"
+                :key="idx"
+                size="small"
+                color="primary"
+                variant="outlined"
+                class="ma-1"
+              >
+                {{ token }}
+              </v-chip>
+              <span
+                v-if="executableTokens.length === 0"
+                class="text-caption text-grey ml-2"
+                >No executable defined</span
+              >
+            </div>
+          </div>
         </div>
 
         <v-text-field
@@ -104,10 +109,18 @@
 
         <v-divider class="my-4"></v-divider>
         <v-list-subheader>Parameters (Synced from Template)</v-list-subheader>
-        <div v-if="!Object.keys(formData.params).length" class="text-caption pa-2">
-          No parameters found in template. Add placeholders like {VAR} to create them.
+        <div
+          v-if="!Object.keys(formData.params).length"
+          class="text-caption pa-2"
+        >
+          No parameters found in template. Add placeholders like {VAR} to create
+          them.
         </div>
-        <div v-for="(param, name) in formData.params" :key="'param-' + name" class="pa-2 border rounded mb-2">
+        <div
+          v-for="(param, name) in formData.params"
+          :key="'param-' + name"
+          class="pa-2 border rounded mb-2"
+        >
           <v-row align="center">
             <v-col cols="3">
               <v-text-field
@@ -184,14 +197,20 @@
         >
           Add Env Var
         </v-btn>
-        <div v-for="(param, name) in formData.environment_variables" :key="'env-' + name" class="pa-2 border rounded mb-2">
+        <div
+          v-for="(param, name) in formData.environment_variables"
+          :key="'env-' + name"
+          class="pa-2 border rounded mb-2"
+        >
           <v-row align="center">
             <v-col cols="3">
               <v-text-field
                 v-model="param._temp_name"
                 label="Name"
                 :readonly="formDataReadOnly"
-                @blur="renameParam('environment_variables', name, param._temp_name)"
+                @blur="
+                  renameParam('environment_variables', name, param._temp_name)
+                "
                 hide-details
               ></v-text-field>
             </v-col>
@@ -205,7 +224,7 @@
               ></v-select>
             </v-col>
             <v-col cols="6">
-               <v-row v-if="param.type === 'enum'">
+              <v-row v-if="param.type === 'enum'">
                 <v-col>
                   <v-combobox
                     v-model="param.options"
@@ -259,7 +278,6 @@
             </v-col>
           </v-row>
         </div>
-
       </v-card-text>
       <v-divider v-if="!formDataReadOnly"></v-divider>
       <v-card-actions v-if="!formDataReadOnly">
@@ -279,16 +297,19 @@
 </template>
 
 <script setup>
-import { reactive, ref, nextTick, watch } from 'vue'
+import { PERMISSIONS } from '@/common/permissions'
+import { reactive, ref, nextTick, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
 
 import api from '@/api/common'
 import { useCrudReload } from '@/common/crud_generic'
+import { loginDataStore } from '@/store/login_data'
 
 const route = useRoute()
 const router = useRouter()
+const loginData = loginDataStore()
 
 const dialogDeleteShow = ref(false)
 const dialogDeleteMsg = ref('')
@@ -315,7 +336,7 @@ function stringToTokens(str) {
   const result = []
   let current = ''
   for (let i = 0; i < str.length; i++) {
-    if (str[i] === '\\' && i + 1 < str.length && str[i+1] === ',') {
+    if (str[i] === '\\' && i + 1 < str.length && str[i + 1] === ',') {
       current += ','
       i++
     } else if (str[i] === ',') {
@@ -326,11 +347,11 @@ function stringToTokens(str) {
     }
   }
   result.push(current)
-  return result.filter(t => t.length > 0)
+  return result.filter((t) => t.length > 0)
 }
 
 function tokensToString(arr) {
-  return arr.map(t => t.replace(/,/g, '\\,')).join(',')
+  return arr.map((t) => t.replace(/\\/g, '\\\\').replace(/,/g, '\\,')).join(',')
 }
 
 const form = ref(null)
@@ -342,6 +363,16 @@ const formData = reactive({
   params_template: [],
   params: {},
   environment_variables: {}
+})
+
+const formButtonEditShow = computed(() => {
+  if (route.params.definition_id === '_new') return false
+  return loginData.hasPermission(PERMISSIONS.JOBS.DEFINITION.UPDATE)
+})
+
+const formButtonDeleteShow = computed(() => {
+  if (route.params.definition_id === '_new') return false
+  return loginData.hasPermission(PERMISSIONS.JOBS.DEFINITION.DELETE)
 })
 
 const paramsTemplateUIString = ref('')
@@ -385,7 +416,8 @@ watch(
   { immediate: true }
 )
 
-const placeholderExecutable = 'Type and press Space or Enter (use "" for spaces)'
+const placeholderExecutable =
+  'Type and press Space or Enter (use "" for spaces)'
 const placeholderParams = 'Type your template here. Use {VAR} for placeholders.'
 
 // UI-State für die Chips (Tokens)
@@ -394,24 +426,31 @@ const executableInput = ref('')
 const executableError = ref('')
 
 // Synchronisierung: String (API) -> Tokens (UI)
-watch(() => formData.executable, (newVal) => {
-  const newTokens = stringToTokens(newVal)
-  if (JSON.stringify(newTokens) !== JSON.stringify(executableTokens.value)) {
-    executableTokens.value = newTokens
+watch(
+  () => formData.executable,
+  (newVal) => {
+    const newTokens = stringToTokens(newVal)
+    if (JSON.stringify(newTokens) !== JSON.stringify(executableTokens.value)) {
+      executableTokens.value = newTokens
+    }
   }
-})
+)
 
 // Synchronisierung: Tokens (UI) -> String (API)
-watch(() => executableTokens.value, (newVal) => {
-  formData.executable = tokensToString(newVal)
-}, { deep: true })
+watch(
+  () => executableTokens.value,
+  (newVal) => {
+    formData.executable = tokensToString(newVal)
+  },
+  { deep: true }
+)
 
 function handleExecutableKeyDown(event) {
   if (event.key === ' ' || event.key === 'Enter') {
     const val = executableInput.value.trim()
     if (!val) {
-       event.preventDefault()
-       return
+      event.preventDefault()
+      return
     }
 
     // Quoting: Falls es mit " beginnt, warten wir auf das schließende "
@@ -438,20 +477,15 @@ function addExecutableToken(val) {
 }
 const formDataReadOnly = ref(true)
 const formDataValid = ref(false)
-const formButtonDeleteShow = ref(true)
-const formButtonEditShow = ref(false)
 const formInputIdReadOnly = ref(true)
 
 function initializeFormState() {
   if (route.params.definition_id !== '_new') {
     formInputIdReadOnly.value = true
     formDataReadOnly.value = true
-    formButtonEditShow.value = true
   } else if (route.params.definition_id === '_new') {
     formInputIdReadOnly.value = false
     formDataReadOnly.value = false
-    formButtonDeleteShow.value = false
-    formButtonEditShow.value = false
   }
   formGetData()
 }
@@ -513,7 +547,7 @@ function formSubmit(event) {
   event.preventDefault()
   let method = 'put'
   let url = `/api/v1/jobs/definitions/${formData.id}`
-  
+
   const cleanParams = (p) => {
     const cleaned = {}
     Object.entries(p).forEach(([k, v]) => {
@@ -571,28 +605,32 @@ function formGetData() {
     formData.params = {}
     formData.environment_variables = {}
   } else {
-    api.get(`/api/v1/jobs/definitions/${route.params.definition_id}`).then((data) => {
-      if (data) {
-        formData.id = data.id
-        formData.executable = data.executable
-        formData.user = data.user
-        formData.group = data.group
-        formData.params_template = data.params_template
-        
-        const addTempNames = (p) => {
-          const withTemp = {}
-          if (p) {
-            Object.entries(p).forEach(([k, v]) => {
-              withTemp[k] = { ...v, _temp_name: k }
-            })
-          }
-          return withTemp
-        }
+    api
+      .get(`/api/v1/jobs/definitions/${route.params.definition_id}`)
+      .then((data) => {
+        if (data) {
+          formData.id = data.id
+          formData.executable = data.executable
+          formData.user = data.user
+          formData.group = data.group
+          formData.params_template = data.params_template
 
-        formData.params = addTempNames(data.params)
-        formData.environment_variables = addTempNames(data.environment_variables)
-      }
-    })
+          const addTempNames = (p) => {
+            const withTemp = {}
+            if (p) {
+              Object.entries(p).forEach(([k, v]) => {
+                withTemp[k] = { ...v, _temp_name: k }
+              })
+            }
+            return withTemp
+          }
+
+          formData.params = addTempNames(data.params)
+          formData.environment_variables = addTempNames(
+            data.environment_variables
+          )
+        }
+      })
   }
 }
 

@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { loginDataStore } from '@/store/login_data'
+import { PERMISSIONS } from '@/common/permissions'
+
 const routeJobsDefinitionsSearch = {
   path: '/jobs/definitions',
   component: () => import('@/layouts/default/LayoutDefault.vue'),
@@ -22,6 +25,7 @@ const routeJobsDefinitionsSearch = {
       to: 'JobsDefinitionsSearch',
       href: '/jobs/definitions',
       requireAdmin: false,
+      requiredPermission: PERMISSIONS.JOBS.GET,
       icon: 'mdi-file-cog',
       group: 'Jobs',
       groupOrder: 5,
@@ -32,13 +36,21 @@ const routeJobsDefinitionsSearch = {
       { title: 'Job Definitions', to: { name: 'JobsDefinitionsSearch' } }
     ],
     toolBar() {
+      const loginData = loginDataStore()
       return {
         title: `Job Definitions`,
         items: [
           {
             title: 'New Definition',
-            to: { name: 'JobsDefinitionsCRUD', params: { definition_id: '_new' } },
-            requireAdmin: false
+            to: {
+              name: 'JobsDefinitionsCRUD',
+              params: { definition_id: '_new' }
+            },
+            hide() {
+              return !loginData.hasPermission(
+                PERMISSIONS.JOBS.DEFINITION.CREATE
+              )
+            }
           }
         ]
       }
@@ -89,6 +101,7 @@ const routeJobsSearch = {
       to: 'JobsSearch',
       href: '/jobs/jobs',
       requireAdmin: false,
+      requiredPermission: PERMISSIONS.JOBS.GET,
       icon: 'mdi-play-network',
       group: 'Jobs',
       groupOrder: 5,
@@ -99,13 +112,16 @@ const routeJobsSearch = {
       { title: 'Jobs', to: { name: 'JobsSearch' } }
     ],
     toolBar() {
+      const loginData = loginDataStore()
       return {
         title: `Jobs`,
         items: [
           {
             title: 'New Job',
             to: { name: 'JobsCRUD', params: { job_id: '_new' } },
-            hide() { return false }
+            hide() {
+              return !loginData.hasPermissionPattern('^JOBS:JOB:.*:CREATE$')
+            }
           }
         ]
       }
@@ -156,6 +172,7 @@ const routeJobsNodesJobsSearch = {
       to: 'JobsNodesJobsSearch',
       href: '/jobs/nodes_jobs',
       requireAdmin: false,
+      requiredPermission: PERMISSIONS.JOBS.GET,
       icon: 'mdi-format-list-bulleted-type',
       group: 'Jobs',
       groupOrder: 5,

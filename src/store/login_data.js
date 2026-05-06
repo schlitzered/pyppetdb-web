@@ -29,14 +29,38 @@ export const loginDataStore = defineStore('loginData', () => {
 
   const getUserData = computed(() => userData.value)
   const getUserDataId = computed(() => userData.value.id)
-  const getUserDataIsAdmin = computed(() => userData.value.admin)
-  const getUserDataPermissions = computed(() => userData.value.permissions || [])
+  const getUserDataIsAdmin = computed(
+    () => userData.value.admin === true || userData.value.admin === 1
+  )
+  const getUserDataPermissions = computed(
+    () => userData.value.permissions || []
+  )
 
   const hasPermission = (permission) => {
-    if (userData.value.admin) {
+    if (getUserDataIsAdmin.value) {
       return true
     }
     return getUserDataPermissions.value.includes(permission)
+  }
+
+  const hasPermissionPattern = (pattern) => {
+    if (getUserDataIsAdmin.value) {
+      return true
+    }
+    const regex = new RegExp(pattern)
+    return getUserDataPermissions.value.some((p) => regex.test(p))
+  }
+
+  const getPermissionMatches = (pattern) => {
+    const regex = new RegExp(pattern)
+    const matches = []
+    getUserDataPermissions.value.forEach((p) => {
+      const m = p.match(regex)
+      if (m && m.length > 1) {
+        matches.push(m[1])
+      }
+    })
+    return matches
   }
 
   function setTimestamp() {
@@ -69,6 +93,8 @@ export const loginDataStore = defineStore('loginData', () => {
     getUserDataIsAdmin,
     getUserDataPermissions,
     hasPermission,
+    hasPermissionPattern,
+    getPermissionMatches,
     resetTimestamp,
     resetUserData,
     setTimestamp,

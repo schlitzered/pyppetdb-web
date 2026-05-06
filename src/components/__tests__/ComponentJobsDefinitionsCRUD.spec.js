@@ -35,18 +35,20 @@ vi.mock('vue-router', () => ({
 }))
 
 vi.mock('vuetify', async (importOriginal) => {
-  const actual = await importOriginal();
+  const actual = await importOriginal()
   return {
     ...actual,
     useTheme: vi.fn(() => ({
       global: { name: { value: 'light' } }
     }))
-  };
-});
+  }
+})
 
 vi.mock('@/api/common', () => ({
   default: {
-    get: vi.fn(() => Promise.resolve({ result: [], meta: {}, nodes: [], filters: [] })),
+    get: vi.fn(() =>
+      Promise.resolve({ result: [], meta: {}, nodes: [], filters: [] })
+    ),
     request: vi.fn(() => Promise.resolve({})),
     delete: vi.fn(() => Promise.resolve({}))
   }
@@ -56,6 +58,9 @@ vi.mock('@/store/login_data', () => ({
   loginDataStore: vi.fn(() => ({
     getUserDataIsAdmin: true,
     isLoaded: false,
+    hasPermission: vi.fn(() => true),
+    hasPermissionPattern: vi.fn(() => true),
+    getPermissionMatches: vi.fn(() => []),
     resetTimestamp: vi.fn(),
     resetUserData: vi.fn(),
     resetIsLoaded: vi.fn(),
@@ -78,8 +83,8 @@ describe('ComponentJobsDefinitionsCRUD', () => {
     const wrapper = mount(ComponentJobsDefinitionsCRUD, {
       global: {
         stubs: {
-          'ComponentDialogWarning': true,
-          'ComponentGenericToolBar': true,
+          ComponentDialogWarning: true,
+          ComponentGenericToolBar: true,
           'v-card': true,
           'v-card-title': true,
           'v-card-text': true,
@@ -101,7 +106,7 @@ describe('ComponentJobsDefinitionsCRUD', () => {
         }
       }
     })
-    
+
     expect(wrapper.exists()).toBe(true)
   })
 
@@ -109,7 +114,7 @@ describe('ComponentJobsDefinitionsCRUD', () => {
     const wrapper = mount(ComponentJobsDefinitionsCRUD, {
       global: {
         stubs: {
-          'ComponentDialogWarning': true,
+          ComponentDialogWarning: true,
           'v-card': true,
           'v-card-text': true,
           'v-card-actions': true,
@@ -140,7 +145,7 @@ describe('ComponentJobsDefinitionsCRUD', () => {
 
     // Simulate dialog response with 'confirm'
     await wrapper.vm.dialogDeleteEvent('confirm')
-    
+
     expect(api.delete).toHaveBeenCalledWith('/api/v1/jobs/definitions/test-def')
     expect(wrapper.vm.dialogDeleteShow).toBe(false)
   })

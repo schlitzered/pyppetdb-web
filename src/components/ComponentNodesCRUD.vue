@@ -1,18 +1,11 @@
-/*
- * Copyright 2026 Stephan Schultchen
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+/* * Copyright 2026 Stephan Schultchen * * Licensed under the Apache License,
+Version 2.0 (the "License"); * you may not use this file except in compliance
+with the License. * You may obtain a copy of the License at * *
+http://www.apache.org/licenses/LICENSE-2.0 * * Unless required by applicable law
+or agreed to in writing, software * distributed under the License is distributed
+on an "AS IS" BASIS, * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+express or implied. * See the License for the specific language governing
+permissions and * limitations under the License. */
 <template>
   <ComponentDialogWarning
     :msg="dialogDeleteMsg"
@@ -323,6 +316,7 @@
 </template>
 
 <script setup>
+import { PERMISSIONS } from '@/common/permissions'
 import {
   syncExpPanelToUrl,
   syncPaginationToUrl,
@@ -336,11 +330,13 @@ import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
 import api from '@/api/common'
 import { apiErrorStore } from '@/store/api_error'
 import { useCrudReload } from '@/common/crud_generic'
+import { loginDataStore } from '@/store/login_data'
 
 const apiError = apiErrorStore()
 
 const route = useRoute()
 const router = useRouter()
+const loginData = loginDataStore()
 
 const dialogDeleteShow = ref(false)
 const dialogDeleteMsg = ref('')
@@ -507,8 +503,15 @@ const form = ref(null)
 const formData = reactive({})
 const formDataReadOnly = ref(true)
 const formDataValid = ref(false)
-const formButtonDeleteShow = ref(true)
-const formButtonEditShow = ref(true)
+
+const formButtonEditShow = computed(() => {
+  return loginData.hasPermission(PERMISSIONS.NODES.UPDATE)
+})
+
+const formButtonDeleteShow = computed(() => {
+  return loginData.hasPermission(PERMISSIONS.NODES.DELETE)
+})
+
 const formInputIdReadOnly = ref(true)
 const formInputIdShow = ref(true)
 
@@ -648,7 +651,6 @@ function formGetNodeData() {
     }
   })
 }
-
 function handleFactsTableUpdate(options) {
   tableFactsSortBy.splice(0, tableFactsSortBy.length, ...options.sortBy)
   updateUrlQuery()
