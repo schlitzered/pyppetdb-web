@@ -351,7 +351,7 @@ function stringToTokens(str) {
 }
 
 function tokensToString(arr) {
-  return arr.map((t) => t.replace(/,/g, '\\,')).join(',')
+  return arr.map((t) => t.replace(/\\/g, '\\\\').replace(/,/g, '\\,')).join(',')
 }
 
 const form = ref(null)
