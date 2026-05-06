@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import { loginDataStore } from '@/store/login_data'
+import { PERMISSIONS } from '@/common/permissions'
 
 const routeNodesSecretsRedactorSearch = {
   path: '/nodes/secrets_redactor',
@@ -51,7 +52,9 @@ const routeNodesSecretsRedactorSearch = {
             },
             hide() {
               const loginData = loginDataStore()
-              return !loginData.hasPermission('NODES:SECRETS_REDACTOR::CREATE')
+              return !loginData.hasPermission(
+                PERMISSIONS.NODES.SECRETS_REDACTOR.CREATE
+              )
             }
           }
         ]

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import { loginDataStore } from '@/store/login_data'
+import { PERMISSIONS } from '@/common/permissions'
 
 const routeNodesGroupsSearch = {
   path: '/nodes_groups',
@@ -24,7 +25,7 @@ const routeNodesGroupsSearch = {
       to: 'NodesGroupsSearch',
       href: '/nodes_groups',
       requireAdmin: false,
-      requiredPermission: 'NODES:GROUPS::GET',
+      requiredPermission: PERMISSIONS.NODES.GROUPS.GET,
       icon: 'mdi-account-multiple',
       group: 'Nodes',
       groupOrder: 1,
@@ -49,7 +50,7 @@ const routeNodesGroupsSearch = {
             title: 'New Node Group',
             to: { name: 'NodesGroupsCRUD', params: { node_group: '_new' } },
             hide() {
-              return !loginData.hasPermission('NODES:GROUPS::CREATE')
+              return !loginData.hasPermission(PERMISSIONS.NODES.GROUPS.CREATE)
             }
           }
         ]

@@ -1,27 +1,18 @@
-/*
- * Copyright 2026 Stephan Schultchen
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+/* * Copyright 2026 Stephan Schultchen * * Licensed under the Apache License,
+Version 2.0 (the "License"); * you may not use this file except in compliance
+with the License. * You may obtain a copy of the License at * *
+http://www.apache.org/licenses/LICENSE-2.0 * * Unless required by applicable law
+or agreed to in writing, software * distributed under the License is distributed
+on an "AS IS" BASIS, * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+express or implied. * See the License for the specific language governing
+permissions and * limitations under the License. */
 <template>
   <v-card>
     <v-card-text>
       <div v-if="loading" class="d-flex justify-center pa-4">
         <v-progress-circular indeterminate></v-progress-circular>
       </div>
-      <div v-else-if="!formData.id">
-        Node Job not found.
-      </div>
+      <div v-else-if="!formData.id">Node Job not found.</div>
       <v-row v-else>
         <v-col cols="12" sm="6">
           <strong>Node Job ID:</strong> {{ formData.id }}
@@ -64,7 +55,12 @@
         ></v-text-field>
       </div>
 
-      <div v-if="(formData.log_blobs && formData.log_blobs.length) || allLines.length > 0">
+      <div
+        v-if="
+          (formData.log_blobs && formData.log_blobs.length) ||
+          allLines.length > 0
+        "
+      >
         <v-infinite-scroll
           :key="refreshKey"
           ref="logScrollRef"
@@ -96,12 +92,17 @@
           <template v-slot:error>
             <div class="pa-2 text-center text-error">
               Error loading logs.
-              <v-btn size="small" variant="text" @click="formGetData">Retry All</v-btn>
+              <v-btn size="small" variant="text" @click="formGetData"
+                >Retry All</v-btn
+              >
             </div>
           </template>
         </v-infinite-scroll>
 
-        <div v-if="allLines.length === 0 && !isConnected" class="text-center pa-4">
+        <div
+          v-if="allLines.length === 0 && !isConnected"
+          class="text-center pa-4"
+        >
           <p class="text-grey mb-2">
             No logs loaded yet (index: {{ nextBlobIndex }} /
             {{ formData.log_blobs.length }})
@@ -256,12 +257,14 @@ function startLogStream() {
     (data) => {
       formData.status = data.status
       // Re-fetch to get final blob IDs if we want to persist the view properly on reload
-      api.get(`/api/v1/jobs/nodes_jobs/${route.params.node_job_id}`).then((res) => {
-        if (res) {
-          formData.status = res.status
-          formData.log_blobs = [...new Set(res.log_blobs)]
-        }
-      })
+      api
+        .get(`/api/v1/jobs/nodes_jobs/${route.params.node_job_id}`)
+        .then((res) => {
+          if (res) {
+            formData.status = res.status
+            formData.log_blobs = [...new Set(res.log_blobs)]
+          }
+        })
     }
   )
 }
@@ -336,7 +339,7 @@ async function loadNextBlobInternal() {
   if (index >= formData.log_blobs.length) return null
 
   const logId = formData.log_blobs[index]
-  
+
   currentFetchPromise = (async () => {
     logLoading.value = true
     try {

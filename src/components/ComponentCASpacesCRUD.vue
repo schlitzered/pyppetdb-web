@@ -1,18 +1,11 @@
-/*
- * Copyright 2026 Stephan Schultchen
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+/* * Copyright 2026 Stephan Schultchen * * Licensed under the Apache License,
+Version 2.0 (the "License"); * you may not use this file except in compliance
+with the License. * You may obtain a copy of the License at * *
+http://www.apache.org/licenses/LICENSE-2.0 * * Unless required by applicable law
+or agreed to in writing, software * distributed under the License is distributed
+on an "AS IS" BASIS, * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+express or implied. * See the License for the specific language governing
+permissions and * limitations under the License. */
 <template>
   <ComponentDialogWarning
     :msg="dialogDeleteMsg"
@@ -81,7 +74,8 @@
 </template>
 
 <script setup>
-import { reactive, ref, nextTick, watch } from 'vue'
+import { PERMISSIONS } from '@/common/permissions'
+import { reactive, ref, nextTick, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCrudReload } from '@/common/crud_generic'
 
@@ -117,8 +111,17 @@ const form = ref(null)
 const formData = reactive({})
 const formDataReadOnly = ref(true)
 const formDataValid = ref(false)
-const formButtonDeleteShow = ref(true)
-const formButtonEditShow = ref(false)
+
+const formButtonEditShow = computed(() => {
+  if (route.params.space_id === '_new') return false
+  return loginData.hasPermission(PERMISSIONS.CA.SPACES.UPDATE)
+})
+
+const formButtonDeleteShow = computed(() => {
+  if (route.params.space_id === '_new') return false
+  return loginData.hasPermission(PERMISSIONS.CA.SPACES.DELETE)
+})
+
 const formInputIdReadOnly = ref(true)
 
 const caChoices = ref([])
@@ -140,13 +143,9 @@ function initializeFormState() {
   if (route.params.space_id !== '_new') {
     formInputIdReadOnly.value = true
     formDataReadOnly.value = true
-    formButtonEditShow.value = loginData.hasPermission('CA:SPACES:UPDATE')
-    formButtonDeleteShow.value = loginData.hasPermission('CA:SPACES:DELETE')
   } else {
     formInputIdReadOnly.value = false
     formDataReadOnly.value = false
-    formButtonDeleteShow.value = false
-    formButtonEditShow.value = false
   }
   formGetData()
   getCAChoices()
@@ -190,7 +189,6 @@ function formSubmit(event) {
   }
   api.request(method, url, data).then(() => {
     if (route.params.space_id === '_new') {
-      formButtonDeleteShow.value = true
       router.push({
         name: 'CASpacesCRUD',
         params: { space_id: formData.id }

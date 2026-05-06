@@ -1,18 +1,11 @@
-/*
- * Copyright 2026 Stephan Schultchen
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+/* * Copyright 2026 Stephan Schultchen * * Licensed under the Apache License,
+Version 2.0 (the "License"); * you may not use this file except in compliance
+with the License. * You may obtain a copy of the License at * *
+http://www.apache.org/licenses/LICENSE-2.0 * * Unless required by applicable law
+or agreed to in writing, software * distributed under the License is distributed
+on an "AS IS" BASIS, * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+express or implied. * See the License for the specific language governing
+permissions and * limitations under the License. */
 <template>
   <v-card>
     <v-form ref="form" v-model="formDataValid">
@@ -50,7 +43,9 @@
         ></v-select>
 
         <v-divider class="my-4"></v-divider>
-        <v-label class="mb-2">Node Filters (AND connected parts, OR connected blocks)</v-label>
+        <v-label class="mb-2"
+          >Node Filters (AND connected parts, OR connected blocks)</v-label
+        >
         <div v-if="!formDataReadOnly">
           <v-card
             v-for="(filter, filterIndex) in nodeFilterBlocks"
@@ -80,16 +75,48 @@
             >
               <v-row align="center">
                 <v-col cols="3">
-                  <v-text-field v-model="part.fact" label="Fact" hide-details @update:model-value="onFilterUpdate"></v-text-field>
+                  <v-text-field
+                    v-model="part.fact"
+                    label="Fact"
+                    hide-details
+                    @update:model-value="onFilterUpdate"
+                  ></v-text-field>
                 </v-col>
                 <v-col cols="2">
-                  <v-select v-model="part.operator" :items="['eq','gt','gte','in','lt','lte','ne','nin','regex']" label="Op" hide-details @update:model-value="onFilterUpdate"></v-select>
+                  <v-select
+                    v-model="part.operator"
+                    :items="[
+                      'eq',
+                      'gt',
+                      'gte',
+                      'in',
+                      'lt',
+                      'lte',
+                      'ne',
+                      'nin',
+                      'regex'
+                    ]"
+                    label="Op"
+                    hide-details
+                    @update:model-value="onFilterUpdate"
+                  ></v-select>
                 </v-col>
                 <v-col cols="2">
-                   <v-select v-model="part.type" :items="['str','int','float','bool']" label="Type" hide-details @update:model-value="onFilterUpdate"></v-select>
+                  <v-select
+                    v-model="part.type"
+                    :items="['str', 'int', 'float', 'bool']"
+                    label="Type"
+                    hide-details
+                    @update:model-value="onFilterUpdate"
+                  ></v-select>
                 </v-col>
                 <v-col cols="4">
-                   <v-text-field v-model="part.value" label="Value" hide-details @update:model-value="onFilterUpdate"></v-text-field>
+                  <v-text-field
+                    v-model="part.value"
+                    label="Value"
+                    hide-details
+                    @update:model-value="onFilterUpdate"
+                  ></v-text-field>
                 </v-col>
                 <v-col cols="1">
                   <v-btn
@@ -122,7 +149,12 @@
           >
         </div>
         <div v-else>
-           <v-chip v-for="(f, i) in formData.node_filter" :key="i" class="ma-1">{{ f }}</v-chip>
+          <v-chip
+            v-for="(f, i) in formData.node_filter"
+            :key="i"
+            class="ma-1"
+            >{{ f }}</v-chip
+          >
         </div>
 
         <v-divider class="my-4"></v-divider>
@@ -137,7 +169,10 @@
           <template v-slot:item.node_job_id="{ item }">
             <router-link
               v-if="item.node_job_id"
-              :to="{ name: 'JobsNodesJobsCRUD', params: { node_job_id: item.node_job_id } }"
+              :to="{
+                name: 'JobsNodesJobsCRUD',
+                params: { node_job_id: item.node_job_id }
+              }"
             >
               {{ item.node_job_id }}
             </router-link>
@@ -160,12 +195,7 @@
             >
               New matching node
             </v-chip>
-            <v-chip
-              v-else
-              color="success"
-              size="x-small"
-              variant="outlined"
-            >
+            <v-chip v-else color="success" size="x-small" variant="outlined">
               Targeted
             </v-chip>
           </template>
@@ -181,75 +211,100 @@
           </template>
           <template v-slot:item.remote_agent.connected="{ item }">
             <v-icon :color="item.remote_agent?.connected ? 'success' : 'error'">
-              {{ item.remote_agent?.connected ? 'mdi-check-circle' : 'mdi-close-circle' }}
+              {{
+                item.remote_agent?.connected
+                  ? 'mdi-check-circle'
+                  : 'mdi-close-circle'
+              }}
             </v-icon>
           </template>
         </v-data-table>
 
         <v-divider class="my-4"></v-divider>
-        <v-list-subheader v-if="Object.keys(jobParams).length">Parameters</v-list-subheader>
+        <v-list-subheader v-if="Object.keys(jobParams).length"
+          >Parameters</v-list-subheader
+        >
         <div v-for="(def, name) in jobParams" :key="'param-' + name">
-           <v-text-field
-             v-if="def.type !== 'bool' && def.type !== 'enum'"
-             v-model="formData.parameters[name]"
-             :label="name"
-             :readonly="formDataReadOnly"
-             :type="def.type === 'int' || def.type === 'float' ? 'number' : 'text'"
-           ></v-text-field>
-           <v-select
-             v-else-if="def.type === 'enum'"
-             v-model="formData.parameters[name]"
-             :items="def.options"
-             :label="name"
-             :readonly="formDataReadOnly"
-           ></v-select>
-           <v-switch
-             v-else-if="def.type === 'bool'"
-             v-model="formData.parameters[name]"
-             :label="name"
-             :readonly="formDataReadOnly"
-           ></v-switch>
+          <v-text-field
+            v-if="def.type !== 'bool' && def.type !== 'enum'"
+            v-model="formData.parameters[name]"
+            :label="name"
+            :readonly="formDataReadOnly"
+            :type="
+              def.type === 'int' || def.type === 'float' ? 'number' : 'text'
+            "
+          ></v-text-field>
+          <v-select
+            v-else-if="def.type === 'enum'"
+            v-model="formData.parameters[name]"
+            :items="def.options"
+            :label="name"
+            :readonly="formDataReadOnly"
+          ></v-select>
+          <v-switch
+            v-else-if="def.type === 'bool'"
+            v-model="formData.parameters[name]"
+            :label="name"
+            :readonly="formDataReadOnly"
+          ></v-switch>
         </div>
 
-        <v-list-subheader v-if="Object.keys(jobEnvVars).length">Environment Variables</v-list-subheader>
+        <v-list-subheader v-if="Object.keys(jobEnvVars).length"
+          >Environment Variables</v-list-subheader
+        >
         <div v-for="(def, name) in jobEnvVars" :key="'env-' + name">
-           <v-text-field
-             v-if="def.type !== 'bool' && def.type !== 'enum'"
-             v-model="formData.env_vars[name]"
-             :label="name"
-             :readonly="formDataReadOnly"
-             :type="def.type === 'int' || def.type === 'float' ? 'number' : 'text'"
-           ></v-text-field>
-           <v-select
-             v-else-if="def.type === 'enum'"
-             v-model="formData.env_vars[name]"
-             :items="def.options"
-             :label="name"
-             :readonly="formDataReadOnly"
-           ></v-select>
-           <v-switch
-             v-else-if="def.type === 'bool'"
-             v-model="formData.env_vars[name]"
-             :label="name"
-             :readonly="formDataReadOnly"
-           ></v-switch>
+          <v-text-field
+            v-if="def.type !== 'bool' && def.type !== 'enum'"
+            v-model="formData.env_vars[name]"
+            :label="name"
+            :readonly="formDataReadOnly"
+            :type="
+              def.type === 'int' || def.type === 'float' ? 'number' : 'text'
+            "
+          ></v-text-field>
+          <v-select
+            v-else-if="def.type === 'enum'"
+            v-model="formData.env_vars[name]"
+            :items="def.options"
+            :label="name"
+            :readonly="formDataReadOnly"
+          ></v-select>
+          <v-switch
+            v-else-if="def.type === 'bool'"
+            v-model="formData.env_vars[name]"
+            :label="name"
+            :readonly="formDataReadOnly"
+          ></v-switch>
         </div>
       </v-card-text>
       <v-divider v-if="!formDataReadOnly"></v-divider>
       <v-card-actions v-if="!formDataReadOnly">
         <v-btn variant="text" @click="formReset">Reset</v-btn>
         <v-spacer></v-spacer>
-        <v-btn color="primary" variant="text" @click="formSubmit" :disabled="!canSubmit">Submit</v-btn>
+        <v-btn
+          color="primary"
+          variant="text"
+          @click="formSubmit"
+          :disabled="!canSubmit"
+          >Submit</v-btn
+        >
       </v-card-actions>
       <v-card-actions v-else>
         <v-spacer></v-spacer>
-        <v-btn color="red" variant="tonal" @click="onCancelClick" prepend-icon="mdi-cancel">Cancel Job</v-btn>
+        <v-btn
+          color="red"
+          variant="tonal"
+          @click="onCancelClick"
+          prepend-icon="mdi-cancel"
+          >Cancel Job</v-btn
+        >
       </v-card-actions>
     </v-form>
   </v-card>
 </template>
 
 <script setup>
+import { PERMISSIONS } from '@/common/permissions'
 import { reactive, ref, nextTick, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -297,7 +352,7 @@ const combinedNodes = computed(() => {
   const combined = []
   const processedIds = new Set()
 
-  currentNodes.forEach(node => {
+  currentNodes.forEach((node) => {
     processedIds.add(node.id)
     const statusInfo = nodeJobStatuses.value[node.id] || {}
     combined.push({
@@ -308,7 +363,7 @@ const combinedNodes = computed(() => {
     })
   })
 
-  originalNodeIds.forEach(id => {
+  originalNodeIds.forEach((id) => {
     if (!processedIds.has(id)) {
       const statusInfo = nodeJobStatuses.value[id] || {}
       combined.push({
@@ -329,12 +384,12 @@ const nodeFilterBlocks = ref([
 ])
 
 function hasJobCreatePermission(definitionId) {
-  if (loginData.hasPermission('JOBS:JOB::CREATE')) {
+  if (loginData.hasPermission(PERMISSIONS.JOBS.JOB.CREATE)) {
     return true
   }
   if (
     definitionId &&
-    loginData.hasPermission(`JOBS:JOB:${definitionId}:CREATE`)
+    loginData.hasPermission(PERMISSIONS.JOBS.JOB.CREATE_SPECIFIC(definitionId))
   ) {
     return true
   }
@@ -351,10 +406,14 @@ const canSubmit = computed(() => {
 
 function getStatusColor(status) {
   switch (status) {
-    case 'success': return 'success'
-    case 'failed': return 'error'
-    case 'running': return 'info'
-    default: return 'grey'
+    case 'success':
+      return 'success'
+    case 'failed':
+      return 'error'
+    case 'running':
+      return 'info'
+    default:
+      return 'grey'
   }
 }
 
@@ -397,7 +456,7 @@ function formReset(event) {
 
 function formSubmit(event) {
   event.preventDefault()
-  
+
   const formattedFilter = getFormattedFilters()
 
   const castValues = (values, definitions) => {
@@ -442,7 +501,9 @@ function formGetData() {
     formData.nodes = []
     jobParams.value = {}
     jobEnvVars.value = {}
-    nodeFilterBlocks.value = [[{ fact: '', operator: 'eq', type: 'str', value: '' }]]
+    nodeFilterBlocks.value = [
+      [{ fact: '', operator: 'eq', type: 'str', value: '' }]
+    ]
     currentlyMatchingNodes.value = []
     nodeJobStatuses.value = {}
   } else {
@@ -458,9 +519,18 @@ function formGetData() {
 }
 
 function getDefinitions() {
+  const isNew = route.params.job_id === '_new'
+  const hasGlobalCreate = loginData.hasPermission(PERMISSIONS.JOBS.JOB.CREATE)
+  if (isNew && !hasGlobalCreate) {
+    definitionChoices.value = loginData.getPermissionMatches(
+      '^JOBS:JOB:(.*):CREATE$'
+    )
+    return
+  }
+
   api.get('/api/v1/jobs/definitions', { limit: 1000 }).then((data) => {
     if (data) {
-      definitionChoices.value = data.result.map(d => d.id)
+      definitionChoices.value = data.result.map((d) => d.id)
     }
   })
 }
@@ -471,15 +541,25 @@ function onDefinitionChange(defId) {
     if (data) {
       jobParams.value = data.params
       jobEnvVars.value = data.environment_variables
-      
+
       if (!formDataReadOnly.value) {
         formData.parameters = {}
         Object.entries(data.params).forEach(([k, v]) => {
-          formData.parameters[k] = v.type === 'bool' ? false : (v.type === 'int' || v.type === 'float' ? 0 : '')
+          formData.parameters[k] =
+            v.type === 'bool'
+              ? false
+              : v.type === 'int' || v.type === 'float'
+                ? 0
+                : ''
         })
         formData.env_vars = {}
         Object.entries(data.environment_variables).forEach(([k, v]) => {
-          formData.env_vars[k] = v.type === 'bool' ? false : (v.type === 'int' || v.type === 'float' ? 0 : '')
+          formData.env_vars[k] =
+            v.type === 'bool'
+              ? false
+              : v.type === 'int' || v.type === 'float'
+                ? 0
+                : ''
         })
       }
     }
@@ -487,7 +567,9 @@ function onDefinitionChange(defId) {
 }
 
 function addFilterBlock() {
-  nodeFilterBlocks.value.push([{ fact: '', operator: 'eq', type: 'str', value: '' }])
+  nodeFilterBlocks.value.push([
+    { fact: '', operator: 'eq', type: 'str', value: '' }
+  ])
   onFilterUpdate()
 }
 
@@ -497,7 +579,12 @@ function removeFilterBlock(index) {
 }
 
 function addPart(filterIndex) {
-  nodeFilterBlocks.value[filterIndex].push({ fact: '', operator: 'eq', type: 'str', value: '' })
+  nodeFilterBlocks.value[filterIndex].push({
+    fact: '',
+    operator: 'eq',
+    type: 'str',
+    value: ''
+  })
   onFilterUpdate()
 }
 
@@ -520,10 +607,12 @@ function getFormattedFilters() {
     return formData.node_filter || []
   }
   const formattedFilter = []
-  nodeFilterBlocks.value.forEach(block => {
-    block.forEach(part => {
+  nodeFilterBlocks.value.forEach((block) => {
+    block.forEach((part) => {
       if (part.fact && part.operator && part.type && part.value !== undefined) {
-        formattedFilter.push(`${part.fact}:${part.operator}:${part.type}:${part.value}`)
+        formattedFilter.push(
+          `${part.fact}:${part.operator}:${part.type}:${part.value}`
+        )
       }
     })
   })
@@ -538,28 +627,34 @@ function updateMatchingNodes() {
   }
 
   nodesLoading.value = true
-  api.get('/api/v1/nodes', { fact: filters, limit: 1000 }).then((data) => {
-    if (data) {
-      currentlyMatchingNodes.value = data.result
-    }
-  }).finally(() => {
-    nodesLoading.value = false
-  })
+  api
+    .get('/api/v1/nodes', { fact: filters, limit: 1000 })
+    .then((data) => {
+      if (data) {
+        currentlyMatchingNodes.value = data.result
+      }
+    })
+    .finally(() => {
+      nodesLoading.value = false
+    })
 }
 
 function fetchNodeJobStatuses(jobId) {
   if (!jobId) return
   nodeJobStatusesLoading.value = true
-  api.get('/api/v1/jobs/nodes_jobs', { job_id: jobId, limit: 1000 }).then((data) => {
-    if (data && data.result) {
-      const statuses = {}
-      data.result.forEach(nj => {
-        statuses[nj.node_id] = { id: nj.id, status: nj.status }
-      })
-      nodeJobStatuses.value = statuses
-    }
-  }).finally(() => {
-    nodeJobStatusesLoading.value = false
-  })
+  api
+    .get('/api/v1/jobs/nodes_jobs', { job_id: jobId, limit: 1000 })
+    .then((data) => {
+      if (data && data.result) {
+        const statuses = {}
+        data.result.forEach((nj) => {
+          statuses[nj.node_id] = { id: nj.id, status: nj.status }
+        })
+        nodeJobStatuses.value = statuses
+      }
+    })
+    .finally(() => {
+      nodeJobStatusesLoading.value = false
+    })
 }
 </script>

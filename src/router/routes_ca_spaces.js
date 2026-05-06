@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import { loginDataStore } from '@/store/login_data'
+import { PERMISSIONS } from '@/common/permissions'
 
 const routeCASpacesSearch = {
   path: '/ca/spaces',
@@ -24,7 +25,7 @@ const routeCASpacesSearch = {
       to: 'CASpacesSearch',
       href: '/ca/spaces',
       requireAdmin: false,
-      requiredPermission: 'CA::GET',
+      requiredPermission: PERMISSIONS.CA.GET,
       icon: 'mdi-folder-key',
       group: 'CA',
       groupOrder: 4,
@@ -49,7 +50,7 @@ const routeCASpacesSearch = {
             title: 'New Space',
             to: { name: 'CASpacesCRUD', params: { space_id: '_new' } },
             hide() {
-              return !loginData.hasPermission('CA:SPACES:CREATE')
+              return !loginData.hasPermission(PERMISSIONS.CA.SPACES.CREATE)
             }
           }
         ]

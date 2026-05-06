@@ -36,14 +36,14 @@ vi.mock('vue-router', () => ({
 }))
 
 vi.mock('vuetify', async (importOriginal) => {
-  const actual = await importOriginal();
+  const actual = await importOriginal()
   return {
     ...actual,
     useTheme: vi.fn(() => ({
       global: { name: { value: 'light' } }
     }))
-  };
-});
+  }
+})
 
 vi.mock('@/api/common', () => ({
   default: {
@@ -56,8 +56,14 @@ vi.mock('@/api/common', () => ({
 vi.mock('@/store/login_data', () => ({
   loginDataStore: vi.fn(() => ({
     getUserDataIsAdmin: true,
+    isLoaded: false,
     hasPermission: vi.fn(() => true),
-    isLoaded: false
+    hasPermissionPattern: vi.fn(() => true),
+    getPermissionMatches: vi.fn(() => []),
+    resetTimestamp: vi.fn(),
+    resetUserData: vi.fn(),
+    resetIsLoaded: vi.fn(),
+    setUserData: vi.fn()
   }))
 }))
 
@@ -70,10 +76,11 @@ describe('ComponentNodesSecretsRedactorSearch', () => {
     const wrapper = mount(ComponentNodesSecretsRedactorSearch, {
       global: {
         stubs: {
-          'ComponentDialogWarning': true,
+          ComponentDialogWarning: true,
           'v-card': true,
           'v-data-table-server': {
-            template: '<div><slot name="top" /><slot name="item.actions" :item="{id: \'test\'}" /></div>'
+            template:
+              '<div><slot name="top" /><slot name="item.actions" :item="{id: \'test\'}" /></div>'
           },
           'v-expansion-panels': true,
           'v-expansion-panel': true,
@@ -84,7 +91,7 @@ describe('ComponentNodesSecretsRedactorSearch', () => {
         }
       }
     })
-    
+
     expect(wrapper.exists()).toBe(true)
   })
 
@@ -92,7 +99,7 @@ describe('ComponentNodesSecretsRedactorSearch', () => {
     const wrapper = mount(ComponentNodesSecretsRedactorSearch, {
       global: {
         stubs: {
-          'ComponentDialogWarning': true,
+          ComponentDialogWarning: true,
           'v-card': true,
           'v-data-table-server': true,
           'v-expansion-panels': true,
@@ -107,12 +114,14 @@ describe('ComponentNodesSecretsRedactorSearch', () => {
 
     const testItem = { id: 'test-secret-id' }
     wrapper.vm.formDelete(testItem)
-    
+
     expect(wrapper.vm.dialogDeleteShow).toBe(true)
     expect(wrapper.vm.dialogDeleteMsg).toContain('test-secret-id')
 
     await wrapper.vm.dialogDeleteEvent('confirm')
-    
-    expect(api.delete).toHaveBeenCalledWith('/api/v1/nodes_secrets_redactor/test-secret-id')
+
+    expect(api.delete).toHaveBeenCalledWith(
+      '/api/v1/nodes_secrets_redactor/test-secret-id'
+    )
   })
 })

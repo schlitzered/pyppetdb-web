@@ -1,18 +1,11 @@
-/*
- * Copyright 2026 Stephan Schultchen
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+/* * Copyright 2026 Stephan Schultchen * * Licensed under the Apache License,
+Version 2.0 (the "License"); * you may not use this file except in compliance
+with the License. * You may obtain a copy of the License at * *
+http://www.apache.org/licenses/LICENSE-2.0 * * Unless required by applicable law
+or agreed to in writing, software * distributed under the License is distributed
+on an "AS IS" BASIS, * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+express or implied. * See the License for the specific language governing
+permissions and * limitations under the License. */
 <template>
   <ComponentDialogWarning
     :msg="dialogDeleteMsg"
@@ -196,7 +189,8 @@
 </template>
 
 <script setup>
-import { reactive, ref, nextTick, watch } from 'vue'
+import { PERMISSIONS } from '@/common/permissions'
+import { reactive, ref, nextTick, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
@@ -236,8 +230,14 @@ const formData = reactive({
 })
 const formDataReadOnly = ref(true)
 const formDataValid = ref(false)
-const formButtonDeleteShow = ref(false)
-const formButtonEditShow = ref(false)
+const formButtonDeleteShow = computed(() => {
+  if (route.params.node_group === '_new') return false
+  return loginData.hasPermission(PERMISSIONS.NODES.GROUPS.DELETE)
+})
+const formButtonEditShow = computed(() => {
+  if (route.params.node_group === '_new') return false
+  return loginData.hasPermission(PERMISSIONS.NODES.GROUPS.UPDATE)
+})
 const formInputIdReadOnly = ref(true)
 
 const filterTableData = ref([])
@@ -266,18 +266,12 @@ function initializeFormState() {
   if (route.params.node_group !== '_new') {
     formInputIdReadOnly.value = true
     formDataReadOnly.value = true
-    formButtonEditShow.value = loginData.hasPermission('NODES:GROUPS::UPDATE')
-    formButtonDeleteShow.value = loginData.hasPermission('NODES:GROUPS::DELETE')
   } else if (route.params.node_group === '_new') {
     formInputIdReadOnly.value = false
     formDataReadOnly.value = false
-    formButtonDeleteShow.value = false
-    formButtonEditShow.value = false
   } else {
     formInputIdReadOnly.value = true
     formDataReadOnly.value = true
-    formButtonEditShow.value = false
-    formButtonDeleteShow.value = false
   }
   formGetData()
 }
@@ -443,17 +437,19 @@ function pickRandomDonorNode() {
     if (data && data.meta && data.meta.result_size > 0) {
       const total = data.meta.result_size
       const randomOffset = Math.floor(Math.random() * total)
-      api.get('/api/v1/nodes', { limit: 10, page: randomOffset }).then((data) => {
-        if (data && data.result && data.result.length > 0) {
-          const node = data.result[0]
-          donorNode.value = node.id
-          if (!donorNodeChoices.value.includes(node.id)) {
-            donorNodeChoices.value.push(node.id)
+      api
+        .get('/api/v1/nodes', { limit: 10, page: randomOffset })
+        .then((data) => {
+          if (data && data.result && data.result.length > 0) {
+            const node = data.result[0]
+            donorNode.value = node.id
+            if (!donorNodeChoices.value.includes(node.id)) {
+              donorNodeChoices.value.push(node.id)
+            }
+            onDonorNodeChange()
           }
-          onDonorNodeChange()
-        }
-        donorNodeLoading.value = false
-      })
+          donorNodeLoading.value = false
+        })
     } else {
       donorNodeLoading.value = false
     }
@@ -528,7 +524,9 @@ async function fetchFactValues(factId) {
       fact_id: factId
     })
     if (data && data.result && data.result.length > 0) {
-      const nonStringEntry = data.result.find((v) => typeof v.value !== 'string')
+      const nonStringEntry = data.result.find(
+        (v) => typeof v.value !== 'string'
+      )
       if (nonStringEntry) {
         factValues[factId] = []
         factValidity[factId] = `type_mismatch:${typeof nonStringEntry.value}`

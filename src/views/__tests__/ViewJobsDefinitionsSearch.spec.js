@@ -34,18 +34,20 @@ vi.mock('vue-router', () => ({
 }))
 
 vi.mock('vuetify', async (importOriginal) => {
-  const actual = await importOriginal();
+  const actual = await importOriginal()
   return {
     ...actual,
     useTheme: vi.fn(() => ({
       global: { name: { value: 'light' } }
     }))
-  };
-});
+  }
+})
 
 vi.mock('@/api/common', () => ({
   default: {
-    get: vi.fn(() => Promise.resolve({ result: [], meta: {}, nodes: [], filters: [] })),
+    get: vi.fn(() =>
+      Promise.resolve({ result: [], meta: {}, nodes: [], filters: [] })
+    ),
     request: vi.fn(() => Promise.resolve({})),
     delete: vi.fn(() => Promise.resolve({}))
   }
@@ -55,6 +57,9 @@ vi.mock('@/store/login_data', () => ({
   loginDataStore: vi.fn(() => ({
     getUserDataIsAdmin: true,
     isLoaded: false,
+    hasPermission: vi.fn(() => true),
+    hasPermissionPattern: vi.fn(() => true),
+    getPermissionMatches: vi.fn(() => []),
     resetTimestamp: vi.fn(),
     resetUserData: vi.fn(),
     resetIsLoaded: vi.fn(),
@@ -73,12 +78,12 @@ describe('ViewJobsDefinitionsSearch', () => {
     const wrapper = mount(ViewJobsDefinitionsSearch, {
       global: {
         stubs: {
-          'ComponentDialogWarning': true,
-          'ComponentGenericToolBar': true,
-          'ComponentNodesSearch': true,
-          'ComponentNodesCrud': true,
-          'ComponentUsersSearch': true,
-          'ComponentUsersCrud': true,
+          ComponentDialogWarning: true,
+          ComponentGenericToolBar: true,
+          ComponentNodesSearch: true,
+          ComponentNodesCrud: true,
+          ComponentUsersSearch: true,
+          ComponentUsersCrud: true,
           // Add all standard Vuetify and custom components to be safe
           'v-card': true,
           'v-card-title': true,
@@ -94,7 +99,7 @@ describe('ViewJobsDefinitionsSearch', () => {
           'v-expansion-panel-text': true,
           'v-data-table': true,
           'v-data-table-server': {
-             template: '<div><slot name="top" /><slot /></div>'
+            template: '<div><slot name="top" /><slot /></div>'
           },
           'v-toolbar': true,
           'v-toolbar-title': true,
@@ -135,7 +140,7 @@ describe('ViewJobsDefinitionsSearch', () => {
         }
       }
     })
-    
+
     expect(wrapper.exists()).toBe(true)
   })
 })

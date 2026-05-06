@@ -1,18 +1,11 @@
-/*
- * Copyright 2026 Stephan Schultchen
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+/* * Copyright 2026 Stephan Schultchen * * Licensed under the Apache License,
+Version 2.0 (the "License"); * you may not use this file except in compliance
+with the License. * You may obtain a copy of the License at * *
+http://www.apache.org/licenses/LICENSE-2.0 * * Unless required by applicable law
+or agreed to in writing, software * distributed under the License is distributed
+on an "AS IS" BASIS, * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+express or implied. * See the License for the specific language governing
+permissions and * limitations under the License. */
 <template>
   <ComponentDialogWarning
     :msg="dialogDeleteMsg"
@@ -87,7 +80,10 @@
         ></v-text-field>
 
         <!-- Section 3: Dynamic Fact Fields -->
-        <template v-for="field in factFields" :key="`hiera-fact-field-${field}`">
+        <template
+          v-for="field in factFields"
+          :key="`hiera-fact-field-${field}`"
+        >
           <v-autocomplete
             v-model="factValues[field]"
             :readonly="formInputFactsReadOnly"
@@ -148,9 +144,7 @@
           :readonly="formDataReadOnly || !keyModelSchema"
           :rules="[validateData]"
           append-inner-icon="mdi-code-json"
-          :label="
-            !keyModelSchema ? 'Data' : `Data (${dataType}) - Raw JSON`
-          "
+          :label="!keyModelSchema ? 'Data' : `Data (${dataType}) - Raw JSON`"
           :placeholder="
             keyModelSchema ? defaultDataValue : 'Waiting for valid key id...'
           "
@@ -197,7 +191,7 @@
           color="primary"
           variant="text"
           @click="formSubmit"
-          :disabled="!formDataValid"
+          :disabled="!formDataValid || !canCreate"
           >Submit</v-btn
         >
       </v-card-actions>
@@ -206,6 +200,7 @@
 </template>
 
 <script setup>
+import { PERMISSIONS } from '@/common/permissions'
 import { reactive, ref, nextTick, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Ajv from 'ajv'
@@ -230,10 +225,15 @@ const schemaFormData = ref({})
 let isSyncing = false
 
 function hasLevelDataPermission(action, keyId = null) {
-  if (loginData.hasPermission(`HIERA:LEVEL_DATA::${action}`)) {
+  if (loginData.hasPermission(PERMISSIONS.HIERA.LEVEL_DATA[action])) {
     return true
   }
-  if (keyId && loginData.hasPermission(`HIERA:LEVEL_DATA:${keyId}:${action}`)) {
+  if (
+    keyId &&
+    loginData.hasPermission(
+      PERMISSIONS.HIERA.LEVEL_DATA[action + '_SPECIFIC'](keyId)
+    )
+  ) {
     return true
   }
   return false
@@ -351,7 +351,10 @@ const resolvedSchema = computed(() => {
   }
 
   console.log('--- SCHEMA DEBUG DUMP ---')
-  console.log('Original Server Schema:\n', JSON.stringify(keyModelSchema.value, null, 2))
+  console.log(
+    'Original Server Schema:\n',
+    JSON.stringify(keyModelSchema.value, null, 2)
+  )
 
   let baseSchema = keyModelSchema.value.properties.data
   let finalSchema = null
@@ -376,7 +379,10 @@ const resolvedSchema = computed(() => {
   }
 
   const result = normalizeSchema(finalSchema)
-  console.log('Transformed Schema (for JsonForms):\n', JSON.stringify(result, null, 2))
+  console.log(
+    'Transformed Schema (for JsonForms):\n',
+    JSON.stringify(result, null, 2)
+  )
   console.log('-------------------------')
 
   return result
@@ -405,8 +411,38 @@ const form = ref(null)
 const formData = reactive({})
 const formDataReadOnly = ref(true)
 const formDataValid = ref(false)
-const formButtonDeleteShow = ref(true)
-const formButtonEditShow = ref(false)
+
+const formButtonEditShow = computed(() => {
+  const isNewLevel = route.params.level_id === '_new'
+  const isNewData = route.params.data_id === '_new'
+  const isNewKey = route.params.key_id === '_new'
+  const isNew = isNewLevel && isNewData && isNewKey
+
+  if (isNew) return false
+  return hasLevelDataPermission('UPDATE', formData.key_id)
+})
+
+const formButtonDeleteShow = computed(() => {
+  const isNewLevel = route.params.level_id === '_new'
+  const isNewData = route.params.data_id === '_new'
+  const isNewKey = route.params.key_id === '_new'
+  const isNew = isNewLevel && isNewData && isNewKey
+
+  if (isNew) return false
+  return hasLevelDataPermission('DELETE', formData.key_id)
+})
+
+const canCreate = computed(() => {
+  const isNewLevel = route.params.level_id === '_new'
+  const isNewData = route.params.data_id === '_new'
+  const isNewKey = route.params.key_id === '_new'
+  const isNew = isNewLevel && isNewData && isNewKey
+
+  if (!isNew) return true
+
+  return hasLevelDataPermission('CREATE', formData.key_id)
+})
+
 const formInputLevelIdReadOnly = ref(true)
 const formInputDataIdReadOnly = ref(true)
 const formInputKeyIdReadOnly = ref(true)
@@ -580,6 +616,28 @@ async function fetchAvailableLevels(search) {
 async function fetchAvailableKeys(search) {
   loadingKeys.value = true
   try {
+    const isNewLevel = route.params.level_id === '_new'
+    const isNewData = route.params.data_id === '_new'
+    const isNewKey = route.params.key_id === '_new'
+    const isNew = isNewLevel && isNewData && isNewKey
+
+    const hasGlobalCreate = loginData.hasPermission(
+      PERMISSIONS.HIERA.LEVEL_DATA.CREATE
+    )
+    if (isNew && !hasGlobalCreate) {
+      const allowedKeys = loginData.getPermissionMatches(
+        '^HIERA:LEVEL_DATA:(.*):CREATE$'
+      )
+      if (search) {
+        availableKeys.value = allowedKeys.filter((k) =>
+          k.toLowerCase().includes(search.toLowerCase())
+        )
+      } else {
+        availableKeys.value = allowedKeys
+      }
+      return
+    }
+
     const params = {
       limit: 10,
       sort_by: 'id',
@@ -914,8 +972,6 @@ function initializeFormState() {
     formInputPriorityReadOnly.value = true
     formInputFactsReadOnly.value = false
     formDataReadOnly.value = false
-    formButtonDeleteShow.value = false
-    formButtonEditShow.value = false
   } else {
     formInputLevelIdReadOnly.value = true
     formInputDataIdReadOnly.value = true
@@ -923,14 +979,6 @@ function initializeFormState() {
     formInputPriorityReadOnly.value = true
     formInputFactsReadOnly.value = true
     formDataReadOnly.value = true
-    formButtonEditShow.value = hasLevelDataPermission(
-      'UPDATE',
-      route.params.key_id
-    )
-    formButtonDeleteShow.value = hasLevelDataPermission(
-      'DELETE',
-      route.params.key_id
-    )
   }
   formGetData()
 }
@@ -1001,7 +1049,6 @@ function formSubmit(event) {
 
   api.request(method, url, requestData).then(() => {
     if (isNew) {
-      formButtonDeleteShow.value = true
       router.push({
         name: 'HieraLevelDataCRUD',
         params: {
@@ -1057,8 +1104,6 @@ function formGetData() {
             factValues[key] = value
           })
         }
-        formButtonEditShow.value = hasLevelDataPermission('UPDATE', data.key_id)
-        formButtonDeleteShow.value = hasLevelDataPermission('DELETE', data.key_id)
       }
     })
   }

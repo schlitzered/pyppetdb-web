@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import { loginDataStore } from '@/store/login_data'
+import { PERMISSIONS } from '@/common/permissions'
 
 const routeTeamsSearch = {
   path: '/teams',
@@ -24,7 +25,7 @@ const routeTeamsSearch = {
       to: 'TeamsSearch',
       href: '/teams',
       requireAdmin: false,
-      requiredPermission: 'TEAMS::GET',
+      requiredPermission: PERMISSIONS.TEAMS.GET,
       icon: 'mdi-account-multiple',
       group: 'Administration',
       groupOrder: 3,
@@ -49,7 +50,7 @@ const routeTeamsSearch = {
             title: 'New Team',
             to: { name: 'TeamsCRUD', params: { team: '_new' } },
             hide() {
-              return !loginData.hasPermission('TEAMS::CREATE')
+              return !loginData.hasPermission(PERMISSIONS.TEAMS.CREATE)
             }
           }
         ]

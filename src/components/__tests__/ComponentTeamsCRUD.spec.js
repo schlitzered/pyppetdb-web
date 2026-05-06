@@ -17,6 +17,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ComponentTeamsCRUD from '../ComponentTeamsCRUD.vue'
 import api from '@/api/common'
+import { PERMISSIONS } from '@/common/permissions'
 
 // Mock dependencies globally
 vi.mock('vue-router', () => ({
@@ -35,18 +36,20 @@ vi.mock('vue-router', () => ({
 }))
 
 vi.mock('vuetify', async (importOriginal) => {
-  const actual = await importOriginal();
+  const actual = await importOriginal()
   return {
     ...actual,
     useTheme: vi.fn(() => ({
       global: { name: { value: 'light' } }
     }))
-  };
-});
+  }
+})
 
 vi.mock('@/api/common', () => ({
   default: {
-    get: vi.fn(() => Promise.resolve({ result: [], meta: {}, nodes: [], filters: [] })),
+    get: vi.fn(() =>
+      Promise.resolve({ result: [], meta: {}, nodes: [], filters: [] })
+    ),
     request: vi.fn(() => Promise.resolve({})),
     delete: vi.fn(() => Promise.resolve({}))
   }
@@ -55,8 +58,10 @@ vi.mock('@/api/common', () => ({
 vi.mock('@/store/login_data', () => ({
   loginDataStore: vi.fn(() => ({
     getUserDataIsAdmin: true,
-    hasPermission: vi.fn(() => true),
     isLoaded: false,
+    hasPermission: vi.fn(() => true),
+    hasPermissionPattern: vi.fn(() => true),
+    getPermissionMatches: vi.fn(() => []),
     resetTimestamp: vi.fn(),
     resetUserData: vi.fn(),
     resetIsLoaded: vi.fn(),
@@ -79,8 +84,8 @@ describe('ComponentTeamsCRUD', () => {
     const wrapper = mount(ComponentTeamsCRUD, {
       global: {
         stubs: {
-          'ComponentDialogWarning': true,
-          'ComponentGenericToolBar': true,
+          ComponentDialogWarning: true,
+          ComponentGenericToolBar: true,
           'v-card': true,
           'v-card-text': true,
           'v-card-actions': true,
@@ -94,7 +99,7 @@ describe('ComponentTeamsCRUD', () => {
         }
       }
     })
-    
+
     expect(wrapper.exists()).toBe(true)
   })
 
@@ -121,7 +126,7 @@ describe('ComponentTeamsCRUD', () => {
     const wrapper = mount(ComponentTeamsCRUD, {
       global: {
         stubs: {
-          'ComponentDialogWarning': true,
+          ComponentDialogWarning: true,
           'v-card': true,
           'v-card-text': true,
           'v-card-actions': true,
@@ -137,21 +142,31 @@ describe('ComponentTeamsCRUD', () => {
     })
 
     // Wait for all promises to resolve
-    await new Promise(resolve => setTimeout(resolve, 100))
+    await new Promise((resolve) => setTimeout(resolve, 100))
 
     const permissions = wrapper.vm.permissionsChoices
-    expect(permissions).toContain('JOBS:JOB::CREATE')
-    expect(permissions).toContain('JOBS:DEFINITION::CREATE')
-    expect(permissions).toContain('JOBS:DEFINITION::UPDATE')
-    expect(permissions).toContain('JOBS:DEFINITION::DELETE')
-    expect(permissions).toContain('JOBS:JOB:job-def-1:CREATE')
-    expect(permissions).toContain('HIERA:KEY_MODELS_DYNAMIC::CREATE')
-    expect(permissions).toContain('HIERA:LEVEL_DATA:hiera-key-1:CREATE')
-    expect(permissions).toContain('HIERA:LEVEL_DATA:hiera-key-1:UPDATE')
-    expect(permissions).toContain('HIERA:LEVEL_DATA:hiera-key-1:DELETE')
-    expect(permissions).toContain('NODES:SECRETS_REDACTOR::CREATE')
-    expect(permissions).toContain('NODES:SECRETS_REDACTOR::DELETE')
-    expect(permissions).toContain('CA:SPACES:space1:CERTS:UPDATE')
-    expect(permissions).toContain('CA:AUTHORITIES:auth1:CERTS:UPDATE')
+    expect(permissions).toContain(PERMISSIONS.JOBS.JOB.CREATE)
+    expect(permissions).toContain(PERMISSIONS.JOBS.DEFINITION.CREATE)
+    expect(permissions).toContain(PERMISSIONS.JOBS.DEFINITION.UPDATE)
+    expect(permissions).toContain(PERMISSIONS.JOBS.DEFINITION.DELETE)
+    expect(permissions).toContain(
+      PERMISSIONS.JOBS.JOB.CREATE_SPECIFIC('job-def-1')
+    )
+    expect(permissions).toContain(PERMISSIONS.HIERA.KEY_MODELS_DYNAMIC.CREATE)
+    expect(permissions).toContain(
+      PERMISSIONS.HIERA.LEVEL_DATA.CREATE_SPECIFIC('hiera-key-1')
+    )
+    expect(permissions).toContain(
+      PERMISSIONS.HIERA.LEVEL_DATA.UPDATE_SPECIFIC('hiera-key-1')
+    )
+    expect(permissions).toContain(
+      PERMISSIONS.HIERA.LEVEL_DATA.DELETE_SPECIFIC('hiera-key-1')
+    )
+    expect(permissions).toContain(PERMISSIONS.NODES.SECRETS_REDACTOR.CREATE)
+    expect(permissions).toContain(PERMISSIONS.NODES.SECRETS_REDACTOR.DELETE)
+    expect(permissions).toContain(PERMISSIONS.CA.SPACES.CERTS.UPDATE('space1'))
+    expect(permissions).toContain(
+      PERMISSIONS.CA.AUTHORITIES.CERTS.UPDATE('auth1')
+    )
   })
 })

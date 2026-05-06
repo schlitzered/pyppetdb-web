@@ -1,18 +1,11 @@
-/*
- * Copyright 2026 Stephan Schultchen
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+/* * Copyright 2026 Stephan Schultchen * * Licensed under the Apache License,
+Version 2.0 (the "License"); * you may not use this file except in compliance
+with the License. * You may obtain a copy of the License at * *
+http://www.apache.org/licenses/LICENSE-2.0 * * Unless required by applicable law
+or agreed to in writing, software * distributed under the License is distributed
+on an "AS IS" BASIS, * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+express or implied. * See the License for the specific language governing
+permissions and * limitations under the License. */
 <template>
   <ComponentDialogWarning
     :msg="dialogDeleteMsg"
@@ -84,7 +77,8 @@
 </template>
 
 <script setup>
-import { reactive, ref, nextTick, watch } from 'vue'
+import { PERMISSIONS } from '@/common/permissions'
+import { reactive, ref, nextTick, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
@@ -120,8 +114,14 @@ const form = ref(null)
 const formData = reactive({})
 const formDataReadOnly = ref(true)
 const formDataValid = ref(false)
-const formButtonDeleteShow = ref(true)
-const formButtonEditShow = ref(false)
+const formButtonDeleteShow = computed(() => {
+  if (route.params.key_id === '_new') return false
+  return loginData.hasPermission(PERMISSIONS.HIERA.KEY_MODELS.DELETE)
+})
+const formButtonEditShow = computed(() => {
+  if (route.params.key_id === '_new') return false
+  return loginData.hasPermission(PERMISSIONS.HIERA.KEY_MODELS.UPDATE)
+})
 const formInputIdReadOnly = ref(true)
 
 // Model type selection
@@ -220,13 +220,9 @@ function initializeFormState() {
   if (route.params.key_id === '_new') {
     formInputIdReadOnly.value = false
     formDataReadOnly.value = false
-    formButtonDeleteShow.value = false
-    formButtonEditShow.value = false
   } else {
     formInputIdReadOnly.value = true
     formDataReadOnly.value = true
-    formButtonEditShow.value = loginData.hasPermission('HIERA:KEY_MODELS::UPDATE')
-    formButtonDeleteShow.value = loginData.hasPermission('HIERA:KEY_MODELS::DELETE')
   }
   formGetData()
 }
@@ -272,7 +268,6 @@ function formSubmit(event) {
   }
   api.request(method, url, data).then(() => {
     if (route.params.key_id === '_new') {
-      formButtonDeleteShow.value = true
       router.push({
         name: 'HieraKeysCRUD',
         params: { key_id: formData.id }

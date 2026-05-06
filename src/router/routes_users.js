@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import { loginDataStore } from '@/store/login_data'
+import { PERMISSIONS } from '@/common/permissions'
 
 const routeUsersSearch = {
   path: '/users',
@@ -24,7 +25,7 @@ const routeUsersSearch = {
       to: 'UsersSearch',
       href: '/users',
       requireAdmin: false,
-      requiredPermission: 'USERS::GET',
+      requiredPermission: PERMISSIONS.USERS.GET,
       icon: 'mdi-account-multiple',
       group: 'Administration',
       groupOrder: 3,
@@ -49,7 +50,7 @@ const routeUsersSearch = {
             title: 'New User',
             to: { name: 'UsersCRUD', params: { user: '_new' } },
             hide() {
-              return !loginData.hasPermission('USERS::CREATE')
+              return !loginData.hasPermission(PERMISSIONS.USERS.CREATE)
             }
           }
         ]
@@ -95,7 +96,10 @@ const routeUsersCrud = {
               params: { user: route.params.user }
             },
             hide(route) {
-              return route.params.user === '_new'
+              const loginData = loginDataStore()
+              if (route.params.user === '_new') return true
+              if (route.params.user === '_self') return false
+              return !loginData.hasPermission(PERMISSIONS.USERS.CREDENTIALS.GET)
             }
           }
         ]

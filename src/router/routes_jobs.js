@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import { loginDataStore } from '@/store/login_data'
+import { PERMISSIONS } from '@/common/permissions'
 
 const routeJobsDefinitionsSearch = {
   path: '/jobs/definitions',
@@ -24,6 +25,7 @@ const routeJobsDefinitionsSearch = {
       to: 'JobsDefinitionsSearch',
       href: '/jobs/definitions',
       requireAdmin: false,
+      requiredPermission: PERMISSIONS.JOBS.GET,
       icon: 'mdi-file-cog',
       group: 'Jobs',
       groupOrder: 5,
@@ -45,7 +47,9 @@ const routeJobsDefinitionsSearch = {
               params: { definition_id: '_new' }
             },
             hide() {
-              return !loginData.hasPermission('JOBS:DEFINITION::CREATE')
+              return !loginData.hasPermission(
+                PERMISSIONS.JOBS.DEFINITION.CREATE
+              )
             }
           }
         ]
@@ -97,7 +101,7 @@ const routeJobsSearch = {
       to: 'JobsSearch',
       href: '/jobs/jobs',
       requireAdmin: false,
-      requiredPermission: 'JOBS::GET',
+      requiredPermission: PERMISSIONS.JOBS.GET,
       icon: 'mdi-play-network',
       group: 'Jobs',
       groupOrder: 5,
@@ -116,7 +120,7 @@ const routeJobsSearch = {
             title: 'New Job',
             to: { name: 'JobsCRUD', params: { job_id: '_new' } },
             hide() {
-              return !loginData.hasPermission('JOBS:JOB::CREATE')
+              return !loginData.hasPermissionPattern('^JOBS:JOB:.*:CREATE$')
             }
           }
         ]
@@ -168,6 +172,7 @@ const routeJobsNodesJobsSearch = {
       to: 'JobsNodesJobsSearch',
       href: '/jobs/nodes_jobs',
       requireAdmin: false,
+      requiredPermission: PERMISSIONS.JOBS.GET,
       icon: 'mdi-format-list-bulleted-type',
       group: 'Jobs',
       groupOrder: 5,

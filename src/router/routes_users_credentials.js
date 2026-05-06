@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import { loginDataStore } from '@/store/login_data'
+import { PERMISSIONS } from '@/common/permissions'
 
 const routeUsersCredentialsSearch = {
   path: '/users/:user/credentials',
@@ -50,7 +51,10 @@ const routeUsersCredentialsSearch = {
               params: { user: route.params.user, credential: '_new' }
             },
             hide() {
-              return !loginData.hasPermission('USERS:CREDENTIALS::CREATE')
+              if (route.params.user === '_self') return false
+              return !loginData.hasPermission(
+                PERMISSIONS.USERS.CREDENTIALS.CREATE
+              )
             }
           }
         ]

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import { loginDataStore } from '@/store/login_data'
+import { PERMISSIONS } from '@/common/permissions'
 
 const routeHieraKeyModelsDynamicSearch = {
   path: '/hiera/key_models/dynamic',
@@ -24,7 +25,7 @@ const routeHieraKeyModelsDynamicSearch = {
       to: 'HieraKeyModelsDynamicSearch',
       href: '/hiera/key_models/dynamic',
       requireAdmin: false,
-      requiredPermission: 'HIERA::GET',
+      requiredPermission: PERMISSIONS.HIERA.GET,
       icon: 'mdi-key-plus',
       group: 'Hiera',
       groupOrder: 2,
@@ -52,7 +53,9 @@ const routeHieraKeyModelsDynamicSearch = {
               params: { key_model_id: '_new' }
             },
             hide() {
-              return !loginData.hasPermission('HIERA:KEY_MODELS_DYNAMIC::CREATE')
+              return !loginData.hasPermission(
+                PERMISSIONS.HIERA.KEY_MODELS_DYNAMIC.CREATE
+              )
             }
           }
         ]

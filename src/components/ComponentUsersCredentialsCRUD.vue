@@ -1,18 +1,11 @@
-/*
- * Copyright 2026 Stephan Schultchen
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+/* * Copyright 2026 Stephan Schultchen * * Licensed under the Apache License,
+Version 2.0 (the "License"); * you may not use this file except in compliance
+with the License. * You may obtain a copy of the License at * *
+http://www.apache.org/licenses/LICENSE-2.0 * * Unless required by applicable law
+or agreed to in writing, software * distributed under the License is distributed
+on an "AS IS" BASIS, * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+express or implied. * See the License for the specific language governing
+permissions and * limitations under the License. */
 <template>
   <ComponentDialogWarning
     :msg="dialogDeleteMsg"
@@ -75,7 +68,8 @@
 </template>
 
 <script setup>
-import { reactive, ref, nextTick, watch } from 'vue'
+import { PERMISSIONS } from '@/common/permissions'
+import { reactive, ref, nextTick, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
@@ -112,8 +106,18 @@ const form = ref(null)
 const formData = reactive({})
 const formDataReadOnly = ref(true)
 const formDataValid = ref(false)
-const formButtonDeleteShow = ref(true)
-const formButtonEditShow = ref(false)
+
+const formButtonEditShow = computed(() => {
+  if (route.params.credential === '_new') return false
+  if (route.params.user === '_self') return true
+  return loginData.hasPermission(PERMISSIONS.USERS.CREDENTIALS.UPDATE)
+})
+
+const formButtonDeleteShow = computed(() => {
+  if (route.params.credential === '_new') return false
+  if (route.params.user === '_self') return true
+  return loginData.hasPermission(PERMISSIONS.USERS.CREDENTIALS.DELETE)
+})
 const formInputIdReadOnly = ref(true)
 const formInputIdShow = ref(true)
 const formInputCreatedReadOnly = ref(true)
@@ -124,23 +128,13 @@ function initializeFormState() {
   if (route.params.credential !== '_new') {
     formInputIdReadOnly.value = true
     formDataReadOnly.value = true
-    formButtonEditShow.value = loginData.hasPermission(
-      'USERS:CREDENTIALS::UPDATE'
-    )
-    formButtonDeleteShow.value = loginData.hasPermission(
-      'USERS:CREDENTIALS::DELETE'
-    )
   } else if (route.params.credential === '_new') {
     formDataReadOnly.value = false
-    formButtonDeleteShow.value = false
-    formButtonEditShow.value = false
     formInputCreatedShow.value = false
     formInputIdShow.value = false
   } else {
     formInputIdReadOnly.value = true
     formDataReadOnly.value = true
-    formButtonEditShow.value = false
-    formButtonDeleteShow.value = false
   }
   formGetData()
 }
@@ -189,7 +183,6 @@ function formSubmit(event) {
       formInputCreatedShow.value = true
       formInputIdShow.value = true
       formInputSecretShow.value = true
-      formButtonDeleteShow.value = true
       router.push({
         name: 'UsersCredentialsCRUD',
         params: { user: route.params.user, credential: data.id }

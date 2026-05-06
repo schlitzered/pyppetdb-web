@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { loginDataStore } from '@/store/login_data'
+import { PERMISSIONS } from '@/common/permissions'
 
 const routePyppetdbNodesSearch = {
   path: '/pyppetdb_nodes',
@@ -24,7 +24,7 @@ const routePyppetdbNodesSearch = {
       to: 'PyppetdbNodesSearch',
       href: '/pyppetdb_nodes',
       requireAdmin: false,
-      requiredPermission: 'PYPPETDB:NODES::GET',
+      requiredPermission: PERMISSIONS.PYPPETDB.NODES.GET,
       icon: 'mdi-server',
       group: 'System',
       groupOrder: 10,
@@ -41,7 +41,6 @@ const routePyppetdbNodesSearch = {
       }
     ],
     toolBar() {
-      const loginData = loginDataStore()
       return {
         title: `PyppetdbNodes`,
         items: []

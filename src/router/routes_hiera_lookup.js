@@ -1,3 +1,4 @@
+import { PERMISSIONS } from '@/common/permissions'
 /*
  * Copyright 2026 Stephan Schultchen
  *
@@ -22,7 +23,7 @@ const routeHieraLookupSearch = {
       to: 'HieraLookupSearch',
       href: '/hiera/lookup',
       requireAdmin: false,
-      requiredPermission: 'HIERA::GET',
+      requiredPermission: PERMISSIONS.HIERA.GET,
       icon: 'mdi-magnify',
       group: 'Hiera',
       groupOrder: 2,

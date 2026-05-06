@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import { loginDataStore } from '@/store/login_data'
+import { PERMISSIONS } from '@/common/permissions'
 
 const routeHieraLevelsSearch = {
   path: '/hiera/levels',
@@ -24,7 +25,7 @@ const routeHieraLevelsSearch = {
       to: 'HieraLevelsSearch',
       href: '/hiera/levels',
       requireAdmin: false,
-      requiredPermission: 'HIERA::GET',
+      requiredPermission: PERMISSIONS.HIERA.GET,
       icon: 'mdi-layers',
       group: 'Hiera',
       groupOrder: 2,
@@ -49,7 +50,7 @@ const routeHieraLevelsSearch = {
             title: 'New Level',
             to: { name: 'HieraLevelsCRUD', params: { level_id: '_new' } },
             hide() {
-              return !loginData.hasPermission('HIERA:LEVELS::CREATE')
+              return !loginData.hasPermission(PERMISSIONS.HIERA.LEVELS.CREATE)
             }
           }
         ]

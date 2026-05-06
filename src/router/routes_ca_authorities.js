@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import { loginDataStore } from '@/store/login_data'
+import { PERMISSIONS } from '@/common/permissions'
 
 const routeCAAuthoritiesSearch = {
   path: '/ca/authorities',
@@ -24,7 +25,7 @@ const routeCAAuthoritiesSearch = {
       to: 'CAAuthoritiesSearch',
       href: '/ca/authorities',
       requireAdmin: false,
-      requiredPermission: 'CA::GET',
+      requiredPermission: PERMISSIONS.CA.GET,
       icon: 'mdi-shield-check',
       group: 'CA',
       groupOrder: 4,
@@ -49,7 +50,7 @@ const routeCAAuthoritiesSearch = {
             title: 'New Authority',
             to: { name: 'CAAuthoritiesCRUD', params: { ca_id: '_new' } },
             hide() {
-              return !loginData.hasPermission('CA:AUTHORITIES:CREATE')
+              return !loginData.hasPermission(PERMISSIONS.CA.AUTHORITIES.CREATE)
             }
           }
         ]

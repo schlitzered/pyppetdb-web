@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import { loginDataStore } from '@/store/login_data'
+import { PERMISSIONS } from '@/common/permissions'
 
 const routeHieraKeysSearch = {
   path: '/hiera/keys',
@@ -24,7 +25,7 @@ const routeHieraKeysSearch = {
       to: 'HieraKeysSearch',
       href: '/hiera/keys',
       requireAdmin: false,
-      requiredPermission: 'HIERA::GET',
+      requiredPermission: PERMISSIONS.HIERA.GET,
       icon: 'mdi-key',
       group: 'Hiera',
       groupOrder: 2,
@@ -49,7 +50,9 @@ const routeHieraKeysSearch = {
             title: 'New Key',
             to: { name: 'HieraKeysCRUD', params: { key_id: '_new' } },
             hide() {
-              return !loginData.hasPermission('HIERA:KEY_MODELS::CREATE')
+              return !loginData.hasPermission(
+                PERMISSIONS.HIERA.KEY_MODELS.CREATE
+              )
             }
           }
         ]
