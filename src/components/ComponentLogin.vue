@@ -79,7 +79,9 @@ import { reactive, ref, nextTick, onMounted } from 'vue'
 import axios from 'axios'
 import api from '@/api/common'
 import router from '../router/routes'
+import { loginDataStore } from '@/store/login_data'
 
+const loginData = loginDataStore()
 const form = ref(null)
 const formData = reactive({
   user: '',
@@ -110,7 +112,17 @@ function formSubmit(event) {
   axios
     .post('/api/v1/authenticate', formData)
     .then(() => {
-      router.push({ name: 'Home' })
+      api
+        .get('/api/v1/users/_self')
+        .then((data) => {
+          if (data) {
+            loginData.setUserData(data)
+            router.push({ name: 'Home' })
+          }
+        })
+        .catch(() => {
+          router.push({ name: 'LoginError' })
+        })
     })
     .catch(() => {
       router.push({ name: 'LoginError' })

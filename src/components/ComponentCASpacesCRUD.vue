@@ -44,6 +44,14 @@ permissions and * limitations under the License. */
           append-inner-icon="mdi-text"
           label="Description"
         ></v-text-field>
+
+        <v-divider class="my-4"></v-divider>
+        <div class="text-subtitle-1 mb-2">Validation Configuration</div>
+        <ComponentCAValidationConfig
+          v-model="formData.validation_config"
+          :readonly="formDataReadOnly"
+        />
+
         <v-list
           v-if="formData.ca_id_history && formData.ca_id_history.length > 0"
         >
@@ -80,6 +88,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useCrudReload } from '@/common/crud_generic'
 
 import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
+import ComponentCAValidationConfig from '@/components/ComponentCAValidationConfig.vue'
 
 import api from '@/api/common'
 import { loginDataStore } from '@/store/login_data'
@@ -182,7 +191,8 @@ function formSubmit(event) {
   let url = `/api/v1/ca/spaces/${formData.id}`
   let data = {
     ca_id: formData.ca_id,
-    description: formData.description
+    description: formData.description,
+    validation_config: formData.validation_config
   }
   if (route.params.space_id === '_new') {
     method = 'post'
@@ -215,10 +225,28 @@ function formGetData() {
     formData['ca_id'] = ''
     formData['description'] = ''
     formData['ca_id_history'] = []
+    formData['validation_config'] = {
+      enforce_rfc1123: true,
+      allowed_extensions: [],
+      key_usages: ['digital_signature', 'key_encipherment'],
+      extended_key_usages: ['SERVER_AUTH', 'CLIENT_AUTH'],
+      san_validation: null,
+      san_injection: null
+    }
   } else {
     api.get(`/api/v1/ca/spaces/${route.params.space_id}`).then((data) => {
       if (data) {
         Object.assign(formData, data)
+        if (!formData.validation_config) {
+          formData.validation_config = {
+            enforce_rfc1123: true,
+            allowed_extensions: [],
+            key_usages: ['digital_signature', 'key_encipherment'],
+            extended_key_usages: ['SERVER_AUTH', 'CLIENT_AUTH'],
+            san_validation: null,
+            san_injection: null
+          }
+        }
       }
     })
   }

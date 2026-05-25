@@ -33,14 +33,16 @@ function upDateUserData() {
 watch(
   () => route.name,
   (newName) => {
-    if (newName && !newName.startsWith('Login')) {
-      if (!loginData.isLoaded) {
-        upDateUserData()
+    if (newName) {
+      if (!newName.startsWith('Login')) {
+        if (!loginData.isLoaded) {
+          upDateUserData()
+        }
+      } else {
+        loginData.resetTimestamp()
+        loginData.resetUserData()
+        loginData.resetIsLoaded()
       }
-    } else {
-      loginData.resetTimestamp()
-      loginData.resetUserData()
-      loginData.resetIsLoaded()
     }
   },
   { immediate: true }
