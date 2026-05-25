@@ -183,6 +183,21 @@ permissions and * limitations under the License. */
           label="Status"
         ></v-text-field>
 
+        <v-text-field
+          v-model="formData.revocation_date"
+          readonly
+          v-if="route.params.ca_id !== '_new' && formData.status === 'revoked'"
+          append-inner-icon="mdi-calendar-remove"
+          label="Revocation Date"
+        ></v-text-field>
+
+        <v-divider class="my-4"></v-divider>
+        <div class="text-subtitle-1 mb-2">Validation Configuration</div>
+        <ComponentCAValidationConfig
+          v-model="formData.validation_config"
+          :readonly="formDataReadOnly"
+        />
+
         <v-divider
           v-if="route.params.ca_id !== '_new' && formData.crl"
           class="my-4"
@@ -264,7 +279,6 @@ permissions and * limitations under the License. */
           color="primary"
           variant="text"
           @click="formSubmit"
-          v-if="route.params.ca_id === '_new'"
           >Submit</v-btn
         >
       </v-card-actions>
@@ -279,6 +293,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useCrudReload } from '@/common/crud_generic'
 
 import ComponentDialogWarning from '@/components/ComponentDialogWarning.vue'
+import ComponentCAValidationConfig from '@/components/ComponentCAValidationConfig.vue'
 
 import api from '@/api/common'
 import { loginDataStore } from '@/store/login_data'
@@ -428,39 +443,52 @@ function formReset(event) {
 function formSubmit(event) {
   event.preventDefault()
   let url = `/api/v1/ca/authorities/${formData.id}`
-  let data = {
-    parent_id:
-      caCreationMode.value === 'internal_sub' ? formData.parent_id : null,
-    cn: caCreationMode.value === 'external' ? null : formData.cn,
-    organization:
-      caCreationMode.value === 'external' ? null : formData.organization,
-    organizational_unit:
-      caCreationMode.value === 'external' ? null : formData.organizational_unit,
-    country: caCreationMode.value === 'external' ? null : formData.country,
-    state: caCreationMode.value === 'external' ? null : formData.state,
-    locality: caCreationMode.value === 'external' ? null : formData.locality,
-    validity_days:
-      caCreationMode.value === 'external' ? null : formData.validity_days,
-    certificate:
-      caCreationMode.value === 'external' ? formData.certificate : null,
-    private_key:
-      caCreationMode.value === 'external' ? formData.private_key : null,
-    external_chain:
-      caCreationMode.value === 'external' && formData.external_chain_raw
-        ? formData.external_chain_raw
-            .split('-----END CERTIFICATE-----')
-            .filter((c) => c.trim())
-            .map((c) => c + '-----END CERTIFICATE-----')
-        : null
-  }
-  api.post(url, data).then((response) => {
-    if (response && response.id) {
-      router.push({
-        name: 'CAAuthoritiesCRUD',
-        params: { ca_id: response.id }
-      })
+  if (route.params.ca_id === '_new') {
+    let data = {
+      parent_id:
+        caCreationMode.value === 'internal_sub' ? formData.parent_id : null,
+      cn: caCreationMode.value === 'external' ? null : formData.cn,
+      organization:
+        caCreationMode.value === 'external' ? null : formData.organization,
+      organizational_unit:
+        caCreationMode.value === 'external'
+          ? null
+          : formData.organizational_unit,
+      country: caCreationMode.value === 'external' ? null : formData.country,
+      state: caCreationMode.value === 'external' ? null : formData.state,
+      locality: caCreationMode.value === 'external' ? null : formData.locality,
+      validity_days:
+        caCreationMode.value === 'external' ? null : formData.validity_days,
+      certificate:
+        caCreationMode.value === 'external' ? formData.certificate : null,
+      private_key:
+        caCreationMode.value === 'external' ? formData.private_key : null,
+      external_chain:
+        caCreationMode.value === 'external' && formData.external_chain_raw
+          ? formData.external_chain_raw
+              .split('-----END CERTIFICATE-----')
+              .filter((c) => c.trim())
+              .map((c) => c + '-----END CERTIFICATE-----')
+          : null,
+      validation_config: formData.validation_config
     }
-  })
+    api.post(url, data).then((response) => {
+      if (response && response.id) {
+        router.push({
+          name: 'CAAuthoritiesCRUD',
+          params: { ca_id: response.id }
+        })
+      }
+    })
+  } else {
+    let data = {
+      validation_config: formData.validation_config
+    }
+    api.put(url, data).then(() => {
+      formDataReadOnly.value = true
+      formGetData()
+    })
+  }
 }
 
 const { reload } = useCrudReload(formGetData)
@@ -489,10 +517,28 @@ function formGetData() {
     formData['status'] = 'active'
     formData['crl'] = null
     formData['chain'] = []
+    formData['validation_config'] = {
+      enforce_rfc1123: true,
+      allowed_extensions: [],
+      key_usages: ['digital_signature', 'key_encipherment'],
+      extended_key_usages: ['SERVER_AUTH', 'CLIENT_AUTH'],
+      san_validation: null,
+      san_injection: null
+    }
   } else {
     api.get(`/api/v1/ca/authorities/${route.params.ca_id}`).then((data) => {
       if (data) {
         Object.assign(formData, data)
+        if (!formData.validation_config) {
+          formData.validation_config = {
+            enforce_rfc1123: true,
+            allowed_extensions: [],
+            key_usages: ['digital_signature', 'key_encipherment'],
+            extended_key_usages: ['SERVER_AUTH', 'CLIENT_AUTH'],
+            san_validation: null,
+            san_injection: null
+          }
+        }
       }
     })
   }
