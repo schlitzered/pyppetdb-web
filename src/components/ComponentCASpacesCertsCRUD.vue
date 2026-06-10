@@ -22,48 +22,61 @@ permissions and * limitations under the License. */
           :false-value="true"
           label="Modify"
         ></v-switch>
-        <v-text-field
-          v-model="formData.id"
-          readonly
-          append-inner-icon="mdi-id-card"
-          label="Cert ID"
-        ></v-text-field>
-        <v-text-field
-          v-model="formData.cn"
-          readonly
-          append-inner-icon="mdi-text"
-          label="Common Name"
-        ></v-text-field>
+        <v-text-field v-model="formData.id" readonly append-inner-icon="mdi-id-card">
+          <template v-slot:label>Cert ID</template>
+        </v-text-field>
+        <v-text-field v-model="formData.cn" readonly>
+          <template v-slot:label>Common Name</template>
+          <template v-slot:append-inner>
+            <v-icon icon="mdi-text" class="me-2"></v-icon>
+            <v-btn
+              v-if="formData.cn"
+              icon="mdi-server"
+              variant="text"
+              density="compact"
+              title="View Node"
+              :to="{
+                name: 'NodesCRUD',
+                params: { node: formData.cn }
+              }"
+            ></v-btn>
+          </template>
+        </v-text-field>
         <v-text-field
           v-model="formData.status"
           readonly
           append-inner-icon="mdi-check-circle"
-          label="Status"
-        ></v-text-field>
+        >
+          <template v-slot:label>Status</template>
+        </v-text-field>
         <v-text-field
           v-model="formData.not_before"
           readonly
           append-inner-icon="mdi-calendar-clock"
-          label="Not Before"
-        ></v-text-field>
+        >
+          <template v-slot:label>Not Before</template>
+        </v-text-field>
         <v-text-field
           v-model="formData.not_after"
           readonly
           append-inner-icon="mdi-calendar-clock"
-          label="Not After"
-        ></v-text-field>
+        >
+          <template v-slot:label>Not After</template>
+        </v-text-field>
         <v-textarea
           v-model="formData.certificate"
           readonly
           append-inner-icon="mdi-certificate"
-          label="Certificate (PEM)"
-        ></v-textarea>
+        >
+          <template v-slot:label>Certificate (PEM)</template>
+        </v-textarea>
         <v-textarea
           v-model="formData.csr"
           readonly
           append-inner-icon="mdi-file-document-edit"
-          label="CSR (PEM)"
-        ></v-textarea>
+        >
+          <template v-slot:label>CSR (PEM)</template>
+        </v-textarea>
       </v-card-text>
       <v-divider v-if="!formDataReadOnly"></v-divider>
       <v-card-actions v-if="!formDataReadOnly">

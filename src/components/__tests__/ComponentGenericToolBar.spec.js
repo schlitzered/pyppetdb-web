@@ -18,6 +18,15 @@ import { mount } from '@vue/test-utils'
 import ComponentGenericToolBar from '../ComponentGenericToolBar.vue'
 
 // Mock dependencies globally
+vi.stubGlobal(
+  'ResizeObserver',
+  class {
+    observe = vi.fn()
+    unobserve = vi.fn()
+    disconnect = vi.fn()
+  }
+)
+
 vi.mock('vue-router', () => ({
   useRouter: vi.fn(() => ({
     push: vi.fn(),

@@ -52,7 +52,7 @@ permissions and * limitations under the License. */
                 ></v-text-field>
                 <v-select
                   v-model="formSearchBy.disabled"
-                  :items="tableDisabledDropdownOptions"
+                  :items="tableGenericDropdownOptions"
                   label="Filter Disabled"
                   @update:modelValue="getSearchData"
                 >
@@ -65,16 +65,16 @@ permissions and * limitations under the License. */
                   :error-messages="outdatedThresholdError"
                   @update:modelValue="handleOutdatedThresholdChange"
                 ></v-text-field>
-              </v-row>
-            </v-expansion-panel-text>
-          </v-expansion-panel>
-          <v-expansion-panel value="fact">
-            <v-expansion-panel-title>
-              <v-icon class="me-2">mdi-history</v-icon>
-              Fact Search
-            </v-expansion-panel-title>
-            <v-expansion-panel-text>
-              <v-row v-for="(fact, index) in formSearchBy.fact" :key="index">
+                </v-row>
+                </v-expansion-panel-text>
+                </v-expansion-panel>
+                <v-expansion-panel value="fact">
+                <v-expansion-panel-title>
+                <v-icon class="me-2">mdi-history</v-icon>
+                Fact Search
+                </v-expansion-panel-title>
+                <v-expansion-panel-text>
+                <v-row v-for="(fact, index) in formSearchBy.fact" :key="index">
                 <v-col cols="3">
                   <v-text-field
                     label="Fact Name"
@@ -110,208 +110,219 @@ permissions and * limitations under the License. */
                     <v-icon>mdi-minus</v-icon>
                   </v-btn>
                 </v-col>
-              </v-row>
+                </v-row>
 
-              <v-btn @click="formSearchByFactsAdd" color="primary"
+                <v-btn @click="formSearchByFactsAdd" color="primary"
                 >Add Fact</v-btn
-              >
-            </v-expansion-panel-text>
-          </v-expansion-panel>
-        </v-expansion-panels>
-        <v-row class="mt-1">
-          <v-col cols="3">
-            <v-chip
-              color="success"
-              variant="outlined"
-              size="large"
-              @click="filterByStatus('^unchanged$')"
-              class="cursor-pointer"
-            >
-              <v-icon start>mdi-check-circle</v-icon>
-              Unchanged: {{ tableItemsMeta.status_unchanged }}
-            </v-chip>
-          </v-col>
-          <v-col cols="3">
-            <v-chip
-              color="warning"
-              variant="outlined"
-              size="large"
-              @click="filterByStatus('^changed$')"
-              class="cursor-pointer"
-            >
-              <v-icon start>mdi-alert-circle</v-icon>
-              Changed: {{ tableItemsMeta.status_changed }}
-            </v-chip>
-          </v-col>
-          <v-col cols="3">
-            <v-chip
-              color="error"
-              variant="outlined"
-              size="large"
-              @click="filterByStatus('^failed$')"
-              class="cursor-pointer"
-            >
-              <v-icon start>mdi-close-circle</v-icon>
-              Failed: {{ tableItemsMeta.status_failed }}
-            </v-chip>
-          </v-col>
-          <v-col cols="3">
-            <v-chip
-              color="info"
-              variant="outlined"
-              size="large"
-              class="cursor-pointer"
-            >
-              <v-icon start>mdi-help-circle</v-icon>
-              Unreported: {{ tableItemsMeta.status_unreported }}
-            </v-chip>
-          </v-col>
-        </v-row>
-        <v-row class="mt-1">
-          <v-col cols="3">
-            <v-chip
-              color="grey"
-              variant="outlined"
-              size="large"
-              class="cursor-pointer"
-            >
-              <v-icon start>mdi-clock-alert-outline</v-icon>
-              Outdated: {{ tableItemsMeta.status_outdated }}
-            </v-chip>
-          </v-col>
-        </v-row>
-      </template>
-      <template v-slot:item.disabled="{ item }">
-        <v-icon>
-          {{
-            item.disabled
-              ? 'mdi-checkbox-marked-outline'
-              : 'mdi-checkbox-blank-outline'
-          }}
-        </v-icon>
-      </template>
-      <template v-slot:item.id="{ item }">
-        <a
-          :href="
-            router.resolve({ name: 'NodesCRUD', params: { node: item.id } })
-              .href
-          "
-          @click.left.prevent
-        >
-          {{ item.id }}
-        </a>
-      </template>
-    </v-data-table-server>
-  </v-card>
-</template>
+                >
+                </v-expansion-panel-text>
+                </v-expansion-panel>
+                </v-expansion-panels>
+                <v-row class="mt-1">
+                <v-col cols="3">
+                <v-chip
+                color="success"
+                :variant="isStatusActive('^unchanged$') ? 'elevated' : 'outlined'"
+                size="large"
+                @click="toggleStatus('^unchanged$')"
+                class="cursor-pointer"
+                >
+                <v-icon start>mdi-check-circle</v-icon>
+                Unchanged: {{ tableItemsMeta.status_unchanged }}
+                </v-chip>
+                </v-col>
+                <v-col cols="3">
+                <v-chip
+                color="warning"
+                :variant="isStatusActive('^changed$') ? 'elevated' : 'outlined'"
+                size="large"
+                @click="toggleStatus('^changed$')"
+                class="cursor-pointer"
+                >
+                <v-icon start>mdi-alert-circle</v-icon>
+                Changed: {{ tableItemsMeta.status_changed }}
+                </v-chip>
+                </v-col>
+                <v-col cols="3">
+                <v-chip
+                color="error"
+                :variant="isStatusActive('^failed$') ? 'elevated' : 'outlined'"
+                size="large"
+                @click="toggleStatus('^failed$')"
+                class="cursor-pointer"
+                >
+                <v-icon start>mdi-close-circle</v-icon>
+                Failed: {{ tableItemsMeta.status_failed }}
+                </v-chip>
+                </v-col>
+                <v-col cols="3">
+                <v-chip
+                color="info"
+                :variant="isStatusActive('^unreported$') ? 'elevated' : 'outlined'"
+                size="large"
+                @click="toggleStatus('^unreported$')"
+                class="cursor-pointer"
+                >
+                <v-icon start>mdi-help-circle</v-icon>
+                Unreported: {{ tableItemsMeta.status_unreported }}
+                </v-chip>
+                </v-col>
+                </v-row>
+                <v-row class="mt-1">
+                <v-col cols="3">
+                <v-chip
+                color="grey"
+                :variant="isStatusActive('^outdated$') ? 'elevated' : 'outlined'"
+                size="large"
+                @click="toggleStatus('^outdated$')"
+                class="cursor-pointer"
+                >
+                <v-icon start>mdi-clock-alert-outline</v-icon>
+                Outdated: {{ tableItemsMeta.status_outdated }}
+                </v-chip>
+                </v-col>
+                </v-row>
+                </template>
+                <template v-slot:item.disabled="{ item }">
+                <v-icon>
+                {{
+                item.disabled
+                ? 'mdi-checkbox-marked-outline'
+                : 'mdi-checkbox-blank-outline'
+                }}
+                </v-icon>
+                </template>
+                <template v-slot:item.id="{ item }">
+                <a
+                :href="
+                router.resolve({ name: 'NodesCRUD', params: { node: item.id } })
+                .href
+                "
+                @click.left.prevent
+                >
+                {{ item.id }}
+                </a>
+                </template>
+                </v-data-table-server>
+                </v-card>
+                </template>
 
-<script setup>
-import { ref } from 'vue'
-import { useDataTable } from '@/common/datatable_generic'
-import { factFieldProcessor } from '@/common/field_processors'
-import { useRouter } from 'vue-router'
+                <script setup>
+                import { ref } from 'vue'
+                import { useDataTable } from '@/common/datatable_generic'
+                import { factFieldProcessor } from '@/common/field_processors'
+                import { useRouter } from 'vue-router'
 
-const router = useRouter()
+                const router = useRouter()
 
-const outdatedThresholdError = ref('')
+                const outdatedThresholdError = ref('')
 
-const tableConfig = {
-  apiEndpoint: '/api/v1/nodes',
-  routeName: 'NodesSearch',
-  fields: ['id', 'environment', 'report.status', 'disabled', 'change_report'],
-  searchFormSchema: [
-    { key: 'node_id', type: 'string' },
-    { key: 'disabled', type: 'string' },
-    { key: 'environment', type: 'string' },
-    {
-      key: 'report_status',
-      type: 'string'
-    },
-    {
-      key: 'outdated_threshold',
-      type: 'string'
-    },
-    {
-      key: 'fact',
-      type: 'array',
-      default: [],
-      fromUrl: factFieldProcessor.fromUrl,
-      toUrl: factFieldProcessor.toUrl
-    }
-  ]
-}
+                const tableConfig = {
+                apiEndpoint: '/api/v1/nodes',
+                routeName: 'NodesSearch',
+                fields: ['id', 'environment', 'report.status', 'disabled', 'change_report'],
+                searchFormSchema: [
+                { key: 'node_id', type: 'string' },
+                { key: 'disabled', type: 'string' },
+                { key: 'environment', type: 'string' },
+                {
+                key: 'report_status',
+                type: 'string'
+                },
+                {
+                key: 'outdated_threshold',
+                type: 'string'
+                },
+                {
+                key: 'fact',
+                type: 'array',
+                default: [],
+                fromUrl: factFieldProcessor.fromUrl,
+                toUrl: factFieldProcessor.toUrl
+                }
+                ]
+                }
 
-const {
-  tableItems,
-  tableItemsMeta,
-  tableLoading,
-  tablePage,
-  tableItemsPerPage,
-  tableItemsPerPageOptions,
-  tableTotalItems,
-  tableSortBy,
-  tableExpPan,
-  formSearchBy,
-  getSearchData,
-  getSearchDataTableEvent,
-  getSearchDataExpPanelEvent,
-  reload
-} = useDataTable(tableConfig)
+                const {
+                tableItems,
+                tableItemsMeta,
+                tableLoading,
+                tablePage,
+                tableItemsPerPage,
+                tableItemsPerPageOptions,
+                tableTotalItems,
+                tableSortBy,
+                tableExpPan,
+                formSearchBy,
+                getSearchData,
+                getSearchDataTableEvent,
+                getSearchDataExpPanelEvent,
+                reload
+                } = useDataTable(tableConfig)
 
-defineExpose({ reload })
+                defineExpose({ reload })
 
-const tableHeaders = [
-  { title: 'Node ID', key: 'id', sortable: true },
-  { title: 'Environment', key: 'environment', sortable: false },
-  { title: 'Report Status', key: 'report.status', sortable: true },
-  { title: 'Change Report', key: 'change_report', sortable: true },
-  { title: 'Disabled', key: 'disabled', sortable: false }
-]
+                const tableHeaders = [
+                { title: 'Node ID', key: 'id', sortable: true },
+                { title: 'Environment', key: 'environment', sortable: false },
+                { title: 'Report Status', key: 'report.status', sortable: true },
+                { title: 'Change Report', key: 'change_report', sortable: true },
+                { title: 'Disabled', key: 'disabled', sortable: false }
+                ]
 
-const tableDisabledDropdownOptions = [
-  { title: 'Unset', value: '' },
-  { title: 'True', value: 'true' },
-  { title: 'False', value: 'false' }
-]
+                const tableGenericDropdownOptions = [
+                { title: 'Unset', value: '' },
+                { title: 'True', value: 'true' },
+                { title: 'False', value: 'false' }
+                ]
 
-const formSearchByFactsOperators = [
-  'eq',
-  'gt',
-  'gte',
-  'in',
-  'lte',
-  'ne',
-  'nin',
-  'regex'
-]
-const formSearchByFactsTypes = ['bool', 'int', 'float', 'str']
+                const formSearchByFactsOperators = [
+                'eq',
+                'gt',
+                'gte',
+                'in',
+                'lte',
+                'ne',
+                'nin',
+                'regex'
+                ]
+                const formSearchByFactsTypes = ['bool', 'int', 'float', 'str']
 
-function formSearchByFactsAdd() {
-  formSearchBy.fact.push({ fact_name: '', operator: '', type: '', value: '' })
-}
+                function formSearchByFactsAdd() {
+                formSearchBy.fact.push({ fact_name: '', operator: '', type: '', value: '' })
+                }
 
-function formSearchByFactsRemove(index) {
-  formSearchBy.fact.splice(index, 1)
-  getSearchData()
-}
+                function formSearchByFactsRemove(index) {
+                formSearchBy.fact.splice(index, 1)
+                getSearchData()
+                }
 
-function onRowClick(item, item_data) {
-  router.push({
-    name: 'NodesCRUD',
-    params: { node: item_data.item.id }
-  })
-}
+                function onRowClick(item, item_data) {
+                router.push({
+                name: 'NodesCRUD',
+                params: { node: item_data.item.id }
+                })
+                }
 
-function filterByStatus(status) {
-  // If the current filter matches the clicked status, clear it
-  if (formSearchBy.report_status === status) {
-    formSearchBy.report_status = ''
-  } else {
-    // Otherwise, set the new filter
-    formSearchBy.report_status = status
-  }
-  getSearchData()
-}
+                function toggleStatus(statusRegex) {
+                let current = formSearchBy.report_status
+                ? formSearchBy.report_status.split('|')
+                : []
+                const index = current.indexOf(statusRegex)
+                if (index > -1) {
+                current.splice(index, 1)
+                } else {
+                current.push(statusRegex)
+                }
+                formSearchBy.report_status = current.join('|')
+                getSearchData()
+                }
+
+                function isStatusActive(statusRegex) {
+                if (!formSearchBy.report_status) return false
+                return formSearchBy.report_status.split('|').includes(statusRegex)
+                }
+
 
 function validateISOTimestamp(value) {
   if (!value) return true // Empty is valid
