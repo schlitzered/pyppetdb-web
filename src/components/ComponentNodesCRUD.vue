@@ -26,9 +26,22 @@ permissions and * limitations under the License. */
           v-if="formInputIdShow"
           v-model="formData.id"
           :readonly="formInputIdReadOnly"
-          append-inner-icon="mdi-account"
+          append-inner-icon="mdi-server"
           label="Node ID"
-        ></v-text-field>
+        >
+          <template v-slot:append v-if="formDataReadOnly">
+            <v-btn
+              icon="mdi-certificate"
+              variant="text"
+              title="Certificates"
+              :to="{
+                name: 'CASpacesCertsSearch',
+                params: { space_id: 'puppet-ca' },
+                query: { cn: route.params.node }
+              }"
+            ></v-btn>
+          </template>
+        </v-text-field>
         <v-switch
           v-model="formData.disabled"
           :disabled="formDataReadOnly"
@@ -641,6 +654,7 @@ function formGetNodeData() {
       formData['change_facts'] = data['change_facts']
       formData['change_last'] = data['change_last']
       formData['change_report'] = data['change_report']
+      formData['report_status_computed'] = data['report_status_computed']
       formData['facts'] = flattenFacts(data['facts'])
       formData['facts_inject'] = data['facts_inject'] || {}
       formData['report'] = data['report']

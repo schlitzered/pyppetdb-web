@@ -8,13 +8,14 @@ express or implied. * See the License for the specific language governing
 permissions and * limitations under the License. */
 <template>
   <v-card>
-    <v-toolbar>
-      <v-toolbar-title>
+    <v-toolbar ref="toolbarRef">
+      <v-toolbar-title ref="titleRef">
         {{ navTitle }}
       </v-toolbar-title>
       <v-spacer></v-spacer>
-      <v-btn icon="mdi-reload" @click="$emit('reload')"></v-btn>
-      <div v-if="navItems.length">
+
+      <!-- Menu shown when overflowing -->
+      <div v-if="navItems.length && isOverflowing">
         <v-menu open-on-hover>
           <template v-slot:activator="{ props }">
             <v-btn icon="mdi-dots-vertical" v-bind="props"></v-btn>
@@ -25,17 +26,50 @@ permissions and * limitations under the License. */
               v-for="(item, index) in navItems"
               :key="index"
               :value="item"
+              @click="onBtnClick(item)"
             >
-              <v-list-item-title @click="onBtnClick(item)">{{
-                item.title
-              }}</v-list-item-title>
+              <v-list-item-title>{{ item.title }}</v-list-item-title>
             </v-list-item>
           </v-list>
         </v-menu>
       </div>
-      <div v-for="(item, index) in navItems" :key="index">
-        <v-btn @click="onBtnClick(item)" :to="item.to || item.link"
-          >{{ item.title }}
+
+      <!-- Buttons shown when NOT overflowing -->
+      <div v-if="navItems.length && !isOverflowing" class="d-flex">
+        <div v-for="(item, index) in navItems" :key="index">
+          <v-btn
+            @click="onBtnClick(item)"
+            :to="item.to || item.link"
+            class="mx-1"
+            >{{ item.title }}
+          </v-btn>
+        </div>
+      </div>
+
+      <v-btn
+        ref="reloadRef"
+        icon="mdi-reload"
+        @click="$emit('reload')"
+      ></v-btn>
+
+      <!-- Ghost container for measurement -->
+      <div
+        ref="ghostRef"
+        class="d-flex"
+        style="
+          visibility: hidden;
+          position: absolute;
+          white-space: nowrap;
+          pointer-events: none;
+          right: 0;
+        "
+      >
+        <v-btn
+          v-for="(item, index) in navItems"
+          :key="'ghost-' + index"
+          class="mx-1"
+        >
+          {{ item.title }}
         </v-btn>
       </div>
     </v-toolbar>
@@ -43,7 +77,7 @@ permissions and * limitations under the License. */
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { loginDataStore } from '@/store/login_data'
 
@@ -52,6 +86,12 @@ defineEmits(['reload'])
 const loginData = loginDataStore()
 const route = useRoute()
 const router = useRouter()
+
+const toolbarRef = ref(null)
+const titleRef = ref(null)
+const reloadRef = ref(null)
+const ghostRef = ref(null)
+const isOverflowing = ref(false)
 
 const navItems = computed(() => {
   let items = []
@@ -90,9 +130,66 @@ const navTitle = computed(() => {
   }
 })
 
-function onBtnClick(event) {
-  if (event.name !== route.name) {
-    router.push(event.to)
+function onBtnClick(item) {
+  if (item.to) {
+    router.push(item.to)
+  } else if (item.link) {
+    router.push(item.link)
   }
 }
+
+const checkOverflow = () => {
+  if (!toolbarRef.value || !ghostRef.value) return
+
+  const toolbarWidth = toolbarRef.value.$el.offsetWidth
+  const titleWidth = titleRef.value?.$el?.offsetWidth || 0
+  const reloadWidth = reloadRef.value?.$el?.offsetWidth || 48
+  const buttonsWidth = ghostRef.value.offsetWidth
+
+  // Buffer for spacing and the 3-dot menu button itself if it were to appear
+  const buffer = 100
+
+  if (titleWidth + reloadWidth + buttonsWidth + buffer > toolbarWidth) {
+    isOverflowing.value = true
+  } else {
+    isOverflowing.value = false
+  }
+}
+
+let resizeObserver = null
+
+onMounted(() => {
+  resizeObserver = new ResizeObserver(() => {
+    checkOverflow()
+  })
+  if (toolbarRef.value) {
+    resizeObserver.observe(toolbarRef.value.$el)
+  }
+  checkOverflow()
+})
+
+onUnmounted(() => {
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+  }
+})
+
+watch(
+  () => navItems.value,
+  () => {
+    nextTick(() => {
+      checkOverflow()
+    })
+  },
+  { deep: true }
+)
+
+watch(
+  () => route.path,
+  () => {
+    nextTick(() => {
+      checkOverflow()
+    })
+  }
+)
 </script>

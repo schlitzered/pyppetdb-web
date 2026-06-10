@@ -67,6 +67,23 @@ permissions and * limitations under the License. */
           {{ item.id }}
         </a>
       </template>
+
+      <template v-slot:item.cn="{ item }">
+        <a
+          v-if="item && item.cn"
+          :href="
+            router.resolve({
+              name: 'NodesCRUD',
+              params: { node: item.cn }
+            }).href
+          "
+          @click.stop.prevent="
+            router.push({ name: 'NodesCRUD', params: { node: item.cn } })
+          "
+        >
+          {{ item.cn }}
+        </a>
+      </template>
     </v-data-table-server>
   </v-card>
 </template>

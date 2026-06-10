@@ -126,6 +126,21 @@ const routeNodesCrud = {
             hide() {
               return false
             }
+          },
+          {
+            title: 'Certs',
+            to: {
+              name: 'CASpacesCertsSearch',
+              params: {
+                space_id: 'puppet-ca'
+              },
+              query: {
+                cn: route.params.node
+              }
+            },
+            hide() {
+              return false
+            }
           }
         ]
       }
