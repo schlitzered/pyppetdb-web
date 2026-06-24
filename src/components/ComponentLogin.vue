@@ -112,11 +112,10 @@ function formSubmit(event) {
   axios
     .post('/api/v1/authenticate', formData)
     .then(() => {
-      api
-        .get('/api/v1/users/_self')
+      loginData
+        .fetchUserData()
         .then((data) => {
           if (data) {
-            loginData.setUserData(data)
             router.push({ name: 'Home' })
           }
         })

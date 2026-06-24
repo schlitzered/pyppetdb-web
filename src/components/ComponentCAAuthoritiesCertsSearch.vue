@@ -9,6 +9,8 @@ permissions and * limitations under the License. */
 <template>
   <v-card>
     <v-data-table-server
+      show-select
+      v-model="tableSelected"
       :headers="tableHeaders"
       :items-length="tableTotalItems"
       :items="tableItems"
@@ -53,6 +55,25 @@ permissions and * limitations under the License. */
             </v-expansion-panel-text>
           </v-expansion-panel>
         </v-expansion-panels>
+        <v-toolbar flat>
+          <v-spacer></v-spacer>
+          <v-btn
+            color="success"
+            variant="text"
+            :disabled="!canSignSelected"
+            @click="batchCertAction('signed')"
+          >
+            Sign Selected
+          </v-btn>
+          <v-btn
+            color="red"
+            variant="text"
+            :disabled="!canRevokeSelected"
+            @click="batchCertAction('revoked')"
+          >
+            Revoke Selected
+          </v-btn>
+        </v-toolbar>
       </template>
       <template v-slot:item.id="{ item }">
         <a
@@ -74,6 +95,8 @@ permissions and * limitations under the License. */
 <script setup>
 import { useDataTable } from '@/common/datatable_generic'
 import { useRouter, useRoute } from 'vue-router'
+import { ref, computed } from 'vue'
+import api from '@/api/common'
 
 const router = useRouter()
 const route = useRoute()
@@ -104,6 +127,33 @@ const {
   getSearchDataExpPanelEvent,
   reload
 } = useDataTable(tableConfig)
+
+const tableSelected = ref([])
+
+const canSignSelected = computed(() => {
+  if (tableSelected.value.length === 0) return false
+  return tableSelected.value.every((id) => {
+    const item = tableItems.value.find((i) => i.id === id)
+    return item && item.status === 'requested'
+  })
+})
+
+const canRevokeSelected = computed(() => {
+  if (tableSelected.value.length === 0) return false
+  return tableSelected.value.every((id) => {
+    const item = tableItems.value.find((i) => i.id === id)
+    return item && (item.status === 'requested' || item.status === 'signed')
+  })
+})
+
+async function batchCertAction(action) {
+  for (const id of tableSelected.value) {
+    let url = `/api/v1/ca/authorities/${route.params.ca_id}/certs/${id}`
+    await api.put(url, { status: action })
+  }
+  tableSelected.value = []
+  reload()
+}
 
 defineExpose({ reload })
 

@@ -28,12 +28,24 @@ permissions and * limitations under the License. */
           append-inner-icon="mdi-id-card"
           label="Cert ID"
         ></v-text-field>
-        <v-text-field
-          v-model="formData.cn"
-          readonly
-          append-inner-icon="mdi-text"
-          label="Common Name"
-        ></v-text-field>
+        <v-text-field v-model="formData.cn" readonly>
+          <template v-slot:label>Common Name</template>
+          <template v-slot:append-inner>
+            <v-icon icon="mdi-text" class="me-2"></v-icon>
+            <v-btn
+              v-if="formData.cn"
+              :disabled="!nodeExists"
+              icon="mdi-server"
+              variant="text"
+              density="compact"
+              :title="nodeExists ? 'View Node' : 'Node not found'"
+              :to="{
+                name: 'NodesCRUD',
+                params: { node: formData.cn }
+              }"
+            ></v-btn>
+          </template>
+        </v-text-field>
         <v-text-field
           v-model="formData.status"
           readonly
@@ -75,6 +87,13 @@ permissions and * limitations under the License. */
           variant="text"
           @click="certAction('signed')"
           >Sign
+        </v-btn>
+        <v-btn
+          v-if="formData.status === 'requested'"
+          color="red"
+          variant="text"
+          @click="certAction('revoked')"
+          >Revoke
         </v-btn>
         <v-btn
           v-if="formData.status === 'signed'"
@@ -131,6 +150,7 @@ const form = ref(null)
 const formData = reactive({})
 const formDataReadOnly = ref(true)
 const formDataValid = ref(false)
+const nodeExists = ref(false)
 
 const formButtonEditShow = computed(() => {
   return loginData.hasPermission(
@@ -167,6 +187,7 @@ const { reload } = useCrudReload(formGetData)
 defineExpose({ reload })
 
 function formGetData() {
+  nodeExists.value = false
   api
     .get(
       `/api/v1/ca/authorities/${route.params.ca_id}/certs/${route.params.cert_id}`
@@ -174,6 +195,16 @@ function formGetData() {
     .then((data) => {
       if (data) {
         Object.assign(formData, data)
+        if (formData.cn) {
+          api
+            .get(`/api/v1/nodes/${formData.cn}`, null, true)
+            .then(() => {
+              nodeExists.value = true
+            })
+            .catch(() => {
+              nodeExists.value = false
+            })
+        }
       }
     })
 }

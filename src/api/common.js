@@ -15,13 +15,14 @@
  */
 import axios from 'axios'
 import { apiErrorStore } from '@/store/api_error'
+import { loginDataStore } from '@/store/login_data'
 import router from '../router/routes'
 import qs from 'qs'
 
-const apiError = apiErrorStore()
-
 export default {
   async request(method, url, data, params, silent = false) {
+    const apiError = apiErrorStore()
+    const loginData = loginDataStore()
     let config = {
       method: method,
       url: url,
@@ -43,6 +44,7 @@ export default {
       })
       .catch((error) => {
         if (error.response && error.response.status === 401) {
+          loginData.reset()
           router.push({ name: 'LoginError' })
         } else {
           if (!silent) {

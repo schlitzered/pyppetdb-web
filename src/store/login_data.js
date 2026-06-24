@@ -15,6 +15,7 @@
  */
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
+import api from '@/api/common'
 
 export const loginDataStore = defineStore('loginData', () => {
   const timestamp = ref(0)
@@ -83,6 +84,26 @@ export const loginDataStore = defineStore('loginData', () => {
     isLoaded.value = false
   }
 
+  function reset() {
+    resetTimestamp()
+    resetUserData()
+    resetIsLoaded()
+  }
+
+  async function fetchUserData() {
+    try {
+      const data = await api.get('/api/v1/users/_self')
+      if (data) {
+        setUserData(data)
+        setTimestamp()
+        return data
+      }
+    } catch (error) {
+      resetIsLoaded()
+      throw error
+    }
+  }
+
   return {
     timestamp,
     userData,
@@ -99,6 +120,8 @@ export const loginDataStore = defineStore('loginData', () => {
     resetUserData,
     setTimestamp,
     setUserData,
-    resetIsLoaded
+    resetIsLoaded,
+    reset,
+    fetchUserData
   }
 })
