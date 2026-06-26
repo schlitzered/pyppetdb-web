@@ -91,6 +91,8 @@
               <DataTable
                 :value="filteredMetrics"
                 paginator
+                paginator-template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+                current-page-report-template="Showing {first} to {last} of {totalRecords} results"
                 :rows="10"
                 class="p-datatable-sm border border-zinc-200 dark:border-zinc-800 rounded"
               >
@@ -120,6 +122,8 @@
               <DataTable
                 :value="filteredLogs"
                 paginator
+                paginator-template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+                current-page-report-template="Showing {first} to {last} of {totalRecords} results"
                 :rows="10"
                 class="p-datatable-sm border border-zinc-200 dark:border-zinc-800 rounded"
               >
@@ -157,6 +161,8 @@
               <DataTable
                 :value="filteredResources"
                 paginator
+                paginator-template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+                current-page-report-template="Showing {first} to {last} of {totalRecords} results"
                 :rows="10"
                 class="p-datatable-sm border border-zinc-200 dark:border-zinc-800 rounded"
               >

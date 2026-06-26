@@ -66,6 +66,8 @@
         :value="tableItems"
         lazy
         paginator
+        paginator-template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+        current-page-report-template="Showing {first} to {last} of {totalRecords} results"
         :rows="tableItemsPerPage"
         :total-records="tableTotalItems"
         :loading="tableLoading"
