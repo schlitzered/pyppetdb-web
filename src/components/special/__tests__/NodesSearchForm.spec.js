@@ -3,14 +3,12 @@ import { it } from 'vitest'
 import { expect } from 'vitest'
 import { vi } from 'vitest'
 import { beforeEach } from 'vitest'
-import { ref } from 'vue'
 import { reactive } from 'vue'
 import { mount } from '@vue/test-utils'
 import { flushPromises } from '@vue/test-utils'
 import { createMockResourceDef } from '@/__test_utils__/helpers'
 import api from '@/api/client'
 import NodesSearchForm from '../NodesSearchForm.vue'
-import { authStore } from '@/stores/auth'
 
 const mockRoute = reactive({
   query: {},

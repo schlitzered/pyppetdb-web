@@ -403,7 +403,7 @@ describe(
             })
           }
         )
-        const wrapper = mount(
+        mount(
           CASpacesCertsForm,
           {
             props: {
@@ -431,7 +431,7 @@ describe(
         api.get.mockRejectedValue(
           new Error('Load error')
         )
-        const wrapper = mount(
+        mount(
           CASpacesCertsForm,
           {
             props: {
@@ -465,7 +465,7 @@ describe(
           status: 'revoked',
           cn: ''
         })
-        const wrapper = mount(
+        mount(
           CASpacesCertsForm,
           {
             props: {

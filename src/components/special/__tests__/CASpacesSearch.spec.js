@@ -7,7 +7,6 @@ import { beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { primeVueStubs } from '@/__test_utils__/helpers'
 import { createMockResourceDef } from '@/__test_utils__/helpers'
-import api from '@/api/client'
 import CASpacesSearch from '../CASpacesSearch.vue'
 
 const mockRouter = {

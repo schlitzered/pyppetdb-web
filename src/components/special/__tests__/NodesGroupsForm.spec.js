@@ -3,7 +3,6 @@ import { it } from 'vitest'
 import { expect } from 'vitest'
 import { vi } from 'vitest'
 import { beforeEach } from 'vitest'
-import { ref } from 'vue'
 import { reactive } from 'vue'
 import { mount } from '@vue/test-utils'
 import { flushPromises } from '@vue/test-utils'
@@ -820,7 +819,7 @@ describe(
           'error'
         ).mockImplementation(() => {})
 
-        const wrapper = mount(
+        mount(
           NodesGroupsForm,
           {
             props: {

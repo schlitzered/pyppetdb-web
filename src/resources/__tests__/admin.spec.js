@@ -216,7 +216,7 @@ describe(
         ).toBe(false)
         expect(
           pyppetdbNodes.permissions.delete(
-            (p) => true
+            () => true
           )
         ).toBe(true)
       }

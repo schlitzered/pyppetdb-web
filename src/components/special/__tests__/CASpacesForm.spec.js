@@ -522,7 +522,7 @@ describe(
         api.get.mockRejectedValue(
           new Error('Load error')
         )
-        const wrapper = mount(
+        mount(
           CASpacesForm,
           {
             props: {
