@@ -537,7 +537,7 @@ describe(
     it(
       'watches secret_value and secret_id for redactor resource type',
       async () => {
-        const wrapper = mount(
+        mount(
           ResourceTable,
           {
             props: {
@@ -871,7 +871,7 @@ describe(
         ).mockRejectedValueOnce(
           new Error('crypto error')
         )
-        const wrapper = mount(
+        mount(
           ResourceTable,
           {
             props: {

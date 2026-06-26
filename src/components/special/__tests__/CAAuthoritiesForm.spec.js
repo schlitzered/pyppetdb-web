@@ -10,7 +10,6 @@ import { primeVueStubs } from '@/__test_utils__/helpers'
 import { createMockResourceDef } from '@/__test_utils__/helpers'
 import api from '@/api/client'
 import ToggleSwitch from 'primevue/toggleswitch'
-import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 import Textarea from 'primevue/textarea'
 import Button from 'primevue/button'
@@ -723,7 +722,7 @@ describe(
     it(
       'watches ca_id route parameters changes',
       async () => {
-        const wrapper = mount(
+        mount(
           CAAuthoritiesForm,
           {
             props: {

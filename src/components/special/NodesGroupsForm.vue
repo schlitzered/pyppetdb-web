@@ -238,6 +238,8 @@
             <DataTable
               :value="filteredNodes"
               paginator
+              paginator-template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+              current-page-report-template="Showing {first} to {last} of {totalRecords} results"
               :rows="10"
               :rows-per-page-options="[10, 25, 50, 100]"
               class="p-datatable-sm border border-zinc-200 dark:border-zinc-800 rounded"

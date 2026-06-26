@@ -171,7 +171,7 @@ describe(
     it(
       'mounts in live mode for running job and connects to stream',
       async () => {
-        const wrapper = mount(
+        mount(
           JobsNodesJobsForm,
           {
             props: {
@@ -508,7 +508,7 @@ describe(
           }
         )
 
-        const wrapper = mount(
+        mount(
           JobsNodesJobsForm,
           {
             props: {

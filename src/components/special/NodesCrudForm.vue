@@ -153,6 +153,8 @@
             <DataTable
               :value="tableFactsInjectItems"
               paginator
+              paginator-template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+              current-page-report-template="Showing {first} to {last} of {totalRecords} results"
               :rows="5"
               :rows-per-page-options="[5, 10, 25, 50]"
               class="p-datatable-sm border border-zinc-200 dark:border-zinc-800 rounded"
@@ -248,6 +250,8 @@
             <DataTable
               :value="tableFactsItems"
               paginator
+              paginator-template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+              current-page-report-template="Showing {first} to {last} of {totalRecords} results"
               :rows="10"
               :rows-per-page-options="[5, 10, 25, 50]"
               class="p-datatable-sm border border-zinc-200 dark:border-zinc-800 rounded"

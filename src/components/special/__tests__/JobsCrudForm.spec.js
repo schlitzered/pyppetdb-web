@@ -864,7 +864,7 @@ describe(
     it(
       'watches route params job_id changes',
       async () => {
-        const wrapper = mount(
+        mount(
           JobsCrudForm,
           {
             props: {
