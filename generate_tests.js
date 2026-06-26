@@ -16,158 +16,160 @@
 import fs from 'fs';
 import path from 'path';
 
-const componentsDir = path.join(process.cwd(), 'src/components');
-const viewsDir = path.join(process.cwd(), 'src/views');
+const componentsDir = path.join(
+  process.cwd(),
+  'src/components'
+);
+const viewsDir = path.join(
+  process.cwd(),
+  'src/views'
+);
 
-const generateTestContent = (componentName, isView) => `import { describe, it, expect, vi } from 'vitest'
+const generateTestContent = ({
+  componentName,
+}) => {
+  return `import { describe } from 'vitest'
+import { it } from 'vitest'
+import { expect } from 'vitest'
+import { vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { primeVueStubs } from '@/__test_utils__/helpers'
+import { createMockResourceDef } from '@/__test_utils__/helpers'
 import ${componentName} from '../${componentName}.vue'
 
-// Mock dependencies globally
-vi.mock('vue-router', () => ({
-  useRouter: vi.fn(() => ({
-    push: vi.fn(),
-    resolve: vi.fn(() => ({ href: '' }))
-  })),
-  useRoute: vi.fn(() => ({
-    name: '',
-    params: {},
-    query: {},
-    meta: {}
-  })),
-  createRouter: vi.fn(),
-  createWebHistory: vi.fn()
-}))
-
-vi.mock('vuetify', async (importOriginal) => {
-  const actual = await importOriginal();
+vi.mock('@/api/client', () => {
   return {
-    ...actual,
-    useTheme: vi.fn(() => ({
-      global: { name: { value: 'light' } }
-    }))
-  };
-});
-
-vi.mock('@/api/common', () => ({
-  default: {
-    get: vi.fn(() => Promise.resolve({ result: [], meta: {}, nodes: [], filters: [] })),
-    request: vi.fn(() => Promise.resolve({})),
-    delete: vi.fn(() => Promise.resolve({}))
+    default: {
+      get: () => {
+        return Promise.resolve({
+          result: [],
+          meta: {},
+          nodes: [],
+          filters: []
+        })
+      },
+      request: () => {
+        return Promise.resolve({})
+      },
+      delete: () => {
+        return Promise.resolve({})
+      },
+      post: () => {
+        return Promise.resolve({})
+      },
+      put: () => {
+        return Promise.resolve({})
+      }
+    }
   }
-}))
+})
 
-vi.mock('@/store/login_data', () => ({
-  loginDataStore: vi.fn(() => ({
-    getUserDataIsAdmin: true,
-    isLoaded: false,
-    hasPermission: vi.fn(() => true),
-    hasPermissionPattern: vi.fn(() => true),
-    getPermissionMatches: vi.fn(() => []),
-    resetTimestamp: vi.fn(),
-    resetUserData: vi.fn(),
-    resetIsLoaded: vi.fn(),
-    setUserData: vi.fn()
-  }))
-}))
+vi.mock('@/stores/auth', () => {
+  return {
+    authStore: () => {
+      return {
+        getUserDataIsAdmin: true,
+        isLoaded: false,
+        hasPermission: () => {
+          return true
+        },
+        hasPermissionPattern: () => {
+          return true
+        },
+        getPermissionMatches: () => {
+          return []
+        },
+        resetTimestamp: vi.fn(),
+        resetUserData: vi.fn(),
+        resetIsLoaded: vi.fn(),
+        reset: vi.fn(),
+        fetchUserData: vi.fn(),
+        setUserData: vi.fn()
+      }
+    }
+  }
+})
 
-vi.mock('@/store/api_error', () => ({
-  apiErrorStore: vi.fn(() => ({
-    setRedirect: vi.fn()
-  }))
-}))
+vi.mock('@/stores/apiError', () => {
+  return {
+    apiErrorStore: () => {
+      return {
+        setRedirect: vi.fn()
+      }
+    }
+  }
+})
 
 describe('${componentName}', () => {
   it('mounts successfully', () => {
-    const wrapper = mount(${componentName}, {
-      global: {
-        stubs: {
-          'ComponentDialogWarning': true,
-          'ComponentGenericToolBar': true,
-          'ComponentNodesSearch': true,
-          'ComponentNodesCrud': true,
-          'ComponentUsersSearch': true,
-          'ComponentUsersCrud': true,
-          // Add all standard Vuetify and custom components to be safe
-          'v-card': true,
-          'v-card-title': true,
-          'v-card-text': true,
-          'v-card-actions': true,
-          'v-form': true,
-          'v-switch': true,
-          'v-text-field': true,
-          'v-textarea': true,
-          'v-expansion-panels': true,
-          'v-expansion-panel': true,
-          'v-expansion-panel-title': true,
-          'v-expansion-panel-text': true,
-          'v-data-table': true,
-          'v-data-table-server': {
-             template: '<div><slot name="top" /><slot /></div>'
-          },
-          'v-toolbar': true,
-          'v-toolbar-title': true,
-          'v-spacer': true,
-          'v-btn': true,
-          'v-divider': true,
-          'v-icon': true,
-          'v-row': true,
-          'v-col': true,
-          'v-select': true,
-          'v-chip': true,
-          'v-menu': true,
-          'v-list': true,
-          'v-list-group': true,
-          'v-list-item': true,
-          'v-list-item-title': true,
-          'v-list-item-subtitle': true,
-          'v-list-subheader': true,
-          'v-container': true,
-          'v-tooltip': true,
-          'v-app-bar': true,
-          'v-app-bar-title': true,
-          'v-app-bar-nav-icon': true,
-          'v-dialog': true,
-          'v-main': true,
-          'v-app': true,
-          'v-navigation-drawer': true,
-          'router-view': true,
-          'router-link': true,
-          'v-alert': true,
-          'v-progress-linear': true,
-          'v-progress-circular': true,
-          'v-footer': true,
-          'v-breadcrumbs': true,
-          'v-breadcrumbs-item': true,
-          'v-breadcrumbs-divider': true,
-          'v-infinite-scroll': true
+    const wrapper = mount(
+      ${componentName},
+      {
+        props: {
+          resourceDef: createMockResourceDef(),
+          status: 'active',
+          modelValue: ''
+        },
+        global: {
+          stubs: primeVueStubs
         }
       }
-    })
-    
-    expect(wrapper.exists()).toBe(true)
+    )
+    expect(
+      wrapper.exists()
+    ).toBe(true)
   })
 })
-`;
+`
+}
 
-const processDir = (dir) => {
+const processDir = ({
+  dir,
+}) => {
   const files = fs.readdirSync(dir);
-  const testsDir = path.join(dir, '__tests__');
-  
-  if (!fs.existsSync(testsDir)){
-    fs.mkdirSync(testsDir);
-  }
-
   files.forEach(file => {
-    if (file.endsWith('.vue')) {
-      const componentName = file.replace('.vue', '');
-      const testFilePath = path.join(testsDir, `${componentName}.spec.js`);
-      fs.writeFileSync(testFilePath, generateTestContent(componentName, dir === viewsDir));
+    const fullPath = path.join(
+      dir,
+      file
+    );
+    const stat = fs.statSync(fullPath);
+    if (stat.isDirectory()) {
+      if (file !== '__tests__' && file !== 'node_modules') {
+        processDir({
+          dir: fullPath,
+        });
+      }
+    } else if (file.endsWith('.vue')) {
+      const componentName = file.replace(
+        '.vue',
+        ''
+      );
+      const testsDir = path.join(
+        dir,
+        '__tests__'
+      );
+      if (!fs.existsSync(testsDir)) {
+        fs.mkdirSync(testsDir);
+      }
+      const testFilePath = path.join(
+        testsDir,
+        `${componentName}.spec.js`
+      );
+      fs.writeFileSync(
+        testFilePath,
+        generateTestContent({
+          componentName,
+        })
+      );
       console.log(`Created/updated test for ${componentName}`);
     }
   });
 };
 
-processDir(componentsDir);
-processDir(viewsDir);
+processDir({
+  dir: componentsDir,
+});
+processDir({
+  dir: viewsDir,
+});
 console.log('Test generation complete.');

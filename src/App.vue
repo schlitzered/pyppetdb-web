@@ -1,15 +1,34 @@
-/* * Copyright 2026 Stephan Schultchen * * Licensed under the Apache License,
-Version 2.0 (the "License"); * you may not use this file except in compliance
-with the License. * You may obtain a copy of the License at * *
-http://www.apache.org/licenses/LICENSE-2.0 * * Unless required by applicable law
-or agreed to in writing, software * distributed under the License is distributed
-on an "AS IS" BASIS, * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
-express or implied. * See the License for the specific language governing
-permissions and * limitations under the License. */
 <template>
-  <router-view />
+  <div :class="{ dark: isDark }">
+    <ConfirmDialog />
+    <Toast />
+    <router-view />
+  </div>
 </template>
 
-<script setup>
-//
+<script setup lang="ts">
+import { computed } from 'vue'
+import { watch } from 'vue'
+import ConfirmDialog from 'primevue/confirmdialog'
+import Toast from 'primevue/toast'
+import { uiStore } from '@/stores/ui'
+
+const ui = uiStore()
+const isDark = computed(() => ui.theme === 'dark')
+
+watch(
+  isDark,
+  (val) => {
+    if (val) {
+      document.documentElement.classList.add('dark')
+      document.body.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+      document.body.classList.remove('dark')
+    }
+  },
+  {
+    immediate: true
+  }
+)
 </script>

@@ -25,6 +25,11 @@ export default defineConfig([
   { files: ["**/*.{js,mjs,cjs,ts,mts,cts,vue}"], languageOptions: { globals: {...globals.browser, ...globals.node} } },
   tseslint.configs.recommended,
   pluginVue.configs["flat/essential"],
+  {
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off"
+    }
+  },
   { 
     files: ["**/*.vue"], 
     languageOptions: { parserOptions: { parser: tseslint.parser } },
