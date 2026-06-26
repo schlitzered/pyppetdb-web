@@ -49,8 +49,8 @@ if (typeof window !== 'undefined') {
   }
 }
 
-if (typeof global !== 'undefined') {
-  ;(global as any).CSS = (global as any).CSS || {
+if (typeof globalThis !== 'undefined') {
+  ;(globalThis as any).CSS = (globalThis as any).CSS || {
     escape: (str: string) => {
       return str
     }

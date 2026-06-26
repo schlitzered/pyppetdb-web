@@ -46,5 +46,8 @@
     "vite": "^6.3.5",
     "vitest": "^4.1.2",
     "vue-tsc": "^2.2.0"
+  },
+  "overrides": {
+    "dompurify": "^3.4.11"
   }
 }
