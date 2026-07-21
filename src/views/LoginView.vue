@@ -110,12 +110,18 @@ const fetchProviders = async () => {
 
 const handleSubmit = async () => {
   try {
+    // TEMP DEBUG
+    console.info('[login] submit: authenticating')
     await axios.post('/api/v1/authenticate', formData)
+    console.info('[login] authenticated, fetching user')
     const user = await auth.fetchUserData()
+    console.info('[login] fetchUserData ->', user ? 'user ok' : 'NO USER')
     if (user) {
+      console.info('[login] pushing Home')
       router.push({ name: 'Home' })
     }
-  } catch {
+  } catch (e) {
+    console.error('[login] handleSubmit catch -> LoginError', e)
     router.push({ name: 'LoginError' })
   }
 }
