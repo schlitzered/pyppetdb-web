@@ -146,6 +146,7 @@ import { FileText } from '@lucide/vue'
 import { ShieldAlert } from '@lucide/vue'
 import { Tag } from '@lucide/vue'
 import { Key } from '@lucide/vue'
+import { KeyRound } from '@lucide/vue'
 import { Layers } from '@lucide/vue'
 import { Database } from '@lucide/vue'
 import { FileCode } from '@lucide/vue'
@@ -170,6 +171,7 @@ const iconMap = {
   ShieldAlert,
   Tag,
   Key,
+  KeyRound,
   Layers,
   Database,
   FileCode,

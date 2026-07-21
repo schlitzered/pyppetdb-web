@@ -15,6 +15,7 @@ import { hieraKeyModelsDynamic } from '@/resources/hiera'
 import { hieraLookup } from '@/resources/hiera'
 import { caAuthorities } from '@/resources/ca'
 import { caAuthoritiesCerts } from '@/resources/ca'
+import { caSecrets } from '@/resources/ca'
 import { caSpaces } from '@/resources/ca'
 import { caSpacesCerts } from '@/resources/ca'
 import { jobs } from '@/resources/jobs'
@@ -39,6 +40,7 @@ export const resources = {
   hieraLookup,
   caAuthorities,
   caAuthoritiesCerts,
+  caSecrets,
   caSpaces,
   caSpacesCerts,
   jobs,

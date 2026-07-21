@@ -274,12 +274,27 @@
                       </div>
                       <div class="flex flex-col gap-1 md:col-span-2">
                         <label class="text-xs text-zinc-500">URL</label>
-                        <InputText
-                          v-model="check.url"
-                          :disabled="readonly"
-                          required
-                          class="bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50"
-                        />
+                        <div class="flex flex-wrap md:flex-nowrap items-start gap-2">
+                          <InputText
+                            v-model="check.url"
+                            :disabled="readonly"
+                            required
+                            class="flex-grow bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50"
+                          />
+                          <CAInsertPicker
+                            v-if="!readonly"
+                            :options="URL_PLACEHOLDERS"
+                            placeholder="Insert placeholder…"
+                            @insert="
+                              (token) => (check.url = appendText(check.url, token))
+                            "
+                          />
+                        </div>
+                        <small class="text-xs text-zinc-500">
+                          Placeholders use single braces
+                          (<code>{cert_cn}</code>, <code>{ca_id}</code>,
+                          <code>{space_id}</code>); no <code>$secrets[…]</code>.
+                        </small>
                       </div>
                     </div>
 
@@ -302,18 +317,23 @@
                           />
                           <InputText
                             v-model="header.value"
-                            placeholder="Value"
-                            :type="header.secret ? 'password' : 'text'"
+                            placeholder="Value (may embed $secrets[…])"
                             :disabled="readonly"
                             class="flex-grow bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50"
                           />
-                          <div class="flex items-center gap-1.5">
-                            <ToggleSwitch
-                              v-model="header.secret"
-                              :disabled="readonly"
-                            />
-                            <span class="text-xs text-zinc-500">Secret</span>
-                          </div>
+                          <CAInsertPicker
+                            v-if="!readonly"
+                            :options="secretIds"
+                            placeholder="Insert $secrets[…]"
+                            empty-placeholder="No secrets"
+                            @insert="
+                              (id) =>
+                                (header.value = appendSecretRef(
+                                  header.value,
+                                  id
+                                ))
+                            "
+                          />
                           <Button
                             v-if="!readonly"
                             icon="pi pi-trash"
@@ -321,6 +341,10 @@
                             @click="removeHeader(index, hIdx)"
                           />
                         </div>
+                        <small class="text-xs text-zinc-500">
+                          Header values support only <code>$secrets[…]</code> —
+                          no CSR/context placeholders.
+                        </small>
                         <Button
                           v-if="!readonly"
                           label="Add Header"
@@ -357,13 +381,24 @@
                           />
                         </div>
                         <div class="flex flex-col gap-1">
-                          <label class="text-xs text-zinc-500">Password</label>
-                          <InputText
-                            v-model="check.password"
-                            type="password"
+                          <label class="text-xs text-zinc-500"
+                            >Password (Secret Reference)</label
+                          >
+                          <Select
+                            :model-value="secretIdFromRef(check.password)"
+                            :options="secretRefOptions(check.password)"
                             :disabled="readonly"
-                            class="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50"
+                            :show-clear="!readonly"
+                            placeholder="Select a secret"
+                            class="bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700"
+                            @update:model-value="
+                              (id) => (check.password = toSecretRef(id))
+                            "
                           />
+                          <small class="text-xs text-zinc-500">
+                            Basic-auth passwords must reference a CA secret
+                            ($secrets[…]).
+                          </small>
                         </div>
                       </div>
                     </div>
@@ -376,6 +411,39 @@
                         rows="3"
                         class="font-mono text-xs bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 w-full"
                       />
+                      <div v-if="!readonly" class="flex flex-wrap justify-end gap-2">
+                        <CAInsertPicker
+                          :options="BODY_PLACEHOLDERS"
+                          placeholder="Insert placeholder…"
+                          @insert="
+                            (token) =>
+                              (check.body_template = appendText(
+                                check.body_template,
+                                token
+                              ))
+                          "
+                        />
+                        <CAInsertPicker
+                          :options="secretIds"
+                          placeholder="Insert $secrets[…]"
+                          empty-placeholder="No secrets"
+                          @insert="
+                            (id) =>
+                              (check.body_template = appendSecretRef(
+                                check.body_template,
+                                id
+                              ))
+                          "
+                        />
+                      </div>
+                      <small class="text-xs text-zinc-500">
+                        Placeholders use double braces:
+                        <code>{{ BODY_PLACEHOLDERS[0] }}</code> (string) and
+                        <code>{{ BODY_PLACEHOLDERS[1] }}</code> (JSON array — no
+                        quotes). <code>$secrets[…]</code> allowed. If left empty,
+                        a default <code>{{ DEFAULT_BODY_EXAMPLE }}</code> body is
+                        sent.
+                      </small>
                     </div>
 
                     <div class="flex flex-wrap gap-4 items-center">
@@ -431,14 +499,23 @@
                       </div>
                       <div class="flex flex-col gap-1">
                         <label class="text-xs text-zinc-500"
-                          >Client Key (PEM)</label
+                          >Client Key (Secret Reference)</label
                         >
-                        <Textarea
-                          v-model="check.client_key"
+                        <Select
+                          :model-value="secretIdFromRef(check.client_key)"
+                          :options="secretRefOptions(check.client_key)"
                           :disabled="readonly"
-                          rows="3"
-                          class="font-mono text-xs bg-white dark:bg-zinc-900 w-full text-zinc-900 dark:text-zinc-50"
+                          :show-clear="!readonly"
+                          placeholder="Select a secret"
+                          class="w-full bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700"
+                          @update:model-value="
+                            (id) => (check.client_key = toSecretRef(id))
+                          "
                         />
+                        <small class="text-xs text-zinc-500">
+                          The client key must reference a CA secret
+                          ($secrets[…]).
+                        </small>
                       </div>
                     </div>
                   </div>
@@ -460,6 +537,12 @@
                   class="text-sm font-semibold text-zinc-700 dark:text-zinc-300"
                   >Script Checks</span
                 >
+                <p class="text-xs text-zinc-500 mt-1">
+                  The script receives CSR values as environment variables
+                  (<code>CN</code>, and <code>SAN1</code>…<code>SANn</code>,
+                  1-based). Exit code 0 passes. <code>$secrets[…]</code> are
+                  <strong>not</strong> resolved here.
+                </p>
                 <div class="flex flex-col gap-3 mt-2">
                   <div
                     v-for="(check, index) in model.san_validation.script_checks"
@@ -746,9 +829,64 @@ import AccordionContent from 'primevue/accordioncontent'
 import Tag from 'primevue/tag'
 import AutoComplete from 'primevue/autocomplete'
 import api from '@/api/client'
+import CAInsertPicker from '@/components/special/CAInsertPicker.vue'
 import { useCAValidationConfig } from '@/composables/useCAValidationConfig'
 
 const { getDefaultValidationConfig } = useCAValidationConfig()
+
+// CSR/context placeholders differ per field: the URL uses Python str.format
+// single braces (and a different CN name), the body uses double braces.
+const URL_PLACEHOLDERS = ['{cert_cn}', '{ca_id}', '{space_id}']
+const BODY_PLACEHOLDERS = ['{{cn}}', '{{sans}}']
+const DEFAULT_BODY_EXAMPLE = '{"cn": …, "sans": […]}'
+
+const appendText = (current: any, text: string): string =>
+  `${current || ''}${text}`
+
+const secretIds = ref<string[]>([])
+
+const fetchSecrets = async () => {
+  try {
+    const response = await api.get<any>('/api/v1/ca/secrets', {
+      limit: 1000,
+      fields: ['id']
+    })
+    if (response && response.result) {
+      secretIds.value = response.result.map((s: any) => s.id)
+    }
+  } catch {
+    // Ignored
+  }
+}
+
+const SECRET_REF_RE = /^\$secrets\[([A-Za-z0-9_-]+)\]$/
+
+// Extract the secret id from a whole-value reference like `$secrets[FOO]`;
+// returns null for free text or empty values.
+const secretIdFromRef = (value: any): string | null => {
+  if (!value) return null
+  const match = String(value).match(SECRET_REF_RE)
+  return match ? match[1] : null
+}
+
+const toSecretRef = (secretId: string | null): string | null =>
+  secretId ? `$secrets[${secretId}]` : null
+
+// whole-reference fields (password, client_key) surface the current id even if
+// the secret was deleted or the list has not loaded yet, so the value stays
+// selectable.
+const secretRefOptions = (value: any): string[] => {
+  const current = secretIdFromRef(value)
+  if (current && !secretIds.value.includes(current)) {
+    return [current, ...secretIds.value]
+  }
+  return secretIds.value
+}
+
+// embeddable fields (header value, body_template, client_key) append a
+// reference rather than replacing the whole value.
+const appendSecretRef = (current: any, secretId: string): string =>
+  `${current || ''}$secrets[${secretId}]`
 
 const model = defineModel<any>({
   default: () => ({
@@ -895,6 +1033,7 @@ const fetchDefaultRandomNode = async () => {
 
 onMounted(() => {
   fetchDefaultRandomNode()
+  fetchSecrets()
 })
 
 const injectionSimulations = computed(() => {
@@ -1030,8 +1169,7 @@ const addHeader = (checkIdx: number) => {
   }
   check.headers.push({
     name: '',
-    value: '',
-    secret: false
+    value: ''
   })
 }
 

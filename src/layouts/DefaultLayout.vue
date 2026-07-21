@@ -21,7 +21,6 @@ import { computed } from 'vue'
 import { onMounted } from 'vue'
 import { onBeforeUnmount } from 'vue'
 import { ref } from 'vue'
-import { watch } from 'vue'
 import { useRoute } from 'vue-router'
 import ProgressSpinner from 'primevue/progressspinner'
 import AppShell from '@/layouts/AppShell.vue'
@@ -42,22 +41,6 @@ const isReady = computed(() => {
   }
   return auth.isLoaded
 })
-
-watch(
-  () => route.name,
-  (newName) => {
-    if (newName) {
-      if (!String(newName).startsWith('Login')) {
-        if (!auth.isLoaded) {
-          auth.fetchUserData().catch(() => {})
-        }
-      } else {
-        auth.reset()
-      }
-    }
-  },
-  { immediate: true }
-)
 
 onMounted(() => {
   intervalId.value = setInterval(() => {

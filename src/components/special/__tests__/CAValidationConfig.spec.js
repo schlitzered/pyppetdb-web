@@ -445,13 +445,12 @@ describe('CAValidationConfig', () => {
             headers: [
               {
                 name: 'h1',
-                value: 'v1',
-                secret: false
+                value: 'v1'
               }
             ],
             basic_auth_enabled: true,
             username: 'user',
-            password: 'pass',
+            password: '$secrets[TOKEN]',
             body_template: '{}',
             verify_ssl: true,
             timeout_seconds: 5,
@@ -520,5 +519,91 @@ describe('CAValidationConfig', () => {
     for (const btn of buttons) {
       await btn.trigger('click')
     }
+  })
+
+  it('resolves, builds and appends secret references', async () => {
+    const model = ref({
+      enforce_rfc1123: true,
+      allowed_extensions: [],
+      key_usages: [],
+      extended_key_usages: [],
+      san_validation: null,
+      san_injection: null
+    })
+    const wrapper = mount(CAValidationConfig, {
+      props: {
+        resourceDef: createMockResourceDef(),
+        modelValue: model.value,
+        'onUpdate:modelValue': (val) => {
+          model.value = val
+        }
+      },
+      global: {
+        stubs: primeVueStubs
+      }
+    })
+    await flushPromises()
+
+    // secretIdFromRef only unwraps whole-value references
+    expect(wrapper.vm.secretIdFromRef('$secrets[GITHUB_TOKEN]')).toBe(
+      'GITHUB_TOKEN'
+    )
+    expect(wrapper.vm.secretIdFromRef('Bearer $secrets[X]')).toBeNull()
+    expect(wrapper.vm.secretIdFromRef('')).toBeNull()
+    expect(wrapper.vm.secretIdFromRef(null)).toBeNull()
+
+    expect(wrapper.vm.toSecretRef('FOO')).toBe('$secrets[FOO]')
+    expect(wrapper.vm.toSecretRef(null)).toBeNull()
+
+    // appendSecretRef embeds rather than replaces
+    expect(wrapper.vm.appendSecretRef('Bearer ', 'TOK')).toBe(
+      'Bearer $secrets[TOK]'
+    )
+    expect(wrapper.vm.appendSecretRef(null, 'TOK')).toBe('$secrets[TOK]')
+
+    // appendText embeds a literal placeholder token verbatim
+    expect(wrapper.vm.appendText('cn=', '{cert_cn}')).toBe('cn={cert_cn}')
+    expect(wrapper.vm.appendText(null, '{{sans}}')).toBe('{{sans}}')
+  })
+
+  it('loads secret ids and surfaces the current one in password options', async () => {
+    const model = ref({
+      enforce_rfc1123: true,
+      allowed_extensions: [],
+      key_usages: [],
+      extended_key_usages: [],
+      san_validation: null,
+      san_injection: null
+    })
+    const wrapper = mount(CAValidationConfig, {
+      props: {
+        resourceDef: createMockResourceDef(),
+        modelValue: model.value,
+        'onUpdate:modelValue': (val) => {
+          model.value = val
+        }
+      },
+      global: {
+        stubs: primeVueStubs
+      }
+    })
+    await flushPromises()
+
+    vi.mocked(api.get).mockResolvedValueOnce({
+      result: [{ id: 'GITHUB_TOKEN' }, { id: 'VAULT_TOKEN' }]
+    })
+    await wrapper.vm.fetchSecrets()
+    expect(wrapper.vm.secretIds).toEqual(['GITHUB_TOKEN', 'VAULT_TOKEN'])
+
+    // a referenced-but-unknown secret is still offered so the value is editable
+    expect(wrapper.vm.secretRefOptions('$secrets[DELETED]')).toEqual([
+      'DELETED',
+      'GITHUB_TOKEN',
+      'VAULT_TOKEN'
+    ])
+    expect(wrapper.vm.secretRefOptions('$secrets[GITHUB_TOKEN]')).toEqual([
+      'GITHUB_TOKEN',
+      'VAULT_TOKEN'
+    ])
   })
 })
