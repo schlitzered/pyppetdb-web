@@ -3,6 +3,7 @@ import type { ResourceDefinition } from '@/types/resources'
 import { PERMISSIONS } from '@/constants/permissions'
 import JobsNodesJobsForm from '@/components/special/JobsNodesJobsForm.vue'
 import JobsCrudForm from '@/components/special/JobsCrudForm.vue'
+import JobsDefinitionsForm from '@/components/special/JobsDefinitionsForm.vue'
 
 export const jobDefinitions: ResourceDefinition = {
   name: 'jobs/definitions',
@@ -14,6 +15,7 @@ export const jobDefinitions: ResourceDefinition = {
     search: 'JobsDefinitionsSearch',
     crud: 'JobsDefinitionsCRUD'
   },
+  customFormComponent: JobsDefinitionsForm,
   path: '/jobs/definitions',
   crudPath: '/jobs/definitions/:definition_id',
   nav: {
@@ -55,28 +57,12 @@ export const jobDefinitions: ResourceDefinition = {
       linkRoute: 'JobsDefinitionsCRUD',
       linkParam: 'definition_id'
     },
-    { key: 'team', label: 'Team', sortable: true },
-    { key: 'executable', label: 'Executable', sortable: true }
+    { key: 'executable', label: 'Executable', sortable: true },
+    { key: 'user', label: 'User', sortable: true },
+    { key: 'group', label: 'Group', sortable: true }
   ],
-  searchFilters: [
-    { key: 'definition_id', label: 'Definition ID', type: 'text' }
-  ],
-  fields: [
-    {
-      key: 'id',
-      label: 'Definition ID',
-      type: 'text',
-      required: true,
-      readonlyOnEdit: true
-    },
-    { key: 'team', label: 'Team', type: 'text', required: true },
-    {
-      key: 'executable',
-      label: 'Executable Path',
-      type: 'text',
-      required: true
-    }
-  ],
+  searchFilters: [{ key: '_id', label: 'Definition ID', type: 'text' }],
+  fields: [],
   permissions: {
     create: (hasPerm) => hasPerm(PERMISSIONS.JOBS.DEFINITION.CREATE),
     edit: (hasPerm) => hasPerm(PERMISSIONS.JOBS.DEFINITION.UPDATE),
