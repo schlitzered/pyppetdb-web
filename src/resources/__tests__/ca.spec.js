@@ -4,6 +4,7 @@ import { expect } from 'vitest'
 import { vi } from 'vitest'
 import { caAuthorities } from '../ca'
 import { caAuthoritiesCerts } from '../ca'
+import { caSecrets } from '../ca'
 import { caSpaces } from '../ca'
 import { caSpacesCerts } from '../ca'
 
@@ -100,6 +101,47 @@ describe(
         ).toBe(true)
         expect(
           caAuthoritiesCerts.permissions.delete(hasPerm)
+        ).toBe(true)
+      }
+    )
+
+    it(
+      'caSecrets logic',
+      () => {
+        const route = {
+          params: {
+            secret_id: 'GITHUB_TOKEN'
+          }
+        }
+        expect(
+          caSecrets.breadcrumbs.search.length
+        ).toBe(3)
+
+        expect(
+          caSecrets.breadcrumbs.crud(route).length
+        ).toBe(4)
+
+        expect(
+          caSecrets.toolbar.crud.title(route)
+        ).toBe('CA Secret GITHUB_TOKEN')
+
+        expect(
+          caSecrets.nav.requiredPermission
+        ).toBe('CA::GET')
+
+        const created = caSecrets.tableColumns.find((c) => c.key === 'created')
+        expect(created.formatter('')).toBe('')
+        expect(created.formatter('2026-07-21T00:00:00Z')).not.toBe('')
+
+        const hasPerm = vi.fn().mockReturnValue(true)
+        expect(
+          caSecrets.permissions.create(hasPerm)
+        ).toBe(true)
+        expect(
+          caSecrets.permissions.edit(hasPerm)
+        ).toBe(true)
+        expect(
+          caSecrets.permissions.delete(hasPerm)
         ).toBe(true)
       }
     )

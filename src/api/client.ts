@@ -2,6 +2,7 @@ import axios from 'axios'
 import type { AxiosRequestConfig } from 'axios'
 import { apiErrorStore } from '@/stores/apiError'
 import { authStore } from '@/stores/auth'
+import { SELF_ENDPOINT } from '@/stores/auth'
 import router from '@/router'
 
 export async function apiRequest<T = unknown>(
@@ -48,8 +49,17 @@ export async function apiRequest<T = unknown>(
     return response.data as T
   } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response?.status === 401) {
-      auth.reset()
-      router.push({ name: 'LoginError' })
+      console.warn(`[api] 401 on ${method.toUpperCase()} ${url}`)
+      if (url === SELF_ENDPOINT) {
+        // The session check itself failed -> we are genuinely logged out.
+        auth.reset()
+        router.push({ name: 'LoginError' })
+      } else {
+        // ponytail: a stray 401 on a data request (e.g. one fired in the churn
+        // right after login) must NOT tear down the session. Re-validate via the
+        // authoritative session check; only its 401 logs the user out (above).
+        auth.fetchUserData().catch(() => {})
+      }
     } else {
       if (!silent) {
         errorStore.set(error)

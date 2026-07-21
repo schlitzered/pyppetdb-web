@@ -3,10 +3,18 @@ import { defineStore } from 'pinia'
 import type { UserData } from '@/types/auth'
 import api from '@/api/client'
 
+// The authoritative session check. A 401 on THIS endpoint means the session is
+// really gone; a 401 on any other request is treated as transient (see client.ts).
+export const SELF_ENDPOINT = '/api/v1/users/_self'
+
 export const authStore = defineStore('auth', () => {
   const timestamp = ref(0)
   const userData = ref<UserData | null>(null)
   const isLoaded = ref(false)
+
+  // ponytail: dedupe concurrent /_self calls (router guard + 401 revalidation
+  // can both trigger a fetch at the same moment) so we never storm the endpoint
+  let inflightFetch: Promise<UserData | undefined> | null = null
 
   const getUserData = computed(() => userData.value)
   const getUserDataId = computed(() => userData.value?.id ?? '')
@@ -74,17 +82,23 @@ export const authStore = defineStore('auth', () => {
   }
 
   async function fetchUserData(): Promise<UserData | undefined> {
-    try {
-      const data = await api.get<UserData>('/api/v1/users/_self')
-      if (data) {
-        setUserData(data)
-        setTimestamp()
-        return data
+    if (inflightFetch) return inflightFetch
+    inflightFetch = (async () => {
+      try {
+        const data = await api.get<UserData>(SELF_ENDPOINT)
+        if (data) {
+          setUserData(data)
+          setTimestamp()
+          return data
+        }
+      } catch (error) {
+        resetIsLoaded()
+        throw error
+      } finally {
+        inflightFetch = null
       }
-    } catch (error) {
-      resetIsLoaded()
-      throw error
-    }
+    })()
+    return inflightFetch
   }
 
   return {

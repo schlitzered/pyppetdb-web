@@ -675,6 +675,18 @@ const handleSave = async () => {
       }
     }
 
+    if (props.resourceDef.name === 'ca/secrets') {
+      if (payload.secret_change) {
+        payload.secret = payload.secret_change
+      }
+      delete payload.secret_change
+      if (!isNew.value && !payload.secret) {
+        delete payload.secret
+      }
+      delete payload.created
+      delete payload.updated
+    }
+
     if (isNew.value) {
       const result = (await create(payload, route)) as any
       if (result && result.secret) {
@@ -695,6 +707,8 @@ const handleSave = async () => {
       confirmPassword.value = {}
       if (formData.password) formData.password = ''
       if (formData.password_change) formData.password_change = ''
+      if (formData.secret) formData.secret = ''
+      if (formData.secret_change) formData.secret_change = ''
       toast.add({
         severity: 'success',
         summary: 'Updated',
@@ -748,6 +762,8 @@ const handleCancel = () => {
     confirmPassword.value = {}
     if (formData.password) formData.password = ''
     if (formData.password_change) formData.password_change = ''
+    if (formData.secret) formData.secret = ''
+    if (formData.secret_change) formData.secret_change = ''
     loadData()
   }
 }

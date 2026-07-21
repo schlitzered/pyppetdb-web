@@ -178,6 +178,127 @@ export const caAuthoritiesCerts: ResourceDefinition = {
   }
 }
 
+export const caSecrets: ResourceDefinition = {
+  name: 'ca/secrets',
+  label: 'CA Secret',
+  labelPlural: 'CA Secrets',
+  apiBase: '/api/v1/ca/secrets',
+  routeParam: 'secret_id',
+  routeNames: {
+    search: 'CASecretsSearch',
+    crud: 'CASecretsCRUD'
+  },
+  path: '/ca/secrets',
+  crudPath: '/ca/secrets/:secret_id',
+  nav: {
+    label: 'CA Secrets',
+    icon: 'KeyRound',
+    group: 'CA',
+    groupOrder: 4,
+    order: 3,
+    requiredPermission: PERMISSIONS.CA.GET
+  },
+  breadcrumbs: {
+    search: [
+      { title: 'Pyppetdb', to: { name: 'Home' } },
+      { title: 'CA' },
+      { title: 'Secrets' }
+    ],
+    crud: (route: RouteLocationNormalized) => [
+      { title: 'Pyppetdb', to: { name: 'Home' } },
+      { title: 'CA' },
+      { title: 'Secrets', to: { name: 'CASecretsSearch' } },
+      { title: String(route.params.secret_id) }
+    ]
+  },
+  toolbar: {
+    search: {
+      title: 'CA Secrets',
+      items: []
+    },
+    crud: {
+      title: (route: RouteLocationNormalized) =>
+        `CA Secret ${route.params.secret_id}`,
+      items: []
+    }
+  },
+  tableColumns: [
+    {
+      key: 'id',
+      label: 'Secret ID',
+      sortable: true,
+      linkRoute: 'CASecretsCRUD',
+      linkParam: 'secret_id'
+    },
+    { key: 'description', label: 'Description', sortable: false },
+    {
+      key: 'created',
+      label: 'Created',
+      sortable: true,
+      formatter: (value: unknown) =>
+        value ? new Date(String(value)).toLocaleString() : ''
+    },
+    {
+      key: 'updated',
+      label: 'Updated',
+      sortable: true,
+      formatter: (value: unknown) =>
+        value ? new Date(String(value)).toLocaleString() : ''
+    }
+  ],
+  searchFilters: [
+    { key: 'secret_id', label: 'Secret ID', type: 'text' },
+    { key: 'description', label: 'Description', type: 'text' }
+  ],
+  fields: [
+    {
+      key: 'id',
+      label: 'Secret ID',
+      type: 'text',
+      required: true,
+      readonlyOnEdit: true
+    },
+    {
+      key: 'description',
+      label: 'Description',
+      type: 'text'
+    },
+    {
+      // write-only: the value is never returned by the API
+      key: 'secret',
+      label: 'Secret',
+      type: 'password',
+      required: true,
+      hiddenOnEdit: true
+    },
+    {
+      // on edit an empty field means "keep the existing secret"; ResourceForm
+      // maps this onto `secret` and drops it when empty (see handleSave)
+      key: 'secret_change',
+      label: 'Change Secret',
+      type: 'password',
+      hiddenOnCreate: true
+    },
+    {
+      key: 'created',
+      label: 'Created',
+      type: 'readonly',
+      hiddenOnCreate: true
+    },
+    {
+      key: 'updated',
+      label: 'Updated',
+      type: 'readonly',
+      hiddenOnCreate: true
+    }
+  ],
+  permissions: {
+    create: (hasPerm) => hasPerm(PERMISSIONS.CA.SECRETS.CREATE),
+    edit: (hasPerm) => hasPerm(PERMISSIONS.CA.SECRETS.UPDATE),
+    delete: (hasPerm) => hasPerm(PERMISSIONS.CA.SECRETS.DELETE)
+  }
+}
+
 export const caSpaces: ResourceDefinition = {
   name: 'ca/spaces',
   label: 'CA Space',

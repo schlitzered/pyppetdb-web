@@ -8,6 +8,7 @@ import { apiRequest } from '../client'
 import { api } from '../client'
 import { apiErrorStore } from '@/stores/apiError'
 import { authStore } from '@/stores/auth'
+import { SELF_ENDPOINT } from '@/stores/auth'
 import router from '@/router'
 import { createPinia } from 'pinia'
 import { setActivePinia } from 'pinia'
@@ -69,7 +70,7 @@ describe('api client', () => {
       }
     )
 
-    it('handles 401 error by resetting auth and redirecting', async () => {
+    it('handles 401 on the session check by resetting auth and redirecting', async () => {
       const error: any = new Error('Unauthorized')
       error.isAxiosError = true
       error.response = { status: 401 }
@@ -79,9 +80,30 @@ describe('api client', () => {
       vi.spyOn(auth, 'reset')
       vi.spyOn(router, 'push')
 
-      await expect(apiRequest('get', '/test')).rejects.toThrow('Unauthorized')
+      await expect(apiRequest('get', SELF_ENDPOINT)).rejects.toThrow(
+        'Unauthorized'
+      )
       expect(auth.reset).toHaveBeenCalled()
       expect(router.push).toHaveBeenCalledWith({ name: 'LoginError' })
+    })
+
+    it('handles 401 on a data request by revalidating without logging out', async () => {
+      const error: any = new Error('Unauthorized')
+      error.isAxiosError = true
+      error.response = { status: 401 }
+      vi.mocked(axios).mockRejectedValueOnce(error)
+
+      const auth = authStore()
+      vi.spyOn(auth, 'reset')
+      vi.spyOn(router, 'push')
+      const fetchSpy = vi
+        .spyOn(auth, 'fetchUserData')
+        .mockResolvedValueOnce(undefined)
+
+      await expect(apiRequest('get', '/test')).rejects.toThrow('Unauthorized')
+      expect(auth.reset).not.toHaveBeenCalled()
+      expect(router.push).not.toHaveBeenCalled()
+      expect(fetchSpy).toHaveBeenCalled()
     })
 
     it('handles non-401 error by calling errorStore if not silent', async () => {

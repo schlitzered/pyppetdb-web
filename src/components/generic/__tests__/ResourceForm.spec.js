@@ -1320,6 +1320,102 @@ describe(
       }
     )
 
+    const caSecretFields = [
+      { key: 'id', label: 'Secret ID', type: 'text', required: true, readonlyOnEdit: true },
+      { key: 'description', label: 'Description', type: 'text' },
+      { key: 'secret', label: 'Secret', type: 'password', required: true, hiddenOnEdit: true },
+      { key: 'secret_change', label: 'Change Secret', type: 'password', hiddenOnCreate: true },
+      { key: 'created', label: 'Created', type: 'readonly', hiddenOnCreate: true },
+      { key: 'updated', label: 'Updated', type: 'readonly', hiddenOnCreate: true }
+    ]
+
+    it(
+      'maps secret_change onto secret and strips metadata on ca/secrets edit',
+      async () => {
+        mockRoute.params.id = 'TOK'
+        const mockFetch = vi.fn().mockResolvedValue({
+          id: 'TOK',
+          description: 'old',
+          created: '2026-07-21T00:00:00Z',
+          updated: '2026-07-21T00:00:00Z'
+        })
+        vi.mocked(useResourceQuery).mockReturnValue({ fetch: mockFetch })
+
+        const mockUpdate = vi.fn().mockResolvedValue({})
+        vi.mocked(useUpdateResource).mockReturnValue({ update: mockUpdate })
+
+        const wrapper = mount(
+          ResourceForm,
+          {
+            props: {
+              resourceDef: getMockResource({
+                name: 'ca/secrets',
+                fields: caSecretFields
+              })
+            },
+            global: {
+              stubs: primeVueStubs
+            }
+          }
+        )
+
+        await vi.dynamicImportSettled()
+
+        wrapper.vm.isModifyMode = true
+        wrapper.vm.formData.secret_change = 'brand-new-secret'
+
+        await wrapper.find('form').trigger('submit')
+
+        const payload = mockUpdate.mock.calls[0][1]
+        expect(payload.secret).toBe('brand-new-secret')
+        expect(payload).not.toHaveProperty('secret_change')
+        expect(payload).not.toHaveProperty('created')
+        expect(payload).not.toHaveProperty('updated')
+      }
+    )
+
+    it(
+      'keeps the existing secret when secret_change is empty on ca/secrets edit',
+      async () => {
+        mockRoute.params.id = 'TOK'
+        const mockFetch = vi.fn().mockResolvedValue({
+          id: 'TOK',
+          description: 'old'
+        })
+        vi.mocked(useResourceQuery).mockReturnValue({ fetch: mockFetch })
+
+        const mockUpdate = vi.fn().mockResolvedValue({})
+        vi.mocked(useUpdateResource).mockReturnValue({ update: mockUpdate })
+
+        const wrapper = mount(
+          ResourceForm,
+          {
+            props: {
+              resourceDef: getMockResource({
+                name: 'ca/secrets',
+                fields: caSecretFields
+              })
+            },
+            global: {
+              stubs: primeVueStubs
+            }
+          }
+        )
+
+        await vi.dynamicImportSettled()
+
+        wrapper.vm.isModifyMode = true
+        wrapper.vm.formData.description = 'updated description'
+
+        await wrapper.find('form').trigger('submit')
+
+        const payload = mockUpdate.mock.calls[0][1]
+        expect(payload).not.toHaveProperty('secret')
+        expect(payload).not.toHaveProperty('secret_change')
+        expect(payload.description).toBe('updated description')
+      }
+    )
+
     it(
       'filters user password change when backend is not internal',
       async () => {
