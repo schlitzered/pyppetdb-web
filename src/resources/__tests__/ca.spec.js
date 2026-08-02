@@ -8,218 +8,136 @@ import { caSecrets } from '../ca'
 import { caSpaces } from '../ca'
 import { caSpacesCerts } from '../ca'
 
-vi.mock(
-  '@/router',
-  () => {
-    return {
-      default: {
-        currentRoute: {
-          value: {
-            params: {
-              ca_id: 'my-ca',
-              space_id: 'my-space'
-            }
+vi.mock('@/router', () => {
+  return {
+    default: {
+      currentRoute: {
+        value: {
+          params: {
+            ca_id: 'my-ca',
+            space_id: 'my-space'
           }
         }
       }
     }
   }
-)
+})
 
-describe(
-  'ca resources',
-  () => {
-    it(
-      'caAuthorities logic',
-      () => {
-        const route = {
-          params: {
-            ca_id: 'ca1'
-          }
-        }
-        expect(
-          caAuthorities.breadcrumbs.crud(route).length
-        ).toBe(4)
-
-        expect(
-          caAuthorities.toolbar.crud.title(route)
-        ).toBe('CA Authority ca1')
-
-        expect(
-          caAuthorities.toolbar.crud.items[0].to(route)
-        ).toEqual({
-          name: 'CAAuthoritiesCertsSearch',
-          params: {
-            ca_id: 'ca1'
-          }
-        })
-
-        const hasPerm = vi.fn().mockReturnValue(true)
-        expect(
-          caAuthorities.permissions.create(hasPerm)
-        ).toBe(true)
-        expect(
-          caAuthorities.permissions.edit(hasPerm)
-        ).toBe(true)
-        expect(
-          caAuthorities.permissions.delete(hasPerm)
-        ).toBe(true)
+describe('ca resources', () => {
+  it('caAuthorities logic', () => {
+    const route = {
+      params: {
+        ca_id: 'ca1'
       }
+    }
+    expect(caAuthorities.breadcrumbs.crud(route).length).toBe(4)
+
+    expect(caAuthorities.toolbar.crud.title(route)).toBe('CA Authority ca1')
+
+    expect(caAuthorities.toolbar.crud.items[0].to(route)).toEqual({
+      name: 'CAAuthoritiesCertsSearch',
+      params: {
+        ca_id: 'ca1'
+      }
+    })
+
+    const hasPerm = vi.fn().mockReturnValue(true)
+    expect(caAuthorities.permissions.create(hasPerm)).toBe(true)
+    expect(caAuthorities.permissions.edit(hasPerm)).toBe(true)
+    expect(caAuthorities.permissions.delete(hasPerm)).toBe(true)
+  })
+
+  it('caAuthoritiesCerts logic', () => {
+    const route = {
+      params: {
+        ca_id: 'ca1',
+        cert_id: 'cert1'
+      }
+    }
+    expect(caAuthoritiesCerts.apiBase(route)).toBe(
+      '/api/v1/ca/authorities/ca1/certs'
     )
 
-    it(
-      'caAuthoritiesCerts logic',
-      () => {
-        const route = {
-          params: {
-            ca_id: 'ca1',
-            cert_id: 'cert1'
-          }
-        }
-        expect(
-          caAuthoritiesCerts.apiBase(route)
-        ).toBe('/api/v1/ca/authorities/ca1/certs')
+    expect(caAuthoritiesCerts.breadcrumbs.search(route).length).toBe(5)
 
-        expect(
-          caAuthoritiesCerts.breadcrumbs.search(route).length
-        ).toBe(5)
+    expect(caAuthoritiesCerts.breadcrumbs.crud(route).length).toBe(6)
 
-        expect(
-          caAuthoritiesCerts.breadcrumbs.crud(route).length
-        ).toBe(6)
-
-        expect(
-          caAuthoritiesCerts.toolbar.crud.title(route)
-        ).toBe('Certificate cert1')
-
-        const hasPerm = vi.fn().mockReturnValue(true)
-        expect(
-          caAuthoritiesCerts.permissions.create(hasPerm)
-        ).toBe(true)
-        expect(
-          caAuthoritiesCerts.permissions.edit(hasPerm)
-        ).toBe(true)
-        expect(
-          caAuthoritiesCerts.permissions.delete(hasPerm)
-        ).toBe(true)
-      }
+    expect(caAuthoritiesCerts.toolbar.crud.title(route)).toBe(
+      'Certificate cert1'
     )
 
-    it(
-      'caSecrets logic',
-      () => {
-        const route = {
-          params: {
-            secret_id: 'GITHUB_TOKEN'
-          }
-        }
-        expect(
-          caSecrets.breadcrumbs.search.length
-        ).toBe(3)
+    const hasPerm = vi.fn().mockReturnValue(true)
+    // authority certs are read-only (GET/PUT): no create, no delete
+    expect(caAuthoritiesCerts.permissions.create(hasPerm)).toBe(false)
+    expect(caAuthoritiesCerts.permissions.edit(hasPerm)).toBe(true)
+    expect(caAuthoritiesCerts.permissions.delete(hasPerm)).toBe(false)
+  })
 
-        expect(
-          caSecrets.breadcrumbs.crud(route).length
-        ).toBe(4)
-
-        expect(
-          caSecrets.toolbar.crud.title(route)
-        ).toBe('CA Secret GITHUB_TOKEN')
-
-        expect(
-          caSecrets.nav.requiredPermission
-        ).toBe('CA::GET')
-
-        const created = caSecrets.tableColumns.find((c) => c.key === 'created')
-        expect(created.formatter('')).toBe('')
-        expect(created.formatter('2026-07-21T00:00:00Z')).not.toBe('')
-
-        const hasPerm = vi.fn().mockReturnValue(true)
-        expect(
-          caSecrets.permissions.create(hasPerm)
-        ).toBe(true)
-        expect(
-          caSecrets.permissions.edit(hasPerm)
-        ).toBe(true)
-        expect(
-          caSecrets.permissions.delete(hasPerm)
-        ).toBe(true)
+  it('caSecrets logic', () => {
+    const route = {
+      params: {
+        secret_id: 'GITHUB_TOKEN'
       }
-    )
+    }
+    expect(caSecrets.breadcrumbs.search.length).toBe(3)
 
-    it(
-      'caSpaces logic',
-      () => {
-        const route = {
-          params: {
-            space_id: 'space1'
-          }
-        }
-        expect(
-          caSpaces.breadcrumbs.crud(route).length
-        ).toBe(4)
+    expect(caSecrets.breadcrumbs.crud(route).length).toBe(4)
 
-        expect(
-          caSpaces.toolbar.crud.title(route)
-        ).toBe('CA Space space1')
+    expect(caSecrets.toolbar.crud.title(route)).toBe('CA Secret GITHUB_TOKEN')
 
-        expect(
-          caSpaces.toolbar.crud.items[0].to(route)
-        ).toEqual({
-          name: 'CASpacesCertsSearch',
-          params: {
-            space_id: 'space1'
-          }
-        })
+    expect(caSecrets.nav.requiredPermission).toBe('CA::GET')
 
-        const hasPerm = vi.fn().mockReturnValue(true)
-        expect(
-          caSpaces.permissions.create(hasPerm)
-        ).toBe(true)
-        expect(
-          caSpaces.permissions.edit(hasPerm)
-        ).toBe(true)
-        expect(
-          caSpaces.permissions.delete(hasPerm)
-        ).toBe(true)
+    const created = caSecrets.tableColumns.find((c) => c.key === 'created')
+    expect(created.formatter('')).toBe('')
+    expect(created.formatter('2026-07-21T00:00:00Z')).not.toBe('')
+
+    const hasPerm = vi.fn().mockReturnValue(true)
+    expect(caSecrets.permissions.create(hasPerm)).toBe(true)
+    expect(caSecrets.permissions.edit(hasPerm)).toBe(true)
+    expect(caSecrets.permissions.delete(hasPerm)).toBe(true)
+  })
+
+  it('caSpaces logic', () => {
+    const route = {
+      params: {
+        space_id: 'space1'
       }
-    )
+    }
+    expect(caSpaces.breadcrumbs.crud(route).length).toBe(4)
 
-    it(
-      'caSpacesCerts logic',
-      () => {
-        const route = {
-          params: {
-            space_id: 'space1',
-            cert_id: 'cert1'
-          }
-        }
-        expect(
-          caSpacesCerts.apiBase(route)
-        ).toBe('/api/v1/ca/spaces/space1/certs')
+    expect(caSpaces.toolbar.crud.title(route)).toBe('CA Space space1')
 
-        expect(
-          caSpacesCerts.breadcrumbs.search(route).length
-        ).toBe(5)
-
-        expect(
-          caSpacesCerts.breadcrumbs.crud(route).length
-        ).toBe(6)
-
-        expect(
-          caSpacesCerts.toolbar.crud.title(route)
-        ).toBe('Certificate cert1')
-
-        const hasPerm = vi.fn().mockReturnValue(true)
-        expect(
-          caSpacesCerts.permissions.create(hasPerm)
-        ).toBe(true)
-        expect(
-          caSpacesCerts.permissions.edit(hasPerm)
-        ).toBe(true)
-        expect(
-          caSpacesCerts.permissions.delete(hasPerm)
-        ).toBe(true)
+    expect(caSpaces.toolbar.crud.items[0].to(route)).toEqual({
+      name: 'CASpacesCertsSearch',
+      params: {
+        space_id: 'space1'
       }
-    )
-  }
-)
+    })
+
+    const hasPerm = vi.fn().mockReturnValue(true)
+    expect(caSpaces.permissions.create(hasPerm)).toBe(true)
+    expect(caSpaces.permissions.edit(hasPerm)).toBe(true)
+    expect(caSpaces.permissions.delete(hasPerm)).toBe(true)
+  })
+
+  it('caSpacesCerts logic', () => {
+    const route = {
+      params: {
+        space_id: 'space1',
+        cert_id: 'cert1'
+      }
+    }
+    expect(caSpacesCerts.apiBase(route)).toBe('/api/v1/ca/spaces/space1/certs')
+
+    expect(caSpacesCerts.breadcrumbs.search(route).length).toBe(5)
+
+    expect(caSpacesCerts.breadcrumbs.crud(route).length).toBe(6)
+
+    expect(caSpacesCerts.toolbar.crud.title(route)).toBe('Certificate cert1')
+
+    const hasPerm = vi.fn().mockReturnValue(true)
+    expect(caSpacesCerts.permissions.create(hasPerm)).toBe(true)
+    expect(caSpacesCerts.permissions.edit(hasPerm)).toBe(true)
+    expect(caSpacesCerts.permissions.delete(hasPerm)).toBe(true)
+  })
+})

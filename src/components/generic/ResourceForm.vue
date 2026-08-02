@@ -492,11 +492,14 @@ const loadMultipleAutocompleteOptions = async () => {
             result = val
           }
         } else {
+          const params: Record<string, unknown> = { limit: 1000 }
+          if (field.autocomplete.responseField) {
+            // we only read this one field off each row
+            params.fields = [field.autocomplete.responseField]
+          }
           const response = await api.get<Record<string, unknown>>(
             field.autocomplete.endpoint,
-            {
-              limit: 1000
-            }
+            params
           )
           if (response && response.result) {
             result = response.result as unknown[]
@@ -575,19 +578,27 @@ const searchSuggestions = async (
       } else if (Array.isArray(val)) {
         result = val
       } else if (typeof val === 'string') {
-        const response = await api.get<Record<string, unknown>>(val, {
+        const params: Record<string, unknown> = {
           [field.autocomplete.field]: query
-        })
+        }
+        if (field.autocomplete.responseField) {
+          params.fields = [field.autocomplete.responseField]
+        }
+        const response = await api.get<Record<string, unknown>>(val, params)
         if (response && response.result) {
           result = response.result as unknown[]
         }
       }
     } else {
+      const params: Record<string, unknown> = {
+        [field.autocomplete.field]: query
+      }
+      if (field.autocomplete.responseField) {
+        params.fields = [field.autocomplete.responseField]
+      }
       const response = await api.get<Record<string, unknown>>(
         field.autocomplete.endpoint,
-        {
-          [field.autocomplete.field]: query
-        }
+        params
       )
       if (response && response.result) {
         result = response.result as unknown[]

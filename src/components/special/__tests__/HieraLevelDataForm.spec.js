@@ -270,8 +270,9 @@ describe('HieraLevelDataForm', () => {
     expect(api.get).toHaveBeenCalledWith(
       '/api/v1/hiera/levels',
       {
+        fields: ['id'],
         limit: 10,
-        sort_by: 'id',
+        sort: 'id',
         sort_order: 'ascending',
         level_id: 'lvl'
       },
@@ -292,8 +293,9 @@ describe('HieraLevelDataForm', () => {
     expect(api.get).toHaveBeenCalledWith(
       '/api/v1/hiera/keys',
       {
+        fields: ['id'],
         limit: 10,
-        sort_by: 'id',
+        sort: 'id',
         sort_order: 'ascending',
         key_id: 'ky'
       },
@@ -320,10 +322,7 @@ describe('HieraLevelDataForm', () => {
     expect(api.get).toHaveBeenCalledWith(
       '/api/v1/nodes/_distinct_fact_values',
       {
-        fact_id: 'hostname',
-        limit: 10,
-        sort_by: 'value',
-        sort_order: 'ascending'
+        fact_id: 'hostname'
       },
       true
     )
@@ -377,7 +376,7 @@ describe('HieraLevelDataForm', () => {
     await flushPromises()
     expect(api.get).toHaveBeenCalledWith(
       '/api/v1/hiera/levels/my-new-level',
-      undefined,
+      { fields: ['priority'] },
       true
     )
     expect(wrapper.vm.formData.priority).toBe(42)
@@ -543,12 +542,12 @@ describe('HieraLevelDataForm', () => {
     await flushPromises()
     expect(api.get).toHaveBeenCalledWith(
       '/api/v1/hiera/keys/user-key',
-      undefined,
+      { fields: ['key_model_id'] },
       true
     )
     expect(api.get).toHaveBeenCalledWith(
       '/api/v1/hiera/key_models/dynamic/dynamic%3Auser-model',
-      undefined,
+      { fields: ['model'] },
       true
     )
     expect(wrapper.vm.keyModelSchema.properties.data.type).toBe('string')

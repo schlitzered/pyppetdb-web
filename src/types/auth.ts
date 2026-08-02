@@ -9,7 +9,8 @@ export interface LoginFormData {
   password: string
 }
 
+// OauthProviderGet in the spec exposes only `id`; the login URL is derived
+// from it (/oauth/authenticate/oauth/{id}/login).
 export interface OAuthProvider {
-  name: string
-  url: string
+  id: string
 }

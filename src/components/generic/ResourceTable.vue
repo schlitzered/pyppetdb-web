@@ -64,16 +64,16 @@
     >
       <DataTable
         :value="tableItems"
-        lazy
+        :lazy="isServerTable"
         paginator
         paginator-template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
         current-page-report-template="Showing {first} to {last} of {totalRecords} results"
         :rows="tableItemsPerPage"
-        :total-records="tableTotalItems"
+        :total-records="isServerTable ? tableTotalItems : undefined"
         :loading="tableLoading"
         @page="onPage"
         @sort="onSort"
-        :first="(tablePage - 1) * tableItemsPerPage"
+        :first="isServerTable ? (tablePage - 1) * tableItemsPerPage : undefined"
         :rows-per-page-options="tableItemsPerPageOptions"
         removable-sort
         class="p-datatable-sm"
@@ -175,8 +175,15 @@ const {
   getSearchDataTableEvent,
   reload
 } = useResourceListQuery({
-  resourceDef: props.resourceDef
+  resourceDef: props.resourceDef,
+  dataTableType: props.resourceDef.dataTableType
 })
+
+// server tables paginate/sort via API round-trips; client tables fetch the
+// whole set once and let PrimeVue handle pagination/sort in-browser
+const isServerTable = computed(
+  () => (props.resourceDef.dataTableType ?? 'server') === 'server'
+)
 
 const canDelete = computed(() => {
   const perm = props.resourceDef.permissions.delete
@@ -269,6 +276,8 @@ interface SortEvent {
 }
 
 const onPage = (event: PageEvent) => {
+  // client tables paginate internally; nothing to fetch
+  if (!isServerTable.value) return
   getSearchDataTableEvent({
     page: event.page + 1,
     itemsPerPage: event.rows,
@@ -278,6 +287,8 @@ const onPage = (event: PageEvent) => {
 }
 
 const onSort = (event: SortEvent) => {
+  // client tables sort internally; nothing to fetch
+  if (!isServerTable.value) return
   const fieldKey = typeof event.sortField === 'string' ? event.sortField : ''
   const sortByList = fieldKey
     ? [

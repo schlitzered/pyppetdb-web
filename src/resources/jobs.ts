@@ -10,6 +10,8 @@ export const jobDefinitions: ResourceDefinition = {
   label: 'Job Definition',
   labelPlural: 'Job Definitions',
   apiBase: '/api/v1/jobs/definitions',
+  // list only renders these; drops params_template / params / environment_variables
+  apiFields: ['id', 'executable', 'user', 'group'],
   routeParam: 'definition_id',
   routeNames: {
     search: 'JobsDefinitionsSearch',
@@ -61,7 +63,9 @@ export const jobDefinitions: ResourceDefinition = {
     { key: 'user', label: 'User', sortable: true },
     { key: 'group', label: 'Group', sortable: true }
   ],
-  searchFilters: [{ key: '_id', label: 'Definition ID', type: 'text' }],
+  searchFilters: [
+    { key: 'definition_id', label: 'Definition ID', type: 'text' }
+  ],
   fields: [],
   permissions: {
     create: (hasPerm) => hasPerm(PERMISSIONS.JOBS.DEFINITION.CREATE),
@@ -75,6 +79,8 @@ export const jobs: ResourceDefinition = {
   label: 'Job',
   labelPlural: 'Jobs',
   apiBase: '/api/v1/jobs/jobs',
+  // list only renders these; drops parameters / env_vars / node_filter / nodes list
+  apiFields: ['id', 'definition_id', 'created_at', 'created_by'],
   routeParam: 'job_id',
   routeNames: {
     search: 'JobsSearch',
@@ -165,6 +171,15 @@ export const jobNodeRuns: ResourceDefinition = {
   label: 'Node Job Run',
   labelPlural: 'Node Job Runs',
   apiBase: '/api/v1/jobs/nodes_jobs',
+  apiFields: [
+    'id',
+    'job_id',
+    'definition_id',
+    'node_id',
+    'status',
+    'created_at',
+    'created_by'
+  ],
   routeParam: 'node_job_id',
   routeNames: {
     search: 'JobsNodesJobsSearch',
@@ -213,8 +228,18 @@ export const jobNodeRuns: ResourceDefinition = {
       linkParam: 'node_job_id'
     },
     { key: 'job_id', label: 'Job ID', sortable: true },
+    { key: 'definition_id', label: 'Definition ID', sortable: true },
     { key: 'node_id', label: 'Node ID', sortable: true },
-    { key: 'status', label: 'Status', sortable: true }
+    { key: 'status', label: 'Status', sortable: true },
+    {
+      key: 'created_at',
+      label: 'Created At',
+      sortable: true,
+      formatter: (value: unknown) => {
+        return value ? new Date(String(value)).toLocaleString() : ''
+      }
+    },
+    { key: 'created_by', label: 'Created By', sortable: true }
   ],
   searchFilters: [
     { key: 'job_id', label: 'Job ID', type: 'text' },

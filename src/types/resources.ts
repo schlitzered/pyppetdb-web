@@ -156,6 +156,10 @@ export interface ResourceDefinition {
   permissions: ResourcePermissions
   defaultSort?: { field: string; order: SortOrder }
   apiFields?: string[]
+  // 'client' for endpoints without server-side pagination/sort (e.g.
+  // /nodes/_distinct_fact_values): fetch the full set and let the table
+  // paginate/sort in the browser. Defaults to 'server'.
+  dataTableType?: 'server' | 'client'
   batchActions?: BatchAction[]
   searchOnly?: boolean
   writeOnly?: boolean

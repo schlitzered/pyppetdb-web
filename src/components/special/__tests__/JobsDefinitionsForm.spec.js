@@ -78,9 +78,9 @@ const customStubs = {
   Button: 'button',
   InputText: 'input',
   ToggleSwitch: 'div',
-  KeyValueEditor: {
+  JobParamsEditor: {
     props: ['rows', 'disabled'],
-    template: '<div class="kv-editor" />'
+    template: '<div class="job-params-editor" />'
   }
 }
 
@@ -114,11 +114,10 @@ describe('JobsDefinitionsForm', () => {
     expect(wrapper.vm.paramsTemplate).toEqual([])
     expect(wrapper.vm.paramsRows).toEqual([])
     expect(wrapper.vm.envRows).toEqual([])
-    // no GET in new mode
     expect(api.get).not.toHaveBeenCalled()
   })
 
-  it('loads and maps existing definition data in edit mode', async () => {
+  it('loads and maps existing typed definition data in edit mode', async () => {
     mockRoute.params.definition_id = 'deploy'
     vi.mocked(api.get).mockResolvedValue({
       id: 'deploy',
@@ -126,29 +125,47 @@ describe('JobsDefinitionsForm', () => {
       user: 'root',
       group: 'wheel',
       params_template: ['--env', '{{env}}'],
-      params: { timeout: '30', retries: '3' },
-      environment_variables: { PATH: '/usr/bin' }
+      params: {
+        retries: { type: 'int', min: 1, max: 5 },
+        env: { type: 'enum', options: ['prod', 'dev'] }
+      },
+      environment_variables: {
+        NAME: { type: 'string', regex: '^[a-z]+$' }
+      }
     })
 
     const wrapper = mountForm()
     await flushPromises()
 
     expect(api.get).toHaveBeenCalledWith('/api/v1/jobs/definitions/deploy')
-    expect(wrapper.vm.formData.executable).toBe('/usr/bin/deploy')
-    expect(wrapper.vm.formData.user).toBe('root')
-    expect(wrapper.vm.formData.group).toBe('wheel')
     expect(wrapper.vm.paramsTemplate).toEqual([
       { value: '--env' },
       { value: '{{env}}' }
     ])
     expect(wrapper.vm.paramsRows).toEqual([
-      { key: 'timeout', value: '30' },
-      { key: 'retries', value: '3' }
+      { key: 'retries', type: 'int', regex: '', min: 1, max: 5, options: [] },
+      {
+        key: 'env',
+        type: 'enum',
+        regex: '',
+        min: null,
+        max: null,
+        options: ['prod', 'dev']
+      }
     ])
-    expect(wrapper.vm.envRows).toEqual([{ key: 'PATH', value: '/usr/bin' }])
+    expect(wrapper.vm.envRows).toEqual([
+      {
+        key: 'NAME',
+        type: 'string',
+        regex: '^[a-z]+$',
+        min: null,
+        max: null,
+        options: []
+      }
+    ])
   })
 
-  it('creates a definition with the full payload and drops blank rows', async () => {
+  it('serializes each param type with only its relevant validators', async () => {
     const wrapper = mountForm()
     await flushPromises()
 
@@ -158,9 +175,54 @@ describe('JobsDefinitionsForm', () => {
     wrapper.vm.formData.group = 'wheel'
     wrapper.vm.paramsTemplate.push({ value: '--env' })
     wrapper.vm.paramsTemplate.push({ value: '   ' })
-    wrapper.vm.paramsRows.push({ key: 'timeout', value: '30' })
-    wrapper.vm.paramsRows.push({ key: '', value: 'ignored' })
-    wrapper.vm.envRows.push({ key: 'PATH', value: '/usr/bin' })
+    wrapper.vm.paramsRows.push({
+      key: 'name',
+      type: 'string',
+      regex: '^x$',
+      min: 5,
+      max: 9,
+      options: ['ignored']
+    })
+    wrapper.vm.paramsRows.push({
+      key: 'count',
+      type: 'int',
+      regex: 'ignored',
+      min: 1,
+      max: 10,
+      options: []
+    })
+    wrapper.vm.paramsRows.push({
+      key: 'ratio',
+      type: 'float',
+      regex: '',
+      min: 0.5,
+      max: null,
+      options: []
+    })
+    wrapper.vm.paramsRows.push({
+      key: 'flag',
+      type: 'bool',
+      regex: 'ignored',
+      min: 1,
+      max: 2,
+      options: ['ignored']
+    })
+    wrapper.vm.envRows.push({
+      key: 'MODE',
+      type: 'enum',
+      regex: '',
+      min: null,
+      max: null,
+      options: ['a', '', ' b ']
+    })
+    wrapper.vm.envRows.push({
+      key: '',
+      type: 'string',
+      regex: 'dropped',
+      min: null,
+      max: null,
+      options: []
+    })
     await flushPromises()
 
     await wrapper.find('form').trigger('submit.prevent')
@@ -172,26 +234,62 @@ describe('JobsDefinitionsForm', () => {
       user: 'root',
       group: 'wheel',
       params_template: ['--env'],
-      params: { timeout: '30' },
-      environment_variables: { PATH: '/usr/bin' }
+      params: {
+        name: { type: 'string', regex: '^x$' },
+        count: { type: 'int', min: 1, max: 10 },
+        ratio: { type: 'float', min: 0.5 },
+        flag: { type: 'bool' }
+      },
+      environment_variables: {
+        MODE: { type: 'enum', options: ['a', 'b'] }
+      }
     })
     expect(mockRouter.push).toHaveBeenCalledWith({
       name: 'JobsDefinitionsSearch'
     })
   })
 
-  it('blocks submit and warns when required fields are missing', async () => {
+  it('blocks submit when required top-level fields are missing', async () => {
     const wrapper = mountForm()
     await flushPromises()
 
     wrapper.vm.formData.id = 'deploy'
-    // executable/user/group left empty
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
     expect(api.post).not.toHaveBeenCalled()
     expect(mockToast.add).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'error' })
+    )
+  })
+
+  it('blocks submit when an enum param has no options', async () => {
+    const wrapper = mountForm()
+    await flushPromises()
+
+    wrapper.vm.formData.id = 'deploy'
+    wrapper.vm.formData.executable = '/usr/bin/deploy'
+    wrapper.vm.formData.user = 'root'
+    wrapper.vm.formData.group = 'wheel'
+    wrapper.vm.paramsRows.push({
+      key: 'mode',
+      type: 'enum',
+      regex: '',
+      min: null,
+      max: null,
+      options: ['  ']
+    })
+    await flushPromises()
+
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(api.post).not.toHaveBeenCalled()
+    expect(mockToast.add).toHaveBeenCalledWith(
+      expect.objectContaining({
+        severity: 'error',
+        detail: expect.stringContaining('enum')
+      })
     )
   })
 

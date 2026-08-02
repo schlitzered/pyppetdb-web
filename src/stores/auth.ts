@@ -76,8 +76,6 @@ export const authStore = defineStore('auth', () => {
   }
 
   function reset() {
-    // TEMP DEBUG: who is tearing down the session?
-    console.warn('[auth] reset() called', new Error('reset stack').stack)
     resetTimestamp()
     resetUserData()
     resetIsLoaded()

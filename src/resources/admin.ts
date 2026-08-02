@@ -23,6 +23,8 @@ export const teams: ResourceDefinition = {
   label: 'Team',
   labelPlural: 'Teams',
   apiBase: '/api/v1/teams',
+  // list only renders id + ldap_group; drops users + permissions arrays
+  apiFields: ['id', 'ldap_group'],
   routeParam: 'team',
   routeNames: {
     search: 'TeamsSearch',

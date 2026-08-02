@@ -31,6 +31,8 @@
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
+import { onBeforeUnmount } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { XCircle } from '@lucide/vue'
 import Card from 'primevue/card'
@@ -38,9 +40,21 @@ import Button from 'primevue/button'
 
 const router = useRouter()
 
+// Auto-return to the login screen after a short delay. The timer MUST be
+// cleared on unmount: otherwise, if the user leaves this page (e.g. logs in
+// again) within the window, the stale timer later fires and yanks them back to
+// /login from wherever they navigated to.
+const redirectTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+
 onMounted(() => {
-  setTimeout(() => {
+  redirectTimer.value = setTimeout(() => {
     router.push({ name: 'Login' })
   }, 5000)
+})
+
+onBeforeUnmount(() => {
+  if (redirectTimer.value) {
+    clearTimeout(redirectTimer.value)
+  }
 })
 </script>

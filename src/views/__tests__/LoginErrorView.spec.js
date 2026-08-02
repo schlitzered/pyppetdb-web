@@ -34,7 +34,10 @@ describe('LoginErrorView', () => {
       global: {
         stubs: {
           Card: { template: '<div><slot name="content" /></div>' },
-          Button: { template: '<button class="btn" :to="to">{{label}}</button>', props: ['label', 'to'] },
+          Button: {
+            template: '<button class="btn" :to="to">{{label}}</button>',
+            props: ['label', 'to']
+          },
           XCircle: true,
           'router-link': true
         }
@@ -48,7 +51,10 @@ describe('LoginErrorView', () => {
       global: {
         stubs: {
           Card: { template: '<div><slot name="content" /></div>' },
-          Button: { template: '<button class="btn" :to="to">{{label}}</button>', props: ['label', 'to'] },
+          Button: {
+            template: '<button class="btn" :to="to">{{label}}</button>',
+            props: ['label', 'to']
+          },
           XCircle: true,
           'router-link': true
         }
@@ -74,5 +80,23 @@ describe('LoginErrorView', () => {
     vi.advanceTimersByTime(5000)
     expect(mockRouter.push).toHaveBeenCalledWith({ name: 'Login' })
   })
-})
 
+  it('clears the redirect timer on unmount so it cannot fire later', () => {
+    const wrapper = mount(LoginErrorView, {
+      global: {
+        stubs: {
+          Card: true,
+          Button: true,
+          XCircle: true,
+          'router-link': true
+        }
+      }
+    })
+
+    // leave the page (e.g. user logs in) before the 5s window elapses
+    wrapper.unmount()
+    vi.advanceTimersByTime(5000)
+
+    expect(mockRouter.push).not.toHaveBeenCalled()
+  })
+})

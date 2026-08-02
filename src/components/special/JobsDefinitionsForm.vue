@@ -157,9 +157,10 @@
               Params
             </label>
             <span class="text-xs text-zinc-400">
-              Default key/value parameters for this definition.
+              Typed parameters accepted by this definition, with per-type
+              validators.
             </span>
-            <KeyValueEditor
+            <JobParamsEditor
               :rows="paramsRows"
               :disabled="isFieldDisabled"
               @add="addParamRow"
@@ -174,9 +175,9 @@
               Environment Variables
             </label>
             <span class="text-xs text-zinc-400">
-              Environment variables exported when the executable runs.
+              Typed environment variables exported when the executable runs.
             </span>
-            <KeyValueEditor
+            <JobParamsEditor
               :rows="envRows"
               :disabled="isFieldDisabled"
               @add="addEnvRow"
@@ -232,15 +233,12 @@ import InputText from 'primevue/inputtext'
 import ToggleSwitch from 'primevue/toggleswitch'
 import Button from 'primevue/button'
 import ResponsiveToolbar from '@/components/shared/ResponsiveToolbar.vue'
-import KeyValueEditor from '@/components/special/KeyValueEditor.vue'
+import JobParamsEditor from '@/components/special/JobParamsEditor.vue'
 import api from '@/api/client'
 import { authStore } from '@/stores/auth'
 import { PERMISSIONS } from '@/constants/permissions'
-
-interface KeyValueRow {
-  key: string
-  value: string
-}
+import type { JobParamRow } from '@/types/jobParams'
+import type { JobParamType } from '@/types/jobParams'
 
 const route = useRoute()
 const router = useRouter()
@@ -265,38 +263,64 @@ const formData = reactive({
 })
 
 const paramsTemplate = ref<{ value: string }[]>([])
-const paramsRows = ref<KeyValueRow[]>([])
-const envRows = ref<KeyValueRow[]>([])
+const paramsRows = ref<JobParamRow[]>([])
+const envRows = ref<JobParamRow[]>([])
 
 const canDelete = computed(() => {
   if (isNew.value) return false
   return auth.hasPermission(PERMISSIONS.JOBS.DEFINITION.DELETE)
 })
 
-const objectToRows = (obj: unknown): KeyValueRow[] => {
+const emptyParamRow = (): JobParamRow => ({
+  key: '',
+  type: 'string',
+  regex: '',
+  min: null,
+  max: null,
+  options: []
+})
+
+// { [name]: JobParamDefinition } -> flat editor rows
+const paramsToRows = (obj: unknown): JobParamRow[] => {
   if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return []
-  return Object.entries(obj as Record<string, unknown>).map(([key, value]) => ({
+  return Object.entries(obj as Record<string, any>).map(([key, def]) => ({
     key,
-    value: value === null || value === undefined ? '' : String(value)
+    type: (def?.type as JobParamType) ?? 'string',
+    regex: def?.regex ?? '',
+    min: def?.min ?? null,
+    max: def?.max ?? null,
+    options: Array.isArray(def?.options)
+      ? def.options.map((o: unknown) => String(o))
+      : []
   }))
 }
 
-const rowsToObject = (rows: KeyValueRow[]): Record<string, string> => {
-  const out: Record<string, string> = {}
+// editor rows -> { [name]: JobParamDefinition }, keeping only the validators
+// that apply to the selected type
+const rowsToParams = (rows: JobParamRow[]): Record<string, unknown> => {
+  const out: Record<string, unknown> = {}
   for (const row of rows) {
     const key = row.key.trim()
-    if (key) {
-      out[key] = row.value
+    if (!key) continue
+    const def: Record<string, unknown> = { type: row.type }
+    if (row.type === 'string') {
+      if (row.regex.trim() !== '') def.regex = row.regex
+    } else if (row.type === 'int' || row.type === 'float') {
+      if (row.min !== null) def.min = row.min
+      if (row.max !== null) def.max = row.max
+    } else if (row.type === 'enum') {
+      def.options = row.options.map((o) => o.trim()).filter((o) => o !== '')
     }
+    out[key] = def
   }
   return out
 }
 
 const addTemplateRow = () => paramsTemplate.value.push({ value: '' })
 const removeTemplateRow = (idx: number) => paramsTemplate.value.splice(idx, 1)
-const addParamRow = () => paramsRows.value.push({ key: '', value: '' })
+const addParamRow = () => paramsRows.value.push(emptyParamRow())
 const removeParamRow = (idx: number) => paramsRows.value.splice(idx, 1)
-const addEnvRow = () => envRows.value.push({ key: '', value: '' })
+const addEnvRow = () => envRows.value.push(emptyParamRow())
 const removeEnvRow = (idx: number) => envRows.value.splice(idx, 1)
 
 const formGetDefinitionData = async () => {
@@ -322,8 +346,8 @@ const formGetDefinitionData = async () => {
       paramsTemplate.value = ((data.params_template as unknown[]) || []).map(
         (value) => ({ value: String(value) })
       )
-      paramsRows.value = objectToRows(data.params)
-      envRows.value = objectToRows(data.environment_variables)
+      paramsRows.value = paramsToRows(data.params)
+      envRows.value = paramsToRows(data.environment_variables)
     }
   } catch {
     toast.add({
@@ -343,13 +367,30 @@ const buildPayload = (includeId: boolean): Record<string, unknown> => {
     params_template: paramsTemplate.value
       .map((row) => row.value)
       .filter((value) => value.trim() !== ''),
-    params: rowsToObject(paramsRows.value),
-    environment_variables: rowsToObject(envRows.value)
+    params: rowsToParams(paramsRows.value),
+    environment_variables: rowsToParams(envRows.value)
   }
   if (includeId) {
     payload.id = formData.id.trim()
   }
   return payload
+}
+
+const validateEnumOptions = (
+  rows: JobParamRow[],
+  section: string
+): string | null => {
+  for (const row of rows) {
+    const key = row.key.trim()
+    if (!key) continue
+    if (row.type === 'enum') {
+      const opts = row.options.map((o) => o.trim()).filter((o) => o !== '')
+      if (opts.length === 0) {
+        return `${section} "${key}" is an enum and needs at least one option`
+      }
+    }
+  }
+  return null
 }
 
 const validate = (): boolean => {
@@ -363,6 +404,18 @@ const validate = (): boolean => {
       severity: 'error',
       summary: 'Validation Error',
       detail: `Required: ${missing.join(', ')}`,
+      life: 3000
+    })
+    return false
+  }
+  const enumError =
+    validateEnumOptions(paramsRows.value, 'Param') ||
+    validateEnumOptions(envRows.value, 'Environment variable')
+  if (enumError) {
+    toast.add({
+      severity: 'error',
+      summary: 'Validation Error',
+      detail: enumError,
       life: 3000
     })
     return false

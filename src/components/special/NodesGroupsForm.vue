@@ -357,11 +357,9 @@ const fetchFactValuesIfNeeded = async (factName: string) => {
   }
   if (!factTypesCache[factName]) {
     try {
+      // endpoint only supports fact_id / disabled / environment / fact / report_status
       const data = await api.get<any>('/api/v1/nodes/_distinct_fact_values', {
-        fact_id: factName,
-        limit: 100,
-        sort_by: 'value',
-        sort_order: 'ascending'
+        fact_id: factName
       })
       if (data && data.result) {
         const hasNonString = data.result.some(
@@ -469,7 +467,7 @@ const removePart = (ruleIdx: number, partIdx: number) => {
 
 const searchTeams = async (event: any) => {
   try {
-    const params: Record<string, any> = {}
+    const params: Record<string, any> = { fields: ['id'] }
     if (event.query) {
       params.team_id = event.query
     }
@@ -484,7 +482,7 @@ const searchTeams = async (event: any) => {
 
 const getTeams = async () => {
   try {
-    const data = await api.get<any>('/api/v1/teams')
+    const data = await api.get<any>('/api/v1/teams', { fields: ['id'] })
     if (data && data.result) {
       teamsChoices.value = data.result.map((team: any) => team.id)
     }

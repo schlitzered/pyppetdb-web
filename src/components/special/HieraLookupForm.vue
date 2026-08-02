@@ -164,6 +164,7 @@ interface AutocompleteCompleteEvent {
 const searchKeys = async (event: AutocompleteCompleteEvent) => {
   try {
     const params: Record<string, any> = {
+      fields: ['id'],
       limit: 10,
       sort: 'id',
       sort_order: 'ascending'
@@ -188,6 +189,7 @@ const fetchFactFields = async () => {
     const response = await api.get<{ result: Array<{ id: string }> }>(
       '/api/v1/hiera/levels',
       {
+        fields: ['id'],
         limit: 1000
       }
     )
@@ -218,11 +220,9 @@ const searchFactSuggestions = async (
   field: string
 ) => {
   try {
+    // endpoint only supports fact_id / disabled / environment / fact / report_status
     const params: Record<string, any> = {
-      fact_id: field,
-      limit: 10,
-      sort_by: 'value',
-      sort_order: 'ascending'
+      fact_id: field
     }
     const response = await api.get<{ result: Array<{ value: any }> }>(
       '/api/v1/nodes/_distinct_fact_values',

@@ -10,6 +10,7 @@ export const hieraKeys: ResourceDefinition = {
   label: 'Hiera Key',
   labelPlural: 'Hiera Keys',
   apiBase: '/api/v1/hiera/keys',
+  apiFields: ['id', 'key_model_id', 'description', 'deprecated'],
   routeParam: 'key_id',
   routeNames: {
     search: 'HieraKeysSearch',
@@ -56,8 +57,9 @@ export const hieraKeys: ResourceDefinition = {
       linkRoute: 'HieraKeysCRUD',
       linkParam: 'key_id'
     },
-    { key: 'team', label: 'Team', sortable: true },
-    { key: 'model', label: 'Model', sortable: true }
+    { key: 'key_model_id', label: 'Key Model', sortable: true },
+    { key: 'description', label: 'Description', sortable: false },
+    { key: 'deprecated', label: 'Deprecated', sortable: true }
   ],
   searchFilters: [{ key: 'key_id', label: 'Key ID', type: 'text' }],
   fields: [
@@ -68,10 +70,22 @@ export const hieraKeys: ResourceDefinition = {
       required: true,
       readonlyOnEdit: true
     },
-    { key: 'team', label: 'Team', type: 'text', required: true },
+    // UI-only helper to pick which key-model list to browse; not part of the
+    // HieraKeyPost/Put body (the backend ignores extra fields).
     {
-      key: 'model',
-      label: 'Model ID',
+      key: 'model_type',
+      label: 'Model Type',
+      type: 'select',
+      required: false,
+      defaultValue: 'static',
+      options: [
+        { label: 'Static', value: 'static' },
+        { label: 'Dynamic', value: 'dynamic' }
+      ]
+    },
+    {
+      key: 'key_model_id',
+      label: 'Key Model',
       type: 'autocomplete',
       required: true,
       autocomplete: {
@@ -84,14 +98,17 @@ export const hieraKeys: ResourceDefinition = {
       }
     },
     {
-      key: 'model_type',
-      label: 'Model Type',
-      type: 'select',
-      required: true,
-      options: [
-        { label: 'Static', value: 'static' },
-        { label: 'Dynamic', value: 'dynamic' }
-      ]
+      key: 'description',
+      label: 'Description',
+      type: 'textarea',
+      required: false
+    },
+    {
+      key: 'deprecated',
+      label: 'Deprecated',
+      type: 'switch',
+      required: false,
+      defaultValue: false
     }
   ],
   permissions: {
@@ -106,6 +123,7 @@ export const hieraLevels: ResourceDefinition = {
   label: 'Hiera Level',
   labelPlural: 'Hiera Levels',
   apiBase: '/api/v1/hiera/levels',
+  apiFields: ['id', 'priority'],
   routeParam: 'level_id',
   routeNames: {
     search: 'HieraLevelsSearch',
@@ -257,6 +275,8 @@ export const hieraKeyModelsStatic: ResourceDefinition = {
   label: 'Key Model Static',
   labelPlural: 'Key Models Static',
   apiBase: '/api/v1/hiera/key_models/static',
+  // list only renders id + description; drops the model JSON schema blob
+  apiFields: ['id', 'description'],
   routeParam: 'key_model_id',
   routeNames: {
     search: 'HieraKeyModelsStaticSearch',
@@ -327,9 +347,10 @@ export const hieraKeyModelsStatic: ResourceDefinition = {
     { key: 'model', label: 'Model (JSON)', type: 'textarea', required: true }
   ],
   permissions: {
-    create: (hasPerm) => hasPerm(PERMISSIONS.HIERA.KEYS.CREATE),
-    edit: (hasPerm) => hasPerm(PERMISSIONS.HIERA.KEYS.UPDATE),
-    delete: (hasPerm) => hasPerm(PERMISSIONS.HIERA.KEYS.DELETE)
+    // static key models are read-only in the API (GET only).
+    create: () => false,
+    edit: () => false,
+    delete: () => false
   }
 }
 
@@ -338,6 +359,8 @@ export const hieraKeyModelsDynamic: ResourceDefinition = {
   label: 'Key Model Dynamic',
   labelPlural: 'Key Models Dynamic',
   apiBase: '/api/v1/hiera/key_models/dynamic',
+  // list only renders id + description; drops the model JSON schema blob
+  apiFields: ['id', 'description'],
   routeParam: 'key_model_id',
   routeNames: {
     search: 'HieraKeyModelsDynamicSearch',

@@ -1152,7 +1152,7 @@ watch(
       try {
         const levelData = await api.get<{ priority: number }>(
           `/api/v1/hiera/levels/${encodeURIComponent(newLevelId)}`,
-          undefined,
+          { fields: ['priority'] },
           true
         )
         if (levelData && levelData.priority !== undefined) {
@@ -1170,11 +1170,9 @@ const searchFactSuggestions = async (
   field: string
 ) => {
   try {
+    // endpoint only supports fact_id / disabled / environment / fact / report_status
     const params: Record<string, any> = {
-      fact_id: field,
-      limit: 10,
-      sort_by: 'value',
-      sort_order: 'ascending'
+      fact_id: field
     }
     const response = await api.get<{ result: Array<{ value: any }> }>(
       '/api/v1/nodes/_distinct_fact_values',
@@ -1351,7 +1349,7 @@ watch(
     try {
       const keyData = await api.get<{ key_model_id: string }>(
         `/api/v1/hiera/keys/${encodeURIComponent(newKeyId)}`,
-        undefined,
+        { fields: ['key_model_id'] },
         true
       )
       if (keyData && keyData.key_model_id) {
@@ -1363,7 +1361,7 @@ watch(
         const endpoint = `/api/v1/hiera/key_models/${type}/${encodeURIComponent(keyData.key_model_id)}`
         const modelData = await api.get<{ model: any }>(
           endpoint,
-          undefined,
+          { fields: ['model'] },
           true
         )
         if (modelData && modelData.model) {
@@ -1421,8 +1419,9 @@ interface AutocompleteSearchEvent {
 const searchLevels = async (event: AutocompleteSearchEvent) => {
   try {
     const params: Record<string, any> = {
+      fields: ['id'],
       limit: 10,
-      sort_by: 'id',
+      sort: 'id',
       sort_order: 'ascending'
     }
     if (event.query) {
@@ -1444,8 +1443,9 @@ const searchLevels = async (event: AutocompleteSearchEvent) => {
 const searchKeys = async (event: AutocompleteSearchEvent) => {
   try {
     const params: Record<string, any> = {
+      fields: ['id'],
       limit: 10,
-      sort_by: 'id',
+      sort: 'id',
       sort_order: 'ascending'
     }
     if (event.query) {

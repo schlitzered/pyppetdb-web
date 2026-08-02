@@ -564,8 +564,25 @@ const formGetNodeData = async () => {
     return
   }
   try {
+    // only the fields this form actually renders; drops the large `catalog`
+    // and `report` blobs. `report_status_computed` is appended by the backend
+    // regardless of `fields`, so it stays available.
     const data = await api.get<any>(
-      `/api/v1/nodes/${encodeURIComponent(nodeId.value)}`
+      `/api/v1/nodes/${encodeURIComponent(nodeId.value)}`,
+      {
+        fields: [
+          'id',
+          'disabled',
+          'change_catalog',
+          'change_facts',
+          'change_last',
+          'change_report',
+          'facts',
+          'facts_inject',
+          'remote_agent.connected',
+          'remote_agent.via'
+        ]
+      }
     )
     if (data) {
       formData.id = data.id
