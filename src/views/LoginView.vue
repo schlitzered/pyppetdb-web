@@ -56,10 +56,10 @@
           <div class="flex flex-col gap-2">
             <Button
               v-for="provider in providers"
-              :key="provider.name"
+              :key="provider.id"
               as="a"
-              :href="provider.url"
-              :label="provider.name"
+              :href="`/oauth/authenticate/oauth/${provider.id}/login`"
+              :label="provider.id"
               icon="pi pi-sign-in"
               outline
               class="w-full border-zinc-700 hover:bg-zinc-800 text-zinc-300"
@@ -110,18 +110,12 @@ const fetchProviders = async () => {
 
 const handleSubmit = async () => {
   try {
-    // TEMP DEBUG
-    console.info('[login] submit: authenticating')
     await axios.post('/api/v1/authenticate', formData)
-    console.info('[login] authenticated, fetching user')
     const user = await auth.fetchUserData()
-    console.info('[login] fetchUserData ->', user ? 'user ok' : 'NO USER')
     if (user) {
-      console.info('[login] pushing Home')
       router.push({ name: 'Home' })
     }
-  } catch (e) {
-    console.error('[login] handleSubmit catch -> LoginError', e)
+  } catch {
     router.push({ name: 'LoginError' })
   }
 }

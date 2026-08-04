@@ -49,7 +49,6 @@ export async function apiRequest<T = unknown>(
     return response.data as T
   } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response?.status === 401) {
-      console.warn(`[api] 401 on ${method.toUpperCase()} ${url}`)
       if (url === SELF_ENDPOINT) {
         // The session check itself failed -> we are genuinely logged out.
         auth.reset()

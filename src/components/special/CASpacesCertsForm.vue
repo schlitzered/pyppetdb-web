@@ -409,7 +409,7 @@ const checkNodeExists = async (cn: string) => {
   try {
     const data = await api.get<any>(
       `/api/v1/nodes/${encodeURIComponent(cn)}`,
-      undefined,
+      { fields: ['id'] },
       true
     )
     nodeExists.value = !!(data && data.id)

@@ -42,6 +42,15 @@ export const nodes: ResourceDefinition = {
   label: 'Node',
   labelPlural: 'Nodes',
   apiBase: '/api/v1/nodes',
+  // only the fields the search table renders — keeps the list call from pulling
+  // facts / catalog / full report blobs for every row
+  apiFields: [
+    'id',
+    'environment',
+    'report.status',
+    'change_report',
+    'disabled'
+  ],
   routeParam: 'node',
   customSearchComponent: NodesSearchForm,
   customFormComponent: NodesCrudForm,
@@ -153,6 +162,8 @@ export const nodesGroups: ResourceDefinition = {
   label: 'Node Group',
   labelPlural: 'Node Groups',
   apiBase: '/api/v1/nodes_groups',
+  // list only renders id + teams; drops filters + embedded nodes list
+  apiFields: ['id', 'teams'],
   routeParam: 'node_group',
   customFormComponent: NodesGroupsForm,
   routeNames: {
@@ -406,6 +417,8 @@ export const nodesDistinctFactValues: ResourceDefinition = {
   label: 'Distinct Fact Values',
   labelPlural: 'Distinct Fact Values',
   apiBase: '/api/v1/nodes/_distinct_fact_values',
+  // endpoint returns the full set with no server-side pagination/sort
+  dataTableType: 'client',
   routeParam: 'fact',
   routeNames: {
     search: 'NodesDistinctFactValues',

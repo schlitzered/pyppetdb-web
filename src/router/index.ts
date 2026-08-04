@@ -25,13 +25,8 @@ const router = createRouter({
 // Resolve auth before a protected route renders, so the view (and its data
 // requests) never fire against an unestablished session. This replaces the
 // route-name watch that used to live in DefaultLayout.
-router.beforeEach(async (to, from) => {
+router.beforeEach(async (to) => {
   const auth = authStore()
-
-  // TEMP DEBUG: trace the login-bounce.
-  console.info(
-    `[nav] beforeEach ${from.fullPath} -> ${to.fullPath} (name=${String(to.name)}) isLoaded=${auth.isLoaded}`
-  )
 
   if (to.name && String(to.name).startsWith('Login')) {
     auth.reset()
@@ -48,17 +43,6 @@ router.beforeEach(async (to, from) => {
   }
 
   return true
-})
-
-// TEMP DEBUG: show every committed navigation + any navigation failure.
-router.afterEach((to, from, failure) => {
-  console.info(
-    `[nav] afterEach  ${from.fullPath} -> ${to.fullPath}` +
-      (failure ? ` FAILED(type=${failure.type}) ${failure.message}` : ' OK')
-  )
-})
-router.onError((err) => {
-  console.error('[nav] onError', err)
 })
 
 export default router

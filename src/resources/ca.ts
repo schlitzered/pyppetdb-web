@@ -14,6 +14,8 @@ export const caAuthorities: ResourceDefinition = {
   label: 'CA Authority',
   labelPlural: 'CA Authorities',
   apiBase: '/api/v1/ca/authorities',
+  // list only renders these; drops certificate / chain / crl / validation_config blobs
+  apiFields: ['id', 'cn', 'issuer', 'internal', 'status'],
   routeParam: 'ca_id',
   routeNames: {
     search: 'CAAuthoritiesSearch',
@@ -96,6 +98,11 @@ export const caAuthoritiesCerts: ResourceDefinition = {
   labelPlural: 'Authority Certificates',
   apiBase: (route: RouteLocationNormalized) =>
     `/api/v1/ca/authorities/${route.params.ca_id}/certs`,
+  // list only renders these; drops certificate / csr / ca / ca_chain / sans blobs
+  apiFields: ['id', 'cn', 'status'],
+  // authority certs are read-only in the API (GET on the collection, GET/PUT on
+  // the item — no POST/DELETE). Search-only avoids offering create/delete.
+  searchOnly: true,
   routeParam: 'cert_id',
   routeNames: {
     search: 'CAAuthoritiesCertsSearch',
@@ -147,9 +154,7 @@ export const caAuthoritiesCerts: ResourceDefinition = {
     {
       key: 'id',
       label: 'Cert ID',
-      sortable: true,
-      linkRoute: 'CAAuthoritiesCertsCRUD',
-      linkParam: 'cert_id'
+      sortable: true
     },
     {
       key: 'cn',
@@ -163,18 +168,13 @@ export const caAuthoritiesCerts: ResourceDefinition = {
   searchFilters: [{ key: 'cn', label: 'Common Name', type: 'text' }],
   fields: [],
   permissions: {
-    create: (hasPerm) => {
-      const caId = router.currentRoute.value.params.ca_id
-      return hasPerm(PERMISSIONS.CA.AUTHORITIES.CERTS.CREATE(String(caId)))
-    },
+    // GET/PUT-only endpoint: no create, no delete.
+    create: () => false,
     edit: (hasPerm) => {
       const caId = router.currentRoute.value.params.ca_id
       return hasPerm(PERMISSIONS.CA.AUTHORITIES.CERTS.UPDATE(String(caId)))
     },
-    delete: (hasPerm) => {
-      const caId = router.currentRoute.value.params.ca_id
-      return hasPerm(PERMISSIONS.CA.AUTHORITIES.CERTS.DELETE(String(caId)))
-    }
+    delete: () => false
   }
 }
 
@@ -304,6 +304,8 @@ export const caSpaces: ResourceDefinition = {
   label: 'CA Space',
   labelPlural: 'CA Spaces',
   apiBase: '/api/v1/ca/spaces',
+  // list only renders these; drops ca_id_history / validation_config
+  apiFields: ['id', 'ca_id', 'description'],
   routeParam: 'space_id',
   routeNames: {
     search: 'CASpacesSearch',
@@ -382,6 +384,8 @@ export const caSpacesCerts: ResourceDefinition = {
   labelPlural: 'Space Certificates',
   apiBase: (route: RouteLocationNormalized) =>
     `/api/v1/ca/spaces/${route.params.space_id}/certs`,
+  // list + bulk-select only use these; drops certificate / csr / ca / ca_chain / sans blobs
+  apiFields: ['id', 'cn', 'status', 'created'],
   routeParam: 'cert_id',
   routeNames: {
     search: 'CASpacesCertsSearch',

@@ -211,21 +211,13 @@
                   >
                     {{ name }} ({{ paramDef.type }})
                   </label>
-                  <div v-if="paramDef.type === 'bool'">
-                    <ToggleSwitch
-                      :id="'param-' + name"
-                      v-model="formData.parameters[name]"
-                      :disabled="formDataReadOnly"
-                    />
-                  </div>
-                  <div v-else>
-                    <InputText
-                      :id="'param-' + name"
-                      v-model="formData.parameters[name]"
-                      :disabled="formDataReadOnly"
-                      class="w-full p-inputtext-sm bg-zinc-50 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50"
-                    />
-                  </div>
+                  <JobParamInput
+                    v-model="formData.parameters[name]"
+                    :input-id="'param-' + name"
+                    :def="paramDef"
+                    :disabled="formDataReadOnly"
+                    :error="paramErrors[name]"
+                  />
                 </div>
               </div>
             </div>
@@ -251,21 +243,13 @@
                   >
                     {{ name }} ({{ envDef.type }})
                   </label>
-                  <div v-if="envDef.type === 'bool'">
-                    <ToggleSwitch
-                      :id="'env-' + name"
-                      v-model="formData.env_vars[name]"
-                      :disabled="formDataReadOnly"
-                    />
-                  </div>
-                  <div v-else>
-                    <InputText
-                      :id="'env-' + name"
-                      v-model="formData.env_vars[name]"
-                      :disabled="formDataReadOnly"
-                      class="w-full p-inputtext-sm bg-zinc-50 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50"
-                    />
-                  </div>
+                  <JobParamInput
+                    v-model="formData.env_vars[name]"
+                    :input-id="'env-' + name"
+                    :def="envDef"
+                    :disabled="formDataReadOnly"
+                    :error="envErrors[name]"
+                  />
                 </div>
               </div>
             </div>
@@ -343,7 +327,9 @@
               class="flex justify-between items-center mt-6 pt-4 border-t border-zinc-200 dark:border-zinc-800"
             >
               <Button
-                v-if="formData.id && formData.status === 'running'"
+                v-if="
+                  formData.id && hasJobCreatePermission(formData.definition_id)
+                "
                 label="Cancel Job"
                 severity="danger"
                 icon="pi pi-times"
@@ -386,7 +372,6 @@ import { useRouter } from 'vue-router'
 import Card from 'primevue/card'
 import Select from 'primevue/select'
 import InputText from 'primevue/inputtext'
-import ToggleSwitch from 'primevue/toggleswitch'
 import Button from 'primevue/button'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -397,7 +382,9 @@ import { useConfirm } from 'primevue/useconfirm'
 import api from '@/api/client'
 import { authStore } from '@/stores/auth'
 import { PERMISSIONS } from '@/constants/permissions'
+import JobParamInput from '@/components/special/JobParamInput.vue'
 import type { ResourceDefinition } from '@/types/resources'
+import type { JobParamDefinition } from '@/types/jobParams'
 
 defineProps<{
   resourceDef: ResourceDefinition
@@ -493,6 +480,75 @@ const hasJobCreatePermission = (definitionId: string) => {
   return false
 }
 
+// Validate a single param/env value against its definition's validators.
+// Empty is treated as "not provided" (allowed); a provided value must satisfy
+// the type-specific constraints.
+const validateJobParamValue = (
+  def: JobParamDefinition,
+  value: unknown
+): string | null => {
+  const isEmpty = value === '' || value === null || value === undefined
+  if (def.type === 'enum') {
+    if (isEmpty) return null
+    const options = def.options || []
+    if (options.length > 0 && !options.includes(String(value))) {
+      return 'Must be one of the allowed options'
+    }
+    return null
+  }
+  if (def.type === 'int' || def.type === 'float') {
+    if (isEmpty) return null
+    const num = Number(value)
+    if (Number.isNaN(num)) return 'Must be a number'
+    if (def.type === 'int' && !Number.isInteger(num)) {
+      return 'Must be an integer'
+    }
+    if (def.min !== null && def.min !== undefined && num < def.min) {
+      return `Must be ≥ ${def.min}`
+    }
+    if (def.max !== null && def.max !== undefined && num > def.max) {
+      return `Must be ≤ ${def.max}`
+    }
+    return null
+  }
+  if (def.type === 'string' && !isEmpty && def.regex) {
+    let re: RegExp
+    try {
+      re = new RegExp(def.regex)
+    } catch {
+      return null
+    }
+    if (!re.test(String(value))) {
+      return `Must match ${def.regex}`
+    }
+  }
+  return null
+}
+
+const buildParamErrors = (
+  defs: Record<string, JobParamDefinition>,
+  values: Record<string, unknown>
+): Record<string, string> => {
+  const errors: Record<string, string> = {}
+  for (const [name, def] of Object.entries(defs)) {
+    const err = validateJobParamValue(def, values[name])
+    if (err) errors[name] = err
+  }
+  return errors
+}
+
+const paramErrors = computed(() =>
+  buildParamErrors(jobParams.value, formData.parameters)
+)
+const envErrors = computed(() =>
+  buildParamErrors(jobEnvVars.value, formData.env_vars)
+)
+const hasValidationErrors = computed(
+  () =>
+    Object.keys(paramErrors.value).length > 0 ||
+    Object.keys(envErrors.value).length > 0
+)
+
 const canSubmit = computed(() => {
   const activeNodesCount = combinedNodes.value.filter(
     (n) => n.state !== 'original_only'
@@ -500,6 +556,7 @@ const canSubmit = computed(() => {
   return (
     formData.definition_id &&
     activeNodesCount > 0 &&
+    !hasValidationErrors.value &&
     hasJobCreatePermission(formData.definition_id)
   )
 })
@@ -575,8 +632,10 @@ const updateMatchingNodes = async () => {
 
   nodesLoading.value = true
   try {
+    // we only render the node id and connection state below, so only ask for those
     const data = await api.get<any>('/api/v1/nodes', {
       fact: filters,
+      fields: ['id', 'remote_agent.connected'],
       limit: 1000
     })
     if (data) {
@@ -612,6 +671,7 @@ const getDefinitions = async () => {
 
   try {
     const data = await api.get<any>('/api/v1/jobs/definitions', {
+      fields: ['id'],
       limit: 1000
     })
     if (data) {
@@ -622,13 +682,28 @@ const getDefinitions = async () => {
   }
 }
 
+// Sensible initial value for a freshly selected param: bool -> false,
+// numbers -> their lower bound if one is defined (so an int with min=1 starts
+// at 1, not an out-of-range 0), everything else -> empty.
+const defaultParamValue = (
+  def: JobParamDefinition
+): string | number | boolean => {
+  if (def.type === 'bool') return false
+  if (def.type === 'int' || def.type === 'float') {
+    return typeof def.min === 'number' ? def.min : 0
+  }
+  return ''
+}
+
 const handleDefinitionChange = async () => {
   const defId = formData.definition_id
   if (!defId) {
     return
   }
   try {
-    const data = await api.get<any>(`/api/v1/jobs/definitions/${defId}`)
+    const data = await api.get<any>(`/api/v1/jobs/definitions/${defId}`, {
+      fields: ['params', 'environment_variables']
+    })
     if (data) {
       jobParams.value = data.params
       jobEnvVars.value = data.environment_variables
@@ -636,22 +711,12 @@ const handleDefinitionChange = async () => {
       if (!formDataReadOnly.value) {
         formData.parameters = {}
         Object.entries(data.params).forEach(([k, v]: [string, any]) => {
-          formData.parameters[k] =
-            v.type === 'bool'
-              ? false
-              : v.type === 'int' || v.type === 'float'
-                ? 0
-                : ''
+          formData.parameters[k] = defaultParamValue(v)
         })
         formData.env_vars = {}
         Object.entries(data.environment_variables).forEach(
           ([k, v]: [string, any]) => {
-            formData.env_vars[k] =
-              v.type === 'bool'
-                ? false
-                : v.type === 'int' || v.type === 'float'
-                  ? 0
-                  : ''
+            formData.env_vars[k] = defaultParamValue(v)
           }
         )
       }
@@ -669,6 +734,7 @@ const fetchNodeJobStatuses = async (jobId: string) => {
   try {
     const data = await api.get<any>('/api/v1/jobs/nodes_jobs', {
       job_id: jobId,
+      fields: ['id', 'node_id', 'status'],
       limit: 1000
     })
     if (data && data.result) {
@@ -740,6 +806,16 @@ const initializeFormState = () => {
 }
 
 const handleSave = async () => {
+  if (hasValidationErrors.value) {
+    toast.add({
+      severity: 'error',
+      summary: 'Validation Error',
+      detail: 'Please fix the highlighted parameter values.',
+      life: 3000
+    })
+    return
+  }
+
   const formattedFilter = getFormattedFilters()
 
   const castValues = (
