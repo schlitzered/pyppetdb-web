@@ -84,7 +84,8 @@ const standardStubs = {
   ProgressSpinner: true,
   ResponsiveToolbar: true,
   JobParamInput: true,
-  AutoComplete: true
+  AutoComplete: true,
+  MultiSelect: true
 }
 
 const slotStubs = {
@@ -198,6 +199,108 @@ describe('JobsCrudForm', () => {
 
     wrapper.vm.searchFacts({ query: 'OS' })
     expect(wrapper.vm.factSuggestions).toEqual(['os.family'])
+  })
+
+  describe('fact value suggestions', () => {
+    const mountNew = async (valuesByFact) => {
+      mockAuthStore.hasPermission.mockReturnValue(true)
+      vi.mocked(api.get).mockImplementation((url, params) => {
+        if (url === '/api/v1/nodes/_distinct_fact_names') {
+          return Promise.resolve({
+            result: params?.fact ? ['kernel'] : ['os.family', 'kernel', 'cpus']
+          })
+        }
+        if (url === '/api/v1/nodes/_distinct_fact_values') {
+          return Promise.resolve({ result: valuesByFact[params.fact_id] || [] })
+        }
+        return Promise.resolve({ result: [] })
+      })
+      const wrapper = mount(JobsCrudForm, {
+        props: { resourceDef: createMockResourceDef() },
+        global: { stubs: standardStubs }
+      })
+      await flushPromises()
+      return wrapper
+    }
+
+    it('infers type, restricts operators and offers values', async () => {
+      const wrapper = await mountNew({
+        cpus: [
+          { value: 2, count: 3 },
+          { value: 8, count: 1 }
+        ]
+      })
+      const block = wrapper.vm.nodeFilterBlocks[0]
+      block[0].fact = 'cpus'
+      block[0].operator = 'regex'
+
+      await wrapper.vm.refreshFactValues()
+
+      expect(block[0].kind).toBe('int')
+      expect(block[0].type).toBe('int')
+      expect(block[0].operator).toBe('eq')
+      expect(wrapper.vm.operatorsFor(block[0])).not.toContain('regex')
+      expect(block[0].values).toEqual([
+        { label: '2 (3)', value: '2' },
+        { label: '8 (1)', value: '8' }
+      ])
+      expect(wrapper.vm.usesValueChoices(block[0])).toBe(true)
+
+      block[0].operator = 'gt'
+      expect(wrapper.vm.usesValueChoices(block[0])).toBe(false)
+      expect(wrapper.vm.valuePlaceholder(block[0])).toBe('2 … 8')
+    })
+
+    it('passes preceding parts of the block as filter context', async () => {
+      const wrapper = await mountNew({
+        'os.family': [{ value: 'RedHat', count: 4 }],
+        kernel: [{ value: 'Linux', count: 4 }]
+      })
+      wrapper.vm.nodeFilterBlocks = [
+        [
+          { fact: 'os.family', operator: 'eq', type: 'str', value: 'RedHat' },
+          { fact: 'kernel', operator: 'eq', type: 'str', value: '' }
+        ]
+      ]
+
+      await wrapper.vm.refreshFactValues()
+
+      expect(api.get).toHaveBeenCalledWith(
+        '/api/v1/nodes/_distinct_fact_values',
+        { fact_id: 'os.family' },
+        true
+      )
+      expect(api.get).toHaveBeenCalledWith(
+        '/api/v1/nodes/_distinct_fact_values',
+        { fact_id: 'kernel', fact: ['os.family:eq:str:RedHat'] },
+        true
+      )
+
+      await wrapper.vm.searchFacts({ query: '' }, 0, 1)
+      expect(api.get).toHaveBeenCalledWith(
+        '/api/v1/nodes/_distinct_fact_names',
+        { fact: ['os.family:eq:str:RedHat'] },
+        true
+      )
+      expect(wrapper.vm.factSuggestions).toEqual(['kernel'])
+    })
+
+    it('falls back to free input for unknown facts', async () => {
+      const wrapper = await mountNew({})
+      const part = wrapper.vm.nodeFilterBlocks[0][0]
+      part.fact = 'os.fam'
+
+      await wrapper.vm.refreshFactValues()
+
+      expect(part.kind).toBe(null)
+      expect(wrapper.vm.operatorsFor(part)).toContain('regex')
+      expect(wrapper.vm.usesValueChoices(part)).toBe(false)
+      expect(api.get).not.toHaveBeenCalledWith(
+        '/api/v1/nodes/_distinct_fact_values',
+        expect.anything(),
+        true
+      )
+    })
   })
 
   it('mounts in creation mode and fetches definitions with specific permission', async () => {
