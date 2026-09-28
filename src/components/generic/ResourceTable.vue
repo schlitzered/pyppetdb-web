@@ -28,6 +28,17 @@
                 @input="debouncedSearch"
                 class="p-inputtext-sm bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700"
               />
+              <AutoComplete
+                v-else-if="filter.type === 'autocomplete'"
+                :input-id="filter.key"
+                v-model="formSearchBy[filter.key]"
+                :suggestions="filterSuggestions[filter.key] || []"
+                :dropdown="true"
+                @complete="searchFilterSuggestions(filter, $event)"
+                @update:model-value="debouncedSearch"
+                class="w-full"
+                input-class="w-full p-inputtext-sm bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700"
+              />
               <Select
                 v-else-if="filter.type === 'select'"
                 :id="filter.key"
@@ -130,6 +141,7 @@
 <script setup lang="ts">
 import { debounce } from '@/utils/debounce'
 import { onMounted } from 'vue'
+import { reactive } from 'vue'
 import { computed } from 'vue'
 import { watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -144,12 +156,14 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
+import AutoComplete from 'primevue/autocomplete'
 import Button from 'primevue/button'
 import api from '@/api/client'
 import { authStore } from '@/stores/auth'
 import { useResourceListQuery } from '@/composables/useResourceListQuery'
 import type { ResourceDefinition } from '@/types/resources'
 import type { TableColumn } from '@/types/resources'
+import type { SearchFilterType } from '@/types/resources'
 
 const props = defineProps<{
   resourceDef: ResourceDefinition
@@ -311,6 +325,26 @@ const handleSearch = () => {
 }
 
 const debouncedSearch = debounce(handleSearch, 300)
+
+const filterSuggestions = reactive<Record<string, string[]>>({})
+
+// ponytail: refetched on every dropdown open; add caching if a
+// suggestionsUrl ever becomes expensive
+const searchFilterSuggestions = async (
+  filter: SearchFilterType,
+  event: { query: string }
+) => {
+  if (!filter.suggestionsUrl) return
+  try {
+    const data = await api.get<any>(filter.suggestionsUrl, {}, true)
+    const query = (event.query || '').toLowerCase()
+    filterSuggestions[filter.key] = (data?.result || []).filter((s: string) =>
+      s.toLowerCase().includes(query)
+    )
+  } catch (err) {
+    console.error(err)
+  }
+}
 
 const formatVal = (
   value: unknown,

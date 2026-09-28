@@ -455,7 +455,14 @@ export const nodesDistinctFactValues: ResourceDefinition = {
     { key: 'value', label: 'Distinct Value', sortable: true },
     { key: 'count', label: 'Count', sortable: true }
   ],
-  searchFilters: [{ key: 'fact_id', label: 'Fact Name', type: 'text' }],
+  searchFilters: [
+    {
+      key: 'fact_id',
+      label: 'Fact Name',
+      type: 'autocomplete',
+      suggestionsUrl: '/api/v1/nodes/_distinct_fact_names'
+    }
+  ],
   fields: [],
   permissions: {}
 }

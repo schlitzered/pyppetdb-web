@@ -135,7 +135,8 @@
                       >
                       <MultiSelect
                         v-model="part.values"
-                        :options="factTypesCache[part.fact]?.values || []"
+                        :options="valueOptionsFor(ruleIdx, partIdx, part)"
+                        @change="refreshRuleValues(ruleIdx)"
                         :disabled="
                           isFieldDisabled ||
                           !part.fact ||
@@ -290,6 +291,7 @@ import ResponsiveToolbar from '@/components/shared/ResponsiveToolbar.vue'
 import api from '@/api/client'
 import { authStore } from '@/stores/auth'
 import { PERMISSIONS } from '@/constants/permissions'
+import { useFactSuggestions } from '@/composables/useFactSuggestions'
 
 const route = useRoute()
 const router = useRouter()
@@ -316,7 +318,10 @@ const formData = reactive({
 const teamsChoices = ref<string[]>([])
 const nodesSearch = ref('')
 const nodesTableData = ref<{ name: string }[]>([])
-const availableFacts = ref<string[]>([])
+const { loadFactNames, searchFactNames, fetchFactValues } = useFactSuggestions()
+// values of parts that have preceding parts in their rule, narrowed to what
+// those parts already match; keyed `${ruleIdx}-${partIdx}`
+const partValueOptions = reactive<Record<string, string[]>>({})
 const filteredFactSuggestions = reactive<Record<string, string[]>>({})
 const factErrors = reactive<Record<string, string>>({})
 const factTypesCache = reactive<
@@ -377,23 +382,58 @@ const fetchFactValuesIfNeeded = async (factName: string) => {
   }
 }
 
-const loadFactNames = async () => {
-  try {
-    const data = await api.get<any>('/api/v1/nodes/_distinct_fact_names')
-    if (data && data.result) {
-      availableFacts.value = data.result
+const partContext = (rule: any, partIdx: number) =>
+  (rule?.part || [])
+    .slice(0, partIdx)
+    .filter((p: any) => p.fact && p.values?.length > 0)
+    .map((p: any) => `${p.fact}:in:str:${p.values.join(',')}`)
+
+const searchFacts = async (event: any, ruleIdx: number, partIdx: number) => {
+  const key = `${ruleIdx}-${partIdx}`
+  filteredFactSuggestions[key] = await searchFactNames(
+    event.query,
+    partContext(formData.filters[ruleIdx], partIdx)
+  )
+}
+
+const refreshRuleValues = async (ruleIdx: number) => {
+  const rule = formData.filters[ruleIdx]
+  for (let partIdx = 0; partIdx < (rule?.part?.length ?? 0); partIdx++) {
+    const key = `${ruleIdx}-${partIdx}`
+    const part = rule.part[partIdx]
+    const context = partContext(rule, partIdx)
+    // the first part (or one after empty parts) uses the unfiltered values
+    // from factTypesCache
+    if (!part.fact || context.length === 0) {
+      delete partValueOptions[key]
+      continue
     }
-  } catch (error) {
-    console.error(error)
+    try {
+      const result = await fetchFactValues(part.fact, context)
+      partValueOptions[key] = result.map((r) => String(r.value))
+    } catch (error) {
+      console.error(error)
+      delete partValueOptions[key]
+    }
   }
 }
 
-const searchFacts = (event: any, ruleIdx: number, partIdx: number) => {
-  const query = (event.query || '').toLowerCase()
-  const key = `${ruleIdx}-${partIdx}`
-  filteredFactSuggestions[key] = availableFacts.value.filter((f) =>
-    f.toLowerCase().includes(query)
-  )
+// part indices shift when parts or rules are removed, so rebuild everything
+const refreshAllRuleValues = async () => {
+  Object.keys(partValueOptions).forEach((key) => delete partValueOptions[key])
+  for (let ruleIdx = 0; ruleIdx < formData.filters.length; ruleIdx++) {
+    await refreshRuleValues(ruleIdx)
+  }
+}
+
+// selected values stay selectable even when the narrowed list no longer
+// contains them
+const valueOptionsFor = (ruleIdx: number, partIdx: number, part: any) => {
+  const options =
+    partValueOptions[`${ruleIdx}-${partIdx}`] ??
+    factTypesCache[part.fact]?.values ??
+    []
+  return Array.from(new Set([...options, ...(part.values || [])]))
 }
 
 const onFactChange = async (ruleIdx: number, partIdx: number) => {
@@ -405,6 +445,7 @@ const onFactChange = async (ruleIdx: number, partIdx: number) => {
   if (factName) {
     await fetchFactValuesIfNeeded(factName)
   }
+  await refreshRuleValues(ruleIdx)
 }
 
 const addRuleGroup = () => {
@@ -415,6 +456,7 @@ const addRuleGroup = () => {
 
 const removeRuleGroup = (ruleIdx: number) => {
   formData.filters.splice(ruleIdx, 1)
+  refreshAllRuleValues()
 }
 
 const addPart = (ruleIdx: number) => {
@@ -429,6 +471,7 @@ const addPart = (ruleIdx: number) => {
 
 const removePart = (ruleIdx: number, partIdx: number) => {
   formData.filters[ruleIdx].part.splice(partIdx, 1)
+  refreshAllRuleValues()
 }
 
 const searchTeams = async (event: any) => {
@@ -485,6 +528,7 @@ const formGetNodeGroupData = async () => {
           }
         }
       }
+      await refreshAllRuleValues()
     }
   } catch {
     toast.add({

@@ -10,6 +10,8 @@ import { reactive } from 'vue'
 import { createMockResourceDef } from '@/__test_utils__/helpers'
 import api from '@/api/client'
 import JobsCrudForm from '../JobsCrudForm.vue'
+import { usesValueChoices } from '@/composables/useFactSuggestions'
+import { valuePlaceholder } from '@/composables/useFactSuggestions'
 
 const mockRoute = reactive({
   params: {
@@ -195,9 +197,7 @@ describe('JobsCrudForm', () => {
     await flushPromises()
 
     expect(api.get).toHaveBeenCalledWith('/api/v1/nodes/_distinct_fact_names')
-    expect(wrapper.vm.availableFacts).toEqual(['os.family', 'kernel'])
-
-    wrapper.vm.searchFacts({ query: 'OS' })
+    await wrapper.vm.searchFacts({ query: 'OS' }, 0, 0)
     expect(wrapper.vm.factSuggestions).toEqual(['os.family'])
   })
 
@@ -244,11 +244,11 @@ describe('JobsCrudForm', () => {
         { label: '2 (3)', value: '2' },
         { label: '8 (1)', value: '8' }
       ])
-      expect(wrapper.vm.usesValueChoices(block[0])).toBe(true)
+      expect(usesValueChoices(block[0])).toBe(true)
 
       block[0].operator = 'gt'
-      expect(wrapper.vm.usesValueChoices(block[0])).toBe(false)
-      expect(wrapper.vm.valuePlaceholder(block[0])).toBe('2 … 8')
+      expect(usesValueChoices(block[0])).toBe(false)
+      expect(valuePlaceholder(block[0])).toBe('2 … 8')
     })
 
     it('passes preceding parts of the block as filter context', async () => {
@@ -294,7 +294,7 @@ describe('JobsCrudForm', () => {
 
       expect(part.kind).toBe(null)
       expect(wrapper.vm.operatorsFor(part)).toContain('regex')
-      expect(wrapper.vm.usesValueChoices(part)).toBe(false)
+      expect(usesValueChoices(part)).toBe(false)
       expect(api.get).not.toHaveBeenCalledWith(
         '/api/v1/nodes/_distinct_fact_values',
         expect.anything(),

@@ -66,7 +66,7 @@
                 option-label="label"
                 option-value="value"
                 show-clear
-                @change="handleSearch"
+                @change="factsChanged"
                 class="p-dropdown-sm bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700"
               />
             </div>
@@ -108,10 +108,14 @@
                   class="text-xs font-semibold text-zinc-500 dark:text-zinc-400"
                   >Fact Name</label
                 >
-                <InputText
+                <AutoComplete
                   v-model="fact.fact_name"
-                  @input="debouncedSearch"
-                  class="p-inputtext-sm bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700"
+                  :suggestions="factSuggestions"
+                  @complete="searchFacts($event, index)"
+                  @update:model-value="factsChanged"
+                  :dropdown="true"
+                  class="w-full"
+                  input-class="w-full p-inputtext-sm bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700"
                 />
               </div>
               <div class="md:col-span-3 flex flex-col gap-1">
@@ -121,8 +125,8 @@
                 >
                 <Select
                   v-model="fact.operator"
-                  :options="formSearchByFactsOperators"
-                  @change="handleSearch"
+                  :options="operatorsFor(fact)"
+                  @change="factsChanged"
                   class="p-dropdown-sm bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700"
                 />
               </div>
@@ -134,7 +138,8 @@
                 <Select
                   v-model="fact.type"
                   :options="formSearchByFactsTypes"
-                  @change="handleSearch"
+                  :disabled="!!fact.kind"
+                  @change="factsChanged"
                   class="p-dropdown-sm bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700"
                 />
               </div>
@@ -143,10 +148,11 @@
                   class="text-xs font-semibold text-zinc-500 dark:text-zinc-400"
                   >Value</label
                 >
-                <InputText
+                <FactValueInput
                   v-model="fact.value"
-                  @input="debouncedSearch"
-                  class="p-inputtext-sm bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700"
+                  :part="fact"
+                  @change="factsChanged"
+                  class="bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700"
                 />
               </div>
               <div class="md:col-span-1 flex justify-end">
@@ -340,6 +346,11 @@ import Column from 'primevue/column'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 import Button from 'primevue/button'
+import AutoComplete from 'primevue/autocomplete'
+import FactValueInput from '@/components/special/FactValueInput.vue'
+import { useFactSuggestions } from '@/composables/useFactSuggestions'
+import { formatFactFilter } from '@/composables/useFactSuggestions'
+import { operatorsFor } from '@/composables/useFactSuggestions'
 import ResponsiveToolbar from '@/components/shared/ResponsiveToolbar.vue'
 import { useResourceListQuery } from '@/composables/useResourceListQuery'
 import { authStore } from '@/stores/auth'
@@ -358,16 +369,6 @@ const tableGenericDropdownOptions = [
   { label: 'False', value: 'false' }
 ]
 
-const formSearchByFactsOperators = [
-  'eq',
-  'gt',
-  'gte',
-  'in',
-  'lte',
-  'ne',
-  'nin',
-  'regex'
-]
 const formSearchByFactsTypes = ['bool', 'int', 'float', 'str']
 
 const {
@@ -430,6 +431,35 @@ const handleSearch = () => {
 
 const debouncedSearch = debounce(handleSearch, 300)
 
+// only `disabled` is passed on: environment / report_status are regexes in
+// the node search but literal matches in the _distinct_* endpoints
+const { loadFactNames, searchFactNames, refreshChain } = useFactSuggestions(
+  () =>
+    formSearchBy.disabled !== '' && formSearchBy.disabled != null
+      ? { disabled: formSearchBy.disabled }
+      : {}
+)
+const factSuggestions = ref<string[]>([])
+
+// all fact rows are ANDed, so each row's suggestions are narrowed by the
+// complete rows before it
+const searchFacts = async (event: { query: string }, index: number) => {
+  const context = (formSearchBy.fact || [])
+    .slice(0, index)
+    .filter((f: any) => f.value !== '')
+    .map((f: any) => formatFactFilter(f.fact_name, f))
+    .filter((f: string | null): f is string => f !== null)
+  factSuggestions.value = await searchFactNames(event.query, context)
+}
+
+const refreshFactValues = () =>
+  refreshChain(formSearchBy.fact || [], (f: any) => f.fact_name)
+
+const factsChanged = debounce(async () => {
+  await refreshFactValues()
+  getSearchData()
+}, 300)
+
 const formSearchByFactsAdd = () => {
   if (!formSearchBy.fact) {
     formSearchBy.fact = []
@@ -444,7 +474,7 @@ const formSearchByFactsAdd = () => {
 
 const formSearchByFactsRemove = (index: number) => {
   formSearchBy.fact.splice(index, 1)
-  getSearchData()
+  factsChanged()
 }
 
 const toggleStatus = (statusRegex: string) => {
@@ -508,5 +538,6 @@ const handleCreate = () => {
 
 onMounted(() => {
   getSearchData()
+  loadFactNames().then(refreshFactValues)
 })
 </script>

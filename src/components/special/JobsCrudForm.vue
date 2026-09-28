@@ -135,53 +135,11 @@
                         />
                       </div>
                       <div class="md:col-span-3">
-                        <MultiSelect
-                          v-if="
-                            usesValueChoices(part) &&
-                            LIST_OPERATORS.includes(part.operator)
-                          "
-                          :model-value="part.value ? part.value.split(',') : []"
-                          @update:model-value="
-                            (v: string[]) => {
-                              part.value = v.join(',')
-                              handleFilterUpdate()
-                            }
-                          "
-                          :options="part.values"
-                          option-label="label"
-                          option-value="value"
-                          filter
-                          display="chip"
-                          :virtual-scroller-options="
-                            part.values.length > 50
-                              ? { itemSize: 32 }
-                              : undefined
-                          "
-                          placeholder="Values"
-                          class="w-full bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700"
-                        />
-                        <Select
-                          v-else-if="usesValueChoices(part)"
+                        <FactValueInput
                           v-model="part.value"
-                          :options="part.values"
-                          option-label="label"
-                          option-value="value"
-                          filter
-                          :virtual-scroller-options="
-                            part.values.length > 50
-                              ? { itemSize: 32 }
-                              : undefined
-                          "
-                          placeholder="Value"
+                          :part="part"
                           @change="handleFilterUpdate"
-                          class="w-full p-dropdown-sm bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700"
-                        />
-                        <InputText
-                          v-else
-                          v-model="part.value"
-                          :placeholder="valuePlaceholder(part)"
-                          @input="handleFilterUpdate"
-                          class="w-full p-inputtext-sm bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700"
+                          class="bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700"
                         />
                       </div>
                       <div class="md:col-span-1 flex justify-center">
@@ -410,9 +368,7 @@ import { useRoute } from 'vue-router'
 import { useRouter } from 'vue-router'
 import Card from 'primevue/card'
 import Select from 'primevue/select'
-import InputText from 'primevue/inputtext'
 import AutoComplete from 'primevue/autocomplete'
-import MultiSelect from 'primevue/multiselect'
 import Button from 'primevue/button'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -424,6 +380,10 @@ import api from '@/api/client'
 import { authStore } from '@/stores/auth'
 import { PERMISSIONS } from '@/constants/permissions'
 import JobParamInput from '@/components/special/JobParamInput.vue'
+import FactValueInput from '@/components/special/FactValueInput.vue'
+import { useFactSuggestions } from '@/composables/useFactSuggestions'
+import { formatFactFilter } from '@/composables/useFactSuggestions'
+import { operatorsFor } from '@/composables/useFactSuggestions'
 import type { ResourceDefinition } from '@/types/resources'
 import type { JobParamDefinition } from '@/types/jobParams'
 
@@ -647,174 +607,30 @@ const removePart = (filterIndex: number, partIndex: number) => {
   handleFilterUpdate()
 }
 
-type FactKind = 'str' | 'int' | 'float' | 'bool'
-
-const ALL_OPERATORS = [
-  'eq',
-  'gt',
-  'gte',
-  'in',
-  'lt',
-  'lte',
-  'ne',
-  'nin',
-  'regex'
-]
-const NUMERIC_OPERATORS = ['eq', 'ne', 'gt', 'gte', 'lt', 'lte', 'in', 'nin']
-const KIND_OPERATORS: Record<FactKind, string[]> = {
-  str: ['eq', 'ne', 'in', 'nin', 'regex'],
-  int: NUMERIC_OPERATORS,
-  float: NUMERIC_OPERATORS,
-  bool: ['eq', 'ne']
-}
-const RANGE_OPERATORS = ['gt', 'gte', 'lt', 'lte']
-const LIST_OPERATORS = ['in', 'nin']
-const CHOICE_OPERATORS = ['eq', 'ne', 'in', 'nin']
-
-const availableFacts = ref<string[]>([])
+const { loadFactNames, searchFactNames, refreshChain } = useFactSuggestions()
 const factSuggestions = ref<string[]>([])
 
-// ponytail: per-instance cache, never invalidated — facts don't change
-// meaningfully while someone is building a filter
-const requestCache = new Map<string, Promise<any>>()
-const cachedGet = (url: string, params: Record<string, any>) => {
-  const key = url + JSON.stringify(params)
-  if (!requestCache.has(key)) {
-    requestCache.set(
-      key,
-      api.get<any>(url, params, true).catch((err) => {
-        requestCache.delete(key)
-        throw err
-      })
-    )
-  }
-  return requestCache.get(key)!
-}
-
-const loadFactNames = async () => {
-  try {
-    const data = await api.get<any>('/api/v1/nodes/_distinct_fact_names')
-    if (data && data.result) {
-      availableFacts.value = data.result
-    }
-  } catch (err) {
-    console.error(err)
-  }
-}
-
-const formatPart = (part: any) => {
-  if (part.fact && part.operator && part.type && part.value !== undefined) {
-    return `${part.fact}:${part.operator}:${part.type}:${part.value}`
-  }
-  return null
-}
-
-// the AND parts before this one; suggestions for a part only offer what
-// still matches nodes selected by its predecessors
-const precedingFilters = (block: any[], partIndex: number) =>
-  block
-    .slice(0, partIndex)
-    .filter((part: any) => part.value !== '')
-    .map(formatPart)
-    .filter((f): f is string => f !== null)
+const formatPart = (part: any) => formatFactFilter(part.fact, part)
 
 const searchFacts = async (
   event: { query: string },
   filterIndex: number,
   partIndex: number
 ) => {
-  const query = (event.query || '').toLowerCase()
-  let names = availableFacts.value
-  const context = precedingFilters(
-    nodeFilterBlocks.value[filterIndex] || [],
-    partIndex
-  )
-  if (context.length > 0) {
-    try {
-      const data = await cachedGet('/api/v1/nodes/_distinct_fact_names', {
-        fact: context
-      })
-      names = data?.result || []
-    } catch (err) {
-      console.error(err)
-    }
-  }
-  factSuggestions.value = names.filter((f) => f.toLowerCase().includes(query))
+  const context = (nodeFilterBlocks.value[filterIndex] || [])
+    .slice(0, partIndex)
+    .filter((part: any) => part.value !== '')
+    .map(formatPart)
+    .filter((f: string | null): f is string => f !== null)
+  factSuggestions.value = await searchFactNames(event.query, context)
 }
 
-const inferKind = (values: any[]): FactKind | null => {
-  if (values.length === 0) return null
-  if (values.every((v) => typeof v === 'boolean')) return 'bool'
-  if (values.every((v) => typeof v === 'number')) {
-    return values.every(Number.isInteger) ? 'int' : 'float'
-  }
-  if (values.every((v) => typeof v === 'string')) return 'str'
-  return null
-}
-
-const refreshPartValues = async (block: any[], partIndex: number) => {
-  const part = block[partIndex]
-  const fact = part.fact
-  const known =
-    availableFacts.value.length === 0 || availableFacts.value.includes(fact)
-  if (!fact || !known) {
-    part.kind = null
-    part.values = []
-    return
-  }
-  const params: Record<string, any> = { fact_id: fact }
-  const context = precedingFilters(block, partIndex)
-  if (context.length > 0) {
-    params.fact = context
-  }
-  try {
-    const data = await cachedGet('/api/v1/nodes/_distinct_fact_values', params)
-    if (part.fact !== fact) return
-    const result: { value: any; count: number }[] = data?.result || []
-    part.kind = inferKind(result.map((r) => r.value))
-    part.values = result.map((r) => ({
-      label: `${r.value} (${r.count})`,
-      value: String(r.value)
-    }))
-    if (part.kind) {
-      part.type = part.kind
-      if (!KIND_OPERATORS[part.kind as FactKind].includes(part.operator)) {
-        part.operator = 'eq'
-      }
-    }
-  } catch (err) {
-    console.error(err)
-  }
-}
-
-// sequential within a block: a part's type/operator may change on refresh,
-// which changes the context of every part after it
 const refreshFactValues = () =>
   Promise.all(
-    nodeFilterBlocks.value.map(async (block: any[]) => {
-      for (let i = 0; i < block.length; i++) {
-        await refreshPartValues(block, i)
-      }
-    })
+    nodeFilterBlocks.value.map((block: any[]) =>
+      refreshChain(block, (part: any) => part.fact)
+    )
   )
-
-const operatorsFor = (part: any) =>
-  part.kind ? KIND_OPERATORS[part.kind as FactKind] : ALL_OPERATORS
-
-const usesValueChoices = (part: any) =>
-  !!part.kind &&
-  part.values?.length > 0 &&
-  CHOICE_OPERATORS.includes(part.operator)
-
-const valuePlaceholder = (part: any) => {
-  if (part.operator === 'regex') return 'Regex'
-  if (LIST_OPERATORS.includes(part.operator)) return 'a,b,c'
-  if (RANGE_OPERATORS.includes(part.operator) && part.values?.length > 0) {
-    const numbers = part.values.map((v: any) => Number(v.value))
-    return `${Math.min(...numbers)} … ${Math.max(...numbers)}`
-  }
-  return 'Value'
-}
 
 const getFormattedFilters = () => {
   if (formDataReadOnly.value) {
