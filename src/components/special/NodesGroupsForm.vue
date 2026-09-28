@@ -133,19 +133,22 @@
                       <label class="text-xs font-semibold text-zinc-500"
                         >Values</label
                       >
-                      <MultiSelect
+                      <AutoComplete
                         v-model="part.values"
-                        :options="valueOptionsFor(ruleIdx, partIdx, part)"
-                        @change="refreshRuleValues(ruleIdx)"
+                        multiple
+                        :dropdown="true"
+                        :suggestions="
+                          valueSuggestions[ruleIdx + '-' + partIdx] || []
+                        "
+                        @complete="searchValues($event, ruleIdx, partIdx)"
+                        @update:model-value="refreshRuleValues(ruleIdx)"
                         :disabled="
                           isFieldDisabled ||
                           !part.fact ||
                           !!factErrors[part.fact]
                         "
-                        :filter="true"
-                        display="chip"
                         class="w-full"
-                        placeholder="Select values"
+                        placeholder="Select or type values"
                       />
                     </div>
 
@@ -286,7 +289,6 @@ import AccordionContent from 'primevue/accordioncontent'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import AutoComplete from 'primevue/autocomplete'
-import MultiSelect from 'primevue/multiselect'
 import ResponsiveToolbar from '@/components/shared/ResponsiveToolbar.vue'
 import api from '@/api/client'
 import { authStore } from '@/stores/auth'
@@ -426,14 +428,28 @@ const refreshAllRuleValues = async () => {
   }
 }
 
-// selected values stay selectable even when the narrowed list no longer
-// contains them
-const valueOptionsFor = (ruleIdx: number, partIdx: number, part: any) => {
-  const options =
-    partValueOptions[`${ruleIdx}-${partIdx}`] ??
-    factTypesCache[part.fact]?.values ??
-    []
-  return Array.from(new Set([...options, ...(part.values || [])]))
+const valueOptionsFor = (ruleIdx: number, partIdx: number, part: any) =>
+  partValueOptions[`${ruleIdx}-${partIdx}`] ??
+  factTypesCache[part.fact]?.values ??
+  []
+
+const valueSuggestions = reactive<Record<string, string[]>>({})
+
+// known values matching the query, plus the query itself so values no node
+// reports yet can still be entered (a group should also catch future nodes)
+const searchValues = (event: any, ruleIdx: number, partIdx: number) => {
+  const part = formData.filters[ruleIdx]?.part?.[partIdx]
+  if (!part) return
+  const query = (event.query || '').trim()
+  const selected = new Set(part.values || [])
+  const suggestions = valueOptionsFor(ruleIdx, partIdx, part).filter(
+    (v: string) =>
+      !selected.has(v) && v.toLowerCase().includes(query.toLowerCase())
+  )
+  if (query && !selected.has(query) && !suggestions.includes(query)) {
+    suggestions.push(query)
+  }
+  valueSuggestions[`${ruleIdx}-${partIdx}`] = suggestions
 }
 
 const onFactChange = async (ruleIdx: number, partIdx: number) => {
