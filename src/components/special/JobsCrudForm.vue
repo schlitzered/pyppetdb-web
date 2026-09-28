@@ -102,11 +102,15 @@
                       class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center"
                     >
                       <div class="md:col-span-4">
-                        <InputText
+                        <AutoComplete
                           v-model="part.fact"
+                          :suggestions="factSuggestions"
+                          @complete="searchFacts"
+                          @update:model-value="handleFilterUpdate"
+                          :dropdown="true"
                           placeholder="Fact"
-                          @input="handleFilterUpdate"
-                          class="w-full p-inputtext-sm bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700"
+                          class="w-full"
+                          input-class="w-full p-inputtext-sm bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700"
                         />
                       </div>
                       <div class="md:col-span-2">
@@ -372,6 +376,7 @@ import { useRouter } from 'vue-router'
 import Card from 'primevue/card'
 import Select from 'primevue/select'
 import InputText from 'primevue/inputtext'
+import AutoComplete from 'primevue/autocomplete'
 import Button from 'primevue/button'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -604,6 +609,27 @@ const addPart = (filterIndex: number) => {
 const removePart = (filterIndex: number, partIndex: number) => {
   nodeFilterBlocks.value[filterIndex].splice(partIndex, 1)
   handleFilterUpdate()
+}
+
+const availableFacts = ref<string[]>([])
+const factSuggestions = ref<string[]>([])
+
+const loadFactNames = async () => {
+  try {
+    const data = await api.get<any>('/api/v1/nodes/_distinct_fact_names')
+    if (data && data.result) {
+      availableFacts.value = data.result
+    }
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+const searchFacts = (event: { query: string }) => {
+  const query = (event.query || '').toLowerCase()
+  factSuggestions.value = availableFacts.value.filter((f) =>
+    f.toLowerCase().includes(query)
+  )
 }
 
 const getFormattedFilters = () => {
@@ -903,6 +929,7 @@ const handleCancel = () => {
 
 onMounted(() => {
   initializeFormState()
+  loadFactNames()
 })
 
 watch(

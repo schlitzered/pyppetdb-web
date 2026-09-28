@@ -111,22 +111,9 @@ describe('NodesGroupsForm', () => {
           result: [{ id: 'team1' }, { id: 'team2' }]
         })
       }
-      if (url === '/api/v1/nodes') {
+      if (url === '/api/v1/nodes/_distinct_fact_names') {
         return Promise.resolve({
-          result: [{ id: 'node1' }]
-        })
-      }
-      if (url === '/api/v1/nodes/node1') {
-        return Promise.resolve({
-          facts: {
-            env: 'prod',
-            nested: {
-              value: '1'
-            }
-          },
-          facts_inject: {
-            custom: 'foo'
-          }
+          result: ['env', 'nested.value', 'custom']
         })
       }
       return Promise.resolve({ result: [] })
@@ -585,7 +572,7 @@ describe('NodesGroupsForm', () => {
     })
   })
 
-  it('handles loadExampleFacts and getTeams errors gracefully', async () => {
+  it('handles loadFactNames and getTeams errors gracefully', async () => {
     vi.mocked(api.get).mockRejectedValue(new Error('API error'))
     const spyError = vi.spyOn(console, 'error').mockImplementation(() => {})
 

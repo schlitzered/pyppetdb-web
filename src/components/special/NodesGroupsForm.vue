@@ -336,21 +336,6 @@ const canDelete = computed(() => {
   return auth.hasPermission(PERMISSIONS.NODES.GROUPS.DELETE)
 })
 
-const flattenObjectKeys = (obj: any, prefix = ''): string[] => {
-  if (!obj || typeof obj !== 'object') return []
-  let keys: string[] = []
-  for (const [key, value] of Object.entries(obj)) {
-    const fullKey = prefix ? `${prefix}.${key}` : key
-    if (value && typeof value === 'object' && !Array.isArray(value)) {
-      keys.push(fullKey)
-      keys = keys.concat(flattenObjectKeys(value, fullKey))
-    } else {
-      keys.push(fullKey)
-    }
-  }
-  return keys
-}
-
 const fetchFactValuesIfNeeded = async (factName: string) => {
   if (!factName) {
     return
@@ -392,30 +377,11 @@ const fetchFactValuesIfNeeded = async (factName: string) => {
   }
 }
 
-const loadExampleFacts = async () => {
+const loadFactNames = async () => {
   try {
-    const data = await api.get<any>('/api/v1/nodes', {
-      limit: 10,
-      fields: ['id']
-    })
-    if (data && data.result && data.result.length > 0) {
-      const firstNode = data.result[0]
-      const nodeDetails = await api.get<any>(
-        `/api/v1/nodes/${encodeURIComponent(firstNode.id)}`,
-        {
-          fields: ['facts', 'facts_inject']
-        }
-      )
-      let keys: string[] = []
-      if (nodeDetails) {
-        if (nodeDetails.facts) {
-          keys = keys.concat(flattenObjectKeys(nodeDetails.facts))
-        }
-        if (nodeDetails.facts_inject) {
-          keys = keys.concat(flattenObjectKeys(nodeDetails.facts_inject))
-        }
-      }
-      availableFacts.value = Array.from(new Set(keys))
+    const data = await api.get<any>('/api/v1/nodes/_distinct_fact_names')
+    if (data && data.result) {
+      availableFacts.value = data.result
     }
   } catch (error) {
     console.error(error)
@@ -664,6 +630,6 @@ const handleBack = () => {
 onMounted(async () => {
   await getTeams()
   await formGetNodeGroupData()
-  await loadExampleFacts()
+  await loadFactNames()
 })
 </script>
