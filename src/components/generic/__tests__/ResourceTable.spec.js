@@ -67,6 +67,7 @@ vi.mock('primevue/usetoast', () => {
 vi.mock('@/api/client', () => {
   return {
     default: {
+      get: vi.fn(),
       delete: vi.fn()
     }
   }
@@ -327,6 +328,36 @@ describe('ResourceTable', () => {
     await booleanSelect.vm.$emit('update:model-value', true)
     await booleanSelect.vm.$emit('change')
     expect(mockGetSearchData).toHaveBeenCalled()
+  })
+
+  it('loads autocomplete filter suggestions from suggestionsUrl', async () => {
+    vi.mocked(api.get).mockResolvedValue({
+      result: ['os.family', 'kernel', 'os.release']
+    })
+    const filter = {
+      key: 'fact_id',
+      label: 'Fact Name',
+      type: 'autocomplete',
+      suggestionsUrl: '/api/v1/nodes/_distinct_fact_names'
+    }
+    const wrapper = mount(ResourceTable, {
+      props: {
+        resourceDef: getMockResourceDef({ searchFilters: [filter] })
+      },
+      global: { stubs: customStubs }
+    })
+
+    await wrapper.vm.searchFilterSuggestions(filter, { query: 'OS' })
+
+    expect(api.get).toHaveBeenCalledWith(
+      '/api/v1/nodes/_distinct_fact_names',
+      {},
+      true
+    )
+    expect(wrapper.vm.filterSuggestions.fact_id).toEqual([
+      'os.family',
+      'os.release'
+    ])
   })
 
   it('calculates link params dynamically with simple and custom configurations', () => {

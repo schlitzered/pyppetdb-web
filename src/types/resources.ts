@@ -63,9 +63,12 @@ export interface TableColumn {
 export interface SearchFilterType {
   key: string
   label: string
-  type: 'text' | 'select' | 'boolean' | 'array'
+  type: 'text' | 'select' | 'boolean' | 'array' | 'autocomplete'
   apiKey?: string
   options?: FieldOption[]
+  // 'autocomplete': endpoint returning `{ result: string[] }`, filtered
+  // client-side by what has been typed
+  suggestionsUrl?: string
   processor?: {
     toUrl: (value: unknown) => string | string[] | undefined
     fromUrl: (value: any) => unknown

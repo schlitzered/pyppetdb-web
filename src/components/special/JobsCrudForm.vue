@@ -105,7 +105,9 @@
                         <AutoComplete
                           v-model="part.fact"
                           :suggestions="factSuggestions"
-                          @complete="searchFacts"
+                          @complete="
+                            searchFacts($event, filterIndex, partIndex)
+                          "
                           @update:model-value="handleFilterUpdate"
                           :dropdown="true"
                           placeholder="Fact"
@@ -116,17 +118,7 @@
                       <div class="md:col-span-2">
                         <Select
                           v-model="part.operator"
-                          :options="[
-                            'eq',
-                            'gt',
-                            'gte',
-                            'in',
-                            'lt',
-                            'lte',
-                            'ne',
-                            'nin',
-                            'regex'
-                          ]"
+                          :options="operatorsFor(part)"
                           placeholder="Op"
                           @change="handleFilterUpdate"
                           class="w-full p-dropdown-sm bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700"
@@ -136,17 +128,18 @@
                         <Select
                           v-model="part.type"
                           :options="['str', 'int', 'float', 'bool']"
+                          :disabled="!!part.kind"
                           placeholder="Type"
                           @change="handleFilterUpdate"
                           class="w-full p-dropdown-sm bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700"
                         />
                       </div>
                       <div class="md:col-span-3">
-                        <InputText
+                        <FactValueInput
                           v-model="part.value"
-                          placeholder="Value"
-                          @input="handleFilterUpdate"
-                          class="w-full p-inputtext-sm bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700"
+                          :part="part"
+                          @change="handleFilterUpdate"
+                          class="bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700"
                         />
                       </div>
                       <div class="md:col-span-1 flex justify-center">
@@ -375,7 +368,6 @@ import { useRoute } from 'vue-router'
 import { useRouter } from 'vue-router'
 import Card from 'primevue/card'
 import Select from 'primevue/select'
-import InputText from 'primevue/inputtext'
 import AutoComplete from 'primevue/autocomplete'
 import Button from 'primevue/button'
 import DataTable from 'primevue/datatable'
@@ -388,6 +380,10 @@ import api from '@/api/client'
 import { authStore } from '@/stores/auth'
 import { PERMISSIONS } from '@/constants/permissions'
 import JobParamInput from '@/components/special/JobParamInput.vue'
+import FactValueInput from '@/components/special/FactValueInput.vue'
+import { useFactSuggestions } from '@/composables/useFactSuggestions'
+import { formatFactFilter } from '@/composables/useFactSuggestions'
+import { operatorsFor } from '@/composables/useFactSuggestions'
 import type { ResourceDefinition } from '@/types/resources'
 import type { JobParamDefinition } from '@/types/jobParams'
 
@@ -611,26 +607,30 @@ const removePart = (filterIndex: number, partIndex: number) => {
   handleFilterUpdate()
 }
 
-const availableFacts = ref<string[]>([])
+const { loadFactNames, searchFactNames, refreshChain } = useFactSuggestions()
 const factSuggestions = ref<string[]>([])
 
-const loadFactNames = async () => {
-  try {
-    const data = await api.get<any>('/api/v1/nodes/_distinct_fact_names')
-    if (data && data.result) {
-      availableFacts.value = data.result
-    }
-  } catch (err) {
-    console.error(err)
-  }
+const formatPart = (part: any) => formatFactFilter(part.fact, part)
+
+const searchFacts = async (
+  event: { query: string },
+  filterIndex: number,
+  partIndex: number
+) => {
+  const context = (nodeFilterBlocks.value[filterIndex] || [])
+    .slice(0, partIndex)
+    .filter((part: any) => part.value !== '')
+    .map(formatPart)
+    .filter((f: string | null): f is string => f !== null)
+  factSuggestions.value = await searchFactNames(event.query, context)
 }
 
-const searchFacts = (event: { query: string }) => {
-  const query = (event.query || '').toLowerCase()
-  factSuggestions.value = availableFacts.value.filter((f) =>
-    f.toLowerCase().includes(query)
+const refreshFactValues = () =>
+  Promise.all(
+    nodeFilterBlocks.value.map((block: any[]) =>
+      refreshChain(block, (part: any) => part.fact)
+    )
   )
-}
 
 const getFormattedFilters = () => {
   if (formDataReadOnly.value) {
@@ -639,10 +639,9 @@ const getFormattedFilters = () => {
   const formattedFilter: string[] = []
   nodeFilterBlocks.value.forEach((block: any) => {
     block.forEach((part: any) => {
-      if (part.fact && part.operator && part.type && part.value !== undefined) {
-        formattedFilter.push(
-          `${part.fact}:${part.operator}:${part.type}:${part.value}`
-        )
+      const formatted = formatPart(part)
+      if (formatted) {
+        formattedFilter.push(formatted)
       }
     })
   })
@@ -679,7 +678,8 @@ const handleFilterUpdate = () => {
     return
   }
   clearTimeout(filterTimer)
-  filterTimer = setTimeout(() => {
+  filterTimer = setTimeout(async () => {
+    await refreshFactValues()
     updateMatchingNodes()
   }, 500)
 }

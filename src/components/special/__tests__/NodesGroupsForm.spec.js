@@ -133,9 +133,12 @@ describe('NodesGroupsForm', () => {
 
     expect(api.get).toHaveBeenCalledWith('/api/v1/teams', { fields: ['id'] })
     expect(wrapper.vm.teamsChoices).toEqual(['team1', 'team2'])
-    expect(wrapper.vm.availableFacts).toContain('env')
-    expect(wrapper.vm.availableFacts).toContain('nested.value')
-    expect(wrapper.vm.availableFacts).toContain('custom')
+    await wrapper.vm.searchFacts({ query: '' }, 0, 0)
+    expect(wrapper.vm.filteredFactSuggestions['0-0']).toEqual([
+      'env',
+      'nested.value',
+      'custom'
+    ])
   })
 
   it('mounts in edit mode and loads group data', async () => {
@@ -330,8 +333,7 @@ describe('NodesGroupsForm', () => {
       team_id: 'search-team'
     })
 
-    wrapper.vm.availableFacts = ['env', 'os']
-    wrapper.vm.searchFacts({ query: 'e' }, 0, 0)
+    await wrapper.vm.searchFacts({ query: 'en' }, 0, 0)
     expect(wrapper.vm.filteredFactSuggestions['0-0']).toEqual(['env'])
   })
 
@@ -650,5 +652,79 @@ describe('NodesGroupsForm', () => {
 
     await wrapper.vm.fetchFactValuesIfNeeded('error-fact')
     expect(wrapper.vm.factTypesCache['error-fact'].values).toEqual([])
+  })
+
+  it('narrows values of later parts by the preceding parts of the rule', async () => {
+    vi.mocked(api.get).mockImplementation((url, params) => {
+      if (url === '/api/v1/nodes/_distinct_fact_values') {
+        if (params.fact_id === 'role' && params.fact) {
+          return Promise.resolve({ result: [{ value: 'web', count: 2 }] })
+        }
+        return Promise.resolve({
+          result: [{ value: 'web' }, { value: 'db' }, { value: 'prod' }]
+        })
+      }
+      return Promise.resolve({ result: [] })
+    })
+    const wrapper = mount(NodesGroupsForm, {
+      props: { resourceDef: createMockResourceDef() },
+      global: { stubs: customStubs }
+    })
+    await flushPromises()
+
+    wrapper.vm.addRuleGroup()
+    wrapper.vm.addPart(0)
+    wrapper.vm.addPart(0)
+    wrapper.vm.formData.filters[0].part[0].fact = 'env'
+    wrapper.vm.formData.filters[0].part[0].values = ['prod']
+    wrapper.vm.formData.filters[0].part[1].fact = 'role'
+    wrapper.vm.formData.filters[0].part[1].values = ['legacy']
+    await wrapper.vm.onFactChange(0, 1)
+
+    expect(api.get).toHaveBeenCalledWith(
+      '/api/v1/nodes/_distinct_fact_values',
+      { fact_id: 'role', fact: ['env:in:str:prod'] },
+      true
+    )
+    const part = wrapper.vm.formData.filters[0].part[1]
+    expect(wrapper.vm.valueOptionsFor(0, 1, part)).toEqual(['web'])
+
+    wrapper.vm.formData.filters[0].part[0].values = []
+    await wrapper.vm.refreshRuleValues(0)
+    expect(wrapper.vm.valueOptionsFor(0, 1, part)).toEqual([
+      'web',
+      'db',
+      'prod'
+    ])
+  })
+
+  it('suggests known values and accepts new ones', async () => {
+    const wrapper = mount(NodesGroupsForm, {
+      props: { resourceDef: createMockResourceDef() },
+      global: { stubs: customStubs }
+    })
+    await flushPromises()
+
+    wrapper.vm.addRuleGroup()
+    wrapper.vm.addPart(0)
+    const part = wrapper.vm.formData.filters[0].part[0]
+    part.fact = 'role'
+    part.values = ['web']
+    wrapper.vm.factTypesCache['role'] = {
+      hasNonString: false,
+      values: ['web', 'db', 'dbproxy']
+    }
+
+    wrapper.vm.searchValues({ query: '' }, 0, 0)
+    expect(wrapper.vm.valueSuggestions['0-0']).toEqual(['db', 'dbproxy'])
+
+    wrapper.vm.searchValues({ query: 'db' }, 0, 0)
+    expect(wrapper.vm.valueSuggestions['0-0']).toEqual(['db', 'dbproxy'])
+
+    wrapper.vm.searchValues({ query: 'newservice ' }, 0, 0)
+    expect(wrapper.vm.valueSuggestions['0-0']).toEqual(['newservice'])
+
+    wrapper.vm.searchValues({ query: 'web' }, 0, 0)
+    expect(wrapper.vm.valueSuggestions['0-0']).toEqual([])
   })
 })

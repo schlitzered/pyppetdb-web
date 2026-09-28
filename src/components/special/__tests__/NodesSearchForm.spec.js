@@ -144,6 +144,44 @@ describe(
     )
 
     it(
+      'narrows fact suggestions by earlier rows and the disabled filter',
+      async () => {
+        const wrapper = mount(
+          NodesSearchForm,
+          {
+            props: {
+              resourceDef: createMockResourceDef()
+            },
+            global: {
+              stubs: customStubs
+            }
+          }
+        )
+        await flushPromises()
+
+        wrapper.vm.formSearchBy.disabled = 'false'
+        wrapper.vm.formSearchBy.fact = [
+          { fact_name: 'os.family', operator: 'eq', type: 'str', value: 'RedHat' },
+          { fact_name: '', operator: '', type: '', value: '' }
+        ]
+        vi.mocked(api.get).mockResolvedValueOnce({ result: ['cpus', 'kernel'] })
+
+        await wrapper.vm.searchFacts({ query: 'cp' }, 1)
+
+        expect(
+          api.get
+        ).toHaveBeenCalledWith(
+          '/api/v1/nodes/_distinct_fact_names',
+          { disabled: 'false', fact: ['os.family:eq:str:RedHat'] },
+          true
+        )
+        expect(
+          wrapper.vm.factSuggestions
+        ).toEqual(['cpus'])
+      }
+    )
+
+    it(
       'handles pagination and sorting',
       async () => {
         const wrapper = mount(
