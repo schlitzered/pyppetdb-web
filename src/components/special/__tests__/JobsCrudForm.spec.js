@@ -83,7 +83,8 @@ const standardStubs = {
   Tag: true,
   ProgressSpinner: true,
   ResponsiveToolbar: true,
-  JobParamInput: true
+  JobParamInput: true,
+  AutoComplete: true
 }
 
 const slotStubs = {
@@ -135,6 +136,9 @@ describe('JobsCrudForm', () => {
           result: [{ id: 'node-1', remote_agent: { connected: true } }]
         })
       }
+      if (url === '/api/v1/nodes/_distinct_fact_names') {
+        return Promise.resolve({ result: ['os.family', 'kernel'] })
+      }
       if (url.startsWith('/api/v1/jobs/definitions/')) {
         return Promise.resolve({
           params: {
@@ -174,6 +178,26 @@ describe('JobsCrudForm', () => {
       limit: 1000
     })
     expect(wrapper.vm.definitionChoices).toEqual(['def-1', 'def-2'])
+  })
+
+  it('loads fact names and filters suggestions', async () => {
+    mockAuthStore.hasPermission.mockReturnValue(true)
+
+    const wrapper = mount(JobsCrudForm, {
+      props: {
+        resourceDef: createMockResourceDef()
+      },
+      global: {
+        stubs: standardStubs
+      }
+    })
+    await flushPromises()
+
+    expect(api.get).toHaveBeenCalledWith('/api/v1/nodes/_distinct_fact_names')
+    expect(wrapper.vm.availableFacts).toEqual(['os.family', 'kernel'])
+
+    wrapper.vm.searchFacts({ query: 'OS' })
+    expect(wrapper.vm.factSuggestions).toEqual(['os.family'])
   })
 
   it('mounts in creation mode and fetches definitions with specific permission', async () => {
