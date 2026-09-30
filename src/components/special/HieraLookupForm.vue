@@ -45,7 +45,7 @@
 
             <div v-if="factFields.length > 0" class="flex flex-col gap-3">
               <h3 class="text-sm font-bold text-zinc-500 dark:text-zinc-400">
-                Facts (Optional)
+                Facts
               </h3>
               <div
                 v-for="field in factFields"
@@ -56,7 +56,7 @@
                   :for="field"
                   class="text-xs font-semibold text-zinc-500 dark:text-zinc-400"
                 >
-                  {{ field }}
+                  {{ field }} *
                 </label>
                 <AutoComplete
                   :id="field"
@@ -75,7 +75,7 @@
               type="submit"
               label="Lookup"
               icon="pi pi-search"
-              :disabled="!lookupKeyId"
+              :disabled="!canLookup"
               :loading="loading"
               class="w-full bg-zinc-800 hover:bg-zinc-700 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-white border-none py-2 mt-4"
             />
@@ -145,6 +145,7 @@ import Button from 'primevue/button'
 import Card from 'primevue/card'
 import ResponsiveToolbar from '@/components/shared/ResponsiveToolbar.vue'
 import api from '@/api/client'
+import { useFactSuggestions } from '@/composables/useFactSuggestions'
 
 const lookupKeyId = ref('')
 const lookupMerge = ref(false)
@@ -169,7 +170,8 @@ const searchKeys = async (event: AutocompleteCompleteEvent) => {
       sort: 'id',
       sort_order: 'ascending'
     }
-    if (event.query) {
+    // same as the facts: an unchanged selection must not narrow the list
+    if (event.query && event.query !== lookupKeyId.value) {
       params.key_id = event.query
     }
     const response = await api.get<{ result: Array<{ id: string }> }>(
@@ -215,42 +217,45 @@ const fetchFactFields = async () => {
   }
 }
 
+const { fetchFactValues } = useFactSuggestions()
+
 const searchFactSuggestions = async (
   event: AutocompleteCompleteEvent,
   field: string
 ) => {
   try {
-    // endpoint only supports fact_id / disabled / environment / fact / report_status
-    const params: Record<string, any> = {
-      fact_id: field
-    }
-    const response = await api.get<{ result: Array<{ value: any }> }>(
-      '/api/v1/nodes/_distinct_fact_values',
-      params,
-      true
+    const allValues = (await fetchFactValues(field)).map((item) =>
+      String(item.value)
     )
-    if (response && response.result) {
-      const allValues = response.result.map((item) => String(item.value))
-      if (event.query) {
-        const queryLower = event.query.toLowerCase()
-        const filtered = allValues.filter((val) =>
-          val.toLowerCase().includes(queryLower)
-        )
-        if (!filtered.some((x) => x.toLowerCase() === queryLower)) {
-          filtered.push(event.query)
-        }
-        factSuggestions[field] = filtered
-      } else {
-        factSuggestions[field] = allValues
+    // focusing / opening the dropdown searches with the selected value;
+    // only filter once the user actually types something else
+    const query = event.query === facts[field] ? '' : event.query
+    if (query) {
+      const queryLower = query.toLowerCase()
+      const filtered = allValues.filter((val) =>
+        val.toLowerCase().includes(queryLower)
+      )
+      if (!filtered.some((x) => x.toLowerCase() === queryLower)) {
+        filtered.push(query)
       }
+      factSuggestions[field] = filtered
+    } else {
+      factSuggestions[field] = allValues
     }
   } catch (error) {
     console.error(error)
   }
 }
 
+// every fact placeholder of the hiera levels is required by the lookup API
+const canLookup = computed(
+  () =>
+    !!lookupKeyId.value &&
+    factFields.value.every((field) => String(facts[field] ?? '').trim())
+)
+
 const performLookup = async () => {
-  if (!lookupKeyId.value) return
+  if (!canLookup.value) return
   loading.value = true
   lookupResult.value = null
   lookupError.value = null
@@ -268,12 +273,17 @@ const performLookup = async () => {
   }
   try {
     const endpoint = `/api/v1/hiera/lookup/${encodeURIComponent(lookupKeyId.value)}`
-    const response = await api.get<any>(endpoint, params)
+    // silent: show the error inline instead of the global dialog, which redirects away
+    const response = await api.get<any>(endpoint, params, true)
     if (response) {
       lookupResult.value = response
     }
   } catch (error: any) {
-    lookupError.value = error.message || 'Failed to perform lookup'
+    const detail = error.response?.data?.detail
+    lookupError.value =
+      (typeof detail === 'string' ? detail : null) ||
+      error.message ||
+      'Failed to perform lookup'
   } finally {
     loading.value = false
   }
