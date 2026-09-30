@@ -174,6 +174,25 @@ describe('HieraLookupForm', () => {
     })
   })
 
+  it('lists all hiera keys again when a key is already selected', async () => {
+    const wrapper = mount(HieraLookupForm, {
+      global: {
+        stubs: customStubs
+      }
+    })
+    await flushPromises()
+
+    wrapper.vm.lookupKeyId = 'my-key'
+    await wrapper.vm.searchKeys({ query: 'my-key' })
+
+    expect(api.get).toHaveBeenCalledWith('/api/v1/hiera/keys', {
+      fields: ['id'],
+      limit: 10,
+      sort: 'id',
+      sort_order: 'ascending'
+    })
+  })
+
   it('handles searchKeys error gracefully', async () => {
     vi.mocked(api.get).mockImplementation((url) => {
       if (url === '/api/v1/hiera/keys') {
@@ -268,6 +287,38 @@ describe('HieraLookupForm', () => {
     expect(wrapper.vm.factSuggestions.osfamily).toEqual(['RedHat'])
   })
 
+  it('offers all fact values again when a value is already selected', async () => {
+    vi.mocked(api.get).mockImplementation((url) => {
+      if (url === '/api/v1/nodes/_distinct_fact_values') {
+        return Promise.resolve({
+          result: [{ value: 'RedHat' }, { value: 'Debian' }]
+        })
+      }
+      return Promise.resolve({ result: [] })
+    })
+
+    const wrapper = mount(HieraLookupForm, {
+      global: {
+        stubs: customStubs
+      }
+    })
+    await flushPromises()
+
+    wrapper.vm.facts.osfamily = 'Debian'
+    await wrapper.vm.searchFactSuggestions({ query: 'Debian' }, 'osfamily')
+    expect(wrapper.vm.factSuggestions.osfamily).toEqual(['RedHat', 'Debian'])
+
+    await wrapper.vm.searchFactSuggestions({ query: 'Deb' }, 'osfamily')
+    expect(wrapper.vm.factSuggestions.osfamily).toEqual(['Debian', 'Deb'])
+    expect(
+      vi
+        .mocked(api.get)
+        .mock.calls.filter(
+          ([url]) => url === '/api/v1/nodes/_distinct_fact_values'
+        )
+    ).toHaveLength(1)
+  })
+
   it('handles searchFactSuggestions error gracefully', async () => {
     vi.mocked(api.get).mockImplementation((url) => {
       if (url === '/api/v1/nodes/_distinct_fact_values') {
@@ -322,10 +373,14 @@ describe('HieraLookupForm', () => {
 
     await wrapper.vm.performLookup()
 
-    expect(api.get).toHaveBeenCalledWith('/api/v1/hiera/lookup/my-key', {
-      merge: true,
-      fact: ['environment:production']
-    })
+    expect(api.get).toHaveBeenCalledWith(
+      '/api/v1/hiera/lookup/my-key',
+      {
+        merge: true,
+        fact: ['environment:production']
+      },
+      true
+    )
     expect(wrapper.vm.lookupResult).toEqual({
       data: {
         value: 'some-value'
@@ -367,6 +422,62 @@ describe('HieraLookupForm', () => {
 
     expect(wrapper.vm.lookupError).toBe('Lookup failed')
     expect(wrapper.vm.lookupResult).toBeNull()
+  })
+
+  it('shows the API error detail inline', async () => {
+    vi.mocked(api.get).mockImplementation((url) => {
+      if (url === '/api/v1/hiera/lookup/my-key') {
+        return Promise.reject({
+          message: 'Request failed with status code 422',
+          response: { data: { detail: 'missing fact' } }
+        })
+      }
+      return Promise.resolve({ result: [] })
+    })
+
+    const wrapper = mount(HieraLookupForm, {
+      global: {
+        stubs: customStubs
+      }
+    })
+    await flushPromises()
+
+    wrapper.vm.lookupKeyId = 'my-key'
+    await wrapper.vm.performLookup()
+
+    expect(wrapper.vm.lookupError).toBe('missing fact')
+  })
+
+  it('requires every fact to be set before lookup', async () => {
+    vi.mocked(api.get).mockImplementation((url) => {
+      if (url === '/api/v1/hiera/levels') {
+        return Promise.resolve({
+          result: [{ id: '{environment}/{role}' }]
+        })
+      }
+      return Promise.resolve({ result: [] })
+    })
+
+    const wrapper = mount(HieraLookupForm, {
+      global: {
+        stubs: customStubs
+      }
+    })
+    await flushPromises()
+
+    wrapper.vm.lookupKeyId = 'my-key'
+    wrapper.vm.facts.environment = 'production'
+    expect(wrapper.vm.canLookup).toBe(false)
+
+    await wrapper.vm.performLookup()
+    expect(api.get).not.toHaveBeenCalledWith(
+      expect.stringContaining('/api/v1/hiera/lookup/'),
+      expect.anything(),
+      expect.anything()
+    )
+
+    wrapper.vm.facts.role = 'web'
+    expect(wrapper.vm.canLookup).toBe(true)
   })
 
   it('does not perform lookup if lookupKeyId is empty', async () => {
