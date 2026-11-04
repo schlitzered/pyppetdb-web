@@ -11,6 +11,7 @@ import { useResourceQuery } from '@/composables/useResourceQuery'
 import { useCreateResource } from '@/composables/useResourceMutation'
 import { useUpdateResource } from '@/composables/useResourceMutation'
 import { useDeleteResource } from '@/composables/useResourceMutation'
+import { flushPromises } from '@vue/test-utils'
 import api from '@/api/client'
 import { primeVueStubs } from '@/__test_utils__/helpers'
 import ResourceForm from '../ResourceForm.vue'
@@ -1644,6 +1645,289 @@ describe(
         expect(
           wrapper.vm.isModifyMode
         ).toBe(false)
+      }
+    )
+
+    describe(
+      'datetime fields',
+      () => {
+        const datetimeFields = [
+          ...minimalFields,
+          { key: 'expires', label: 'Expires', type: 'datetime' }
+        ]
+
+        const mountForm = async () => {
+          const wrapper = mount(
+            ResourceForm,
+            {
+              props: {
+                resourceDef: getMockResource({ fields: datetimeFields })
+              },
+              global: {
+                stubs: primeVueStubs
+              }
+            }
+          )
+          await flushPromises()
+          return wrapper
+        }
+
+        it(
+          'offers presets only while the field can be edited',
+          async () => {
+            vi.useFakeTimers({ now: new Date('2026-11-03T12:00:00Z'), toFake: ['Date'] })
+            const presetFields = [
+              ...minimalFields,
+              { key: 'expires', label: 'Expires', type: 'datetime', presetDays: [30, 90] }
+            ]
+            const presets = (wrapper) =>
+              wrapper.findAllComponents({ name: 'Button' }).filter(
+                (button) => button.props('label')?.endsWith(' days')
+              )
+            const wrapper = mount(
+              ResourceForm,
+              {
+                props: {
+                  resourceDef: getMockResource({ fields: presetFields })
+                },
+                global: {
+                  stubs: primeVueStubs
+                }
+              }
+            )
+            await flushPromises()
+
+            expect(
+              presets(wrapper).map((button) => button.props('label'))
+            ).toEqual(['30 days', '90 days'])
+
+            await presets(wrapper)[0].trigger('click')
+            const expected = new Date('2026-11-03T12:00:00Z')
+            expected.setDate(expected.getDate() + 30)
+            expect(
+              wrapper.vm.formData.expires
+            ).toEqual(expected)
+
+            mockRoute.params.id = '123'
+            vi.mocked(useResourceQuery).mockReturnValue({
+              fetch: vi.fn().mockResolvedValue({ id: '123', name: 'cred' })
+            })
+            const viewWrapper = mount(
+              ResourceForm,
+              {
+                props: {
+                  resourceDef: getMockResource({ fields: presetFields })
+                },
+                global: {
+                  stubs: primeVueStubs
+                }
+              }
+            )
+            await flushPromises()
+            expect(
+              presets(viewWrapper)
+            ).toHaveLength(0)
+            vi.useRealTimers()
+          }
+        )
+
+        it(
+          'sends null when creating without a value',
+          async () => {
+            const mockCreate = vi.fn().mockResolvedValue({ id: 'c1' })
+            vi.mocked(useCreateResource).mockReturnValue({ create: mockCreate })
+            const wrapper = await mountForm()
+            wrapper.vm.formData.name = 'cred'
+
+            await wrapper.find('form').trigger('submit')
+            await flushPromises()
+
+            expect(
+              mockCreate.mock.calls[0][0].expires
+            ).toBeNull()
+          }
+        )
+
+        it(
+          'converts the api format and clears with null',
+          async () => {
+            mockRoute.params.id = '123'
+            vi.mocked(useResourceQuery).mockReturnValue({
+              fetch: vi.fn().mockResolvedValue({
+                id: '123',
+                name: 'cred',
+                expires: '2026-12-31 12:00:00+00:00'
+              })
+            })
+            const mockUpdate = vi.fn().mockResolvedValue({})
+            vi.mocked(useUpdateResource).mockReturnValue({ update: mockUpdate })
+            const wrapper = await mountForm()
+
+            expect(
+              wrapper.vm.formData.expires
+            ).toEqual(new Date('2026-12-31T12:00:00Z'))
+
+            wrapper.vm.isModifyMode = true
+            await wrapper.find('form').trigger('submit')
+            await flushPromises()
+            expect(
+              mockUpdate.mock.calls[0][1].expires
+            ).toBe('2026-12-31T12:00:00.000Z')
+
+            wrapper.vm.isModifyMode = true
+            wrapper.vm.formData.expires = null
+            await wrapper.find('form').trigger('submit')
+            await flushPromises()
+            expect(
+              mockUpdate.mock.calls[1][1].expires
+            ).toBeNull()
+          }
+        )
+      }
+    )
+
+    describe(
+      'restrictable permissions',
+      () => {
+        const restrictableFields = [
+          ...minimalFields,
+          {
+            key: 'permissions',
+            label: 'Permissions',
+            type: 'permission-grid',
+            restrictable: true,
+            autocomplete: { endpoint: 'permissions' }
+          }
+        ]
+
+        const mountForm = async (stored) => {
+          if (stored === undefined) {
+            mockRoute.params.id = '_new'
+          } else {
+            mockRoute.params.id = '123'
+            vi.mocked(useResourceQuery).mockReturnValue({
+              fetch: vi.fn().mockResolvedValue({ id: '123', name: 'cred', ...stored })
+            })
+          }
+          vi.mocked(api.get).mockResolvedValue({ result: ['read', 'write'] })
+          const wrapper = mount(
+            ResourceForm,
+            {
+              props: {
+                resourceDef: getMockResource({ fields: restrictableFields })
+              },
+              global: {
+                stubs: primeVueStubs
+              }
+            }
+          )
+          await flushPromises()
+          return wrapper
+        }
+
+        const restrictToggle = (wrapper) =>
+          wrapper.findAllComponents({ name: 'ToggleSwitch' }).find(
+            (toggle) => toggle.element.closest('label')?.textContent.includes('Restrict permissions')
+          )
+
+        it(
+          'creates unrestricted without sending permissions',
+          async () => {
+            const mockCreate = vi.fn().mockResolvedValue({ id: 'c1' })
+            vi.mocked(useCreateResource).mockReturnValue({ create: mockCreate })
+            const wrapper = await mountForm()
+            wrapper.vm.formData.name = 'cred'
+
+            expect(
+              wrapper.findComponent({ name: 'DataTable' }).exists()
+            ).toBe(false)
+
+            await wrapper.find('form').trigger('submit')
+            await flushPromises()
+
+            expect(
+              mockCreate.mock.calls[0][0]
+            ).not.toHaveProperty('permissions')
+          }
+        )
+
+        it(
+          'sends an empty list when restricted without any permission',
+          async () => {
+            const mockCreate = vi.fn().mockResolvedValue({ id: 'c1' })
+            vi.mocked(useCreateResource).mockReturnValue({ create: mockCreate })
+            const wrapper = await mountForm()
+            wrapper.vm.formData.name = 'cred'
+
+            await restrictToggle(wrapper).vm.$emit('update:model-value', true)
+
+            expect(
+              wrapper.findComponent({ name: 'DataTable' }).exists()
+            ).toBe(true)
+
+            await wrapper.find('form').trigger('submit')
+            await flushPromises()
+
+            expect(
+              mockCreate.mock.calls[0][0].permissions
+            ).toEqual([])
+          }
+        )
+
+        it(
+          'leaves an unrestricted credential alone on update and locks after restricting',
+          async () => {
+            const mockUpdate = vi.fn().mockResolvedValue({})
+            vi.mocked(useUpdateResource).mockReturnValue({ update: mockUpdate })
+            const wrapper = await mountForm({ permissions: null })
+            wrapper.vm.isModifyMode = true
+            await flushPromises()
+
+            await wrapper.find('form').trigger('submit')
+            await flushPromises()
+            expect(
+              mockUpdate.mock.calls[0][1]
+            ).not.toHaveProperty('permissions')
+
+            wrapper.vm.isModifyMode = true
+            await flushPromises()
+            expect(
+              restrictToggle(wrapper).props('disabled')
+            ).toBe(false)
+
+            await restrictToggle(wrapper).vm.$emit('update:model-value', true)
+            await wrapper.find('form').trigger('submit')
+            await flushPromises()
+            expect(
+              mockUpdate.mock.calls[1][1].permissions
+            ).toEqual([])
+
+            wrapper.vm.isModifyMode = true
+            await flushPromises()
+            expect(
+              restrictToggle(wrapper).props('disabled')
+            ).toBe(true)
+          }
+        )
+
+        it(
+          'keeps stored permissions missing from the available list',
+          async () => {
+            const wrapper = await mountForm({ permissions: ['read', 'SPACES:a:READ'] })
+            wrapper.vm.isModifyMode = true
+            await flushPromises()
+
+            expect(
+              wrapper.vm.formData.permissions
+            ).toEqual(['read', 'SPACES:a:READ'])
+            expect(
+              wrapper.vm.filteredPermissions
+            ).toContainEqual({ name: 'SPACES:a:READ' })
+            expect(
+              restrictToggle(wrapper).props('disabled')
+            ).toBe(true)
+          }
+        )
       }
     )
   }

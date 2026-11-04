@@ -47,7 +47,7 @@
               </label>
               <InputText
                 id="environment"
-                v-model="formSearchBy.environment"
+                v-model="formSearchBy['ext.puppet.environment']"
                 @input="debouncedSearch"
                 class="p-inputtext-sm bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700"
               />
@@ -79,7 +79,7 @@
               </label>
               <InputText
                 id="outdated_threshold"
-                v-model="formSearchBy.outdated_threshold"
+                v-model="formSearchBy['ext.puppet.outdated_threshold']"
                 @input="handleThresholdInput"
                 placeholder="YYYY-MM-DDTHH:MM:SS"
                 class="p-inputtext-sm bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700"
@@ -99,7 +99,7 @@
         <AccordionContent>
           <div class="flex flex-col gap-3">
             <div
-              v-for="(fact, index) in formSearchBy.fact"
+              v-for="(fact, index) in formSearchBy['ext.puppet.fact']"
               :key="index"
               class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end"
             >
@@ -174,6 +174,68 @@
           </div>
         </AccordionContent>
       </AccordionPanel>
+      <AccordionPanel value="label">
+        <AccordionHeader>Label Search</AccordionHeader>
+        <AccordionContent>
+          <div class="flex flex-col gap-3">
+            <div
+              v-for="(label, index) in formSearchBy.label"
+              :key="index"
+              class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end"
+            >
+              <div class="md:col-span-4 flex flex-col gap-1">
+                <label
+                  class="text-xs font-semibold text-zinc-500 dark:text-zinc-400"
+                  >Label Key</label
+                >
+                <InputText
+                  v-model="label.key"
+                  @input="debouncedSearch"
+                  class="p-inputtext-sm bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700"
+                />
+              </div>
+              <div class="md:col-span-3 flex flex-col gap-1">
+                <label
+                  class="text-xs font-semibold text-zinc-500 dark:text-zinc-400"
+                  >Operator</label
+                >
+                <Select
+                  v-model="label.operator"
+                  :options="labelOperators"
+                  @change="debouncedSearch"
+                  class="p-dropdown-sm bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700"
+                />
+              </div>
+              <div class="md:col-span-4 flex flex-col gap-1">
+                <label
+                  class="text-xs font-semibold text-zinc-500 dark:text-zinc-400"
+                  >Value</label
+                >
+                <InputText
+                  v-model="label.value"
+                  @input="debouncedSearch"
+                  class="p-inputtext-sm bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700"
+                />
+              </div>
+              <div class="md:col-span-1 flex justify-end">
+                <Button
+                  icon="pi pi-minus"
+                  class="bg-rose-600 hover:bg-rose-700 text-white border-none p-2"
+                  @click="formSearchByLabelsRemove(index)"
+                />
+              </div>
+            </div>
+            <div>
+              <Button
+                label="Add Label Filter"
+                icon="pi pi-plus"
+                class="p-button-outlined p-button-sm text-zinc-700 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                @click="formSearchByLabelsAdd"
+              />
+            </div>
+          </div>
+        </AccordionContent>
+      </AccordionPanel>
     </Accordion>
 
     <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mt-2">
@@ -194,7 +256,7 @@
         <span
           class="text-sm font-bold bg-emerald-100 dark:bg-emerald-900/30 px-2 py-0.5 rounded text-emerald-800 dark:text-emerald-400"
         >
-          {{ tableItemsMeta.status_unchanged ?? 0 }}
+          {{ statusCounts.status_unchanged ?? 0 }}
         </span>
       </button>
 
@@ -215,7 +277,7 @@
         <span
           class="text-sm font-bold bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 rounded text-amber-800 dark:text-amber-400"
         >
-          {{ tableItemsMeta.status_changed ?? 0 }}
+          {{ statusCounts.status_changed ?? 0 }}
         </span>
       </button>
 
@@ -236,7 +298,7 @@
         <span
           class="text-sm font-bold bg-rose-100 dark:bg-rose-900/30 px-2 py-0.5 rounded text-rose-800 dark:text-rose-400"
         >
-          {{ tableItemsMeta.status_failed ?? 0 }}
+          {{ statusCounts.status_failed ?? 0 }}
         </span>
       </button>
 
@@ -257,7 +319,7 @@
         <span
           class="text-sm font-bold bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded text-zinc-700 dark:text-zinc-300"
         >
-          {{ tableItemsMeta.status_unreported ?? 0 }}
+          {{ statusCounts.status_unreported ?? 0 }}
         </span>
       </button>
 
@@ -278,7 +340,7 @@
         <span
           class="text-sm font-bold bg-zinc-200 dark:bg-zinc-700 px-2 py-0.5 rounded text-zinc-800 dark:text-zinc-200"
         >
-          {{ tableItemsMeta.status_outdated ?? 0 }}
+          {{ statusCounts.status_outdated ?? 0 }}
         </span>
       </button>
     </div>
@@ -315,18 +377,65 @@
             </router-link>
           </template>
         </Column>
-        <Column field="environment" header="Environment" sortable />
-        <Column field="report.status" header="Report Status" sortable />
-        <Column field="change_report" header="Change Report" sortable />
-        <Column field="disabled" header="Disabled">
+        <Column field="labels" header="Labels">
+          <template #body="slotProps">
+            <div class="flex flex-wrap gap-1">
+              <span
+                v-for="label in slotProps.data.labels"
+                :key="label.key"
+                class="font-mono text-xs bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded"
+              >
+                {{ label.key }}={{ label.value }}
+              </span>
+            </div>
+          </template>
+        </Column>
+        <Column field="ext.puppet.environment" header="Environment" sortable />
+        <Column
+          field="ext.puppet.change_catalog"
+          header="Change Catalog"
+          sortable
+        >
+          <template #body="slotProps">
+            {{ formatDate(slotProps.data.ext?.puppet?.change_catalog) }}
+          </template>
+        </Column>
+        <Column field="ext.puppet.change_facts" header="Change Facts" sortable>
+          <template #body="slotProps">
+            {{ formatDate(slotProps.data.ext?.puppet?.change_facts) }}
+          </template>
+        </Column>
+        <Column field="ext.puppet.change_last" header="Change Last" sortable>
+          <template #body="slotProps">
+            {{ formatDate(slotProps.data.ext?.puppet?.change_last) }}
+          </template>
+        </Column>
+        <Column
+          field="ext.puppet.change_report"
+          header="Change Report"
+          sortable
+        >
+          <template #body="slotProps">
+            {{ formatDate(slotProps.data.ext?.puppet?.change_report) }}
+          </template>
+        </Column>
+        <Column
+          field="ext.puppet.report_status_computed"
+          header="Report Status"
+        />
+        <Column
+          field="ext.jobs.remote_agent.connected"
+          header="Agent Connected"
+        >
           <template #body="slotProps">
             <i
-              v-if="slotProps.data.disabled"
+              v-if="slotProps.data.ext?.jobs?.remote_agent?.connected"
               class="pi pi-check-square text-zinc-700 dark:text-zinc-300"
             ></i>
             <i v-else class="pi pi-stop text-zinc-400"></i>
           </template>
         </Column>
+        <Column field="ext.jobs.remote_agent.via" header="Agent Via" />
       </DataTable>
     </div>
   </div>
@@ -370,6 +479,7 @@ const tableGenericDropdownOptions = [
 ]
 
 const formSearchByFactsTypes = ['bool', 'int', 'float', 'str']
+const labelOperators = ['eq', 'ne', 'in', 'nin', 'regex']
 
 const {
   tableItems,
@@ -383,6 +493,7 @@ const {
   tableExpPan,
   formSearchBy,
   getSearchData,
+  loadFromUrl,
   getSearchDataTableEvent
 } = useResourceListQuery({
   resourceDef: nodes
@@ -405,6 +516,10 @@ const onPage = (event: PageEvent) => {
     sortBy: tableSortBy,
     searchBy: []
   })
+}
+
+const formatDate = (value: string | null | undefined) => {
+  return value ? new Date(value).toLocaleString() : ''
 }
 
 const onSort = (event: SortEvent) => {
@@ -431,8 +546,7 @@ const handleSearch = () => {
 
 const debouncedSearch = debounce(handleSearch, 300)
 
-// only `disabled` is passed on: environment / report_status are regexes in
-// the node search but literal matches in the _distinct_* endpoints
+// suggestions are only narrowed by `disabled`, not by the other node filters
 const { loadFactNames, searchFactNames, refreshChain } = useFactSuggestions(
   () =>
     formSearchBy.disabled !== '' && formSearchBy.disabled != null
@@ -444,7 +558,7 @@ const factSuggestions = ref<string[]>([])
 // all fact rows are ANDed, so each row's suggestions are narrowed by the
 // complete rows before it
 const searchFacts = async (event: { query: string }, index: number) => {
-  const context = (formSearchBy.fact || [])
+  const context = (formSearchBy['ext.puppet.fact'] || [])
     .slice(0, index)
     .filter((f: any) => f.value !== '')
     .map((f: any) => formatFactFilter(f.fact_name, f))
@@ -453,7 +567,7 @@ const searchFacts = async (event: { query: string }, index: number) => {
 }
 
 const refreshFactValues = () =>
-  refreshChain(formSearchBy.fact || [], (f: any) => f.fact_name)
+  refreshChain(formSearchBy['ext.puppet.fact'] || [], (f: any) => f.fact_name)
 
 const factsChanged = debounce(async () => {
   await refreshFactValues()
@@ -461,10 +575,10 @@ const factsChanged = debounce(async () => {
 }, 300)
 
 const formSearchByFactsAdd = () => {
-  if (!formSearchBy.fact) {
-    formSearchBy.fact = []
+  if (!formSearchBy['ext.puppet.fact']) {
+    formSearchBy['ext.puppet.fact'] = []
   }
-  formSearchBy.fact.push({
+  formSearchBy['ext.puppet.fact'].push({
     fact_name: '',
     operator: '',
     type: '',
@@ -473,13 +587,28 @@ const formSearchByFactsAdd = () => {
 }
 
 const formSearchByFactsRemove = (index: number) => {
-  formSearchBy.fact.splice(index, 1)
+  formSearchBy['ext.puppet.fact'].splice(index, 1)
   factsChanged()
 }
 
+const formSearchByLabelsAdd = () => {
+  formSearchBy.label.push({ key: '', operator: 'eq', value: '' })
+}
+
+const formSearchByLabelsRemove = (index: number) => {
+  formSearchBy.label.splice(index, 1)
+  getSearchData()
+}
+
+const REPORT_STATUS = 'ext.puppet.report_status_computed'
+
+const statusCounts = computed<Record<string, number>>(
+  () => (tableItemsMeta.value as any).ext?.puppet || {}
+)
+
 const toggleStatus = (statusRegex: string) => {
-  let current = formSearchBy.report_status
-    ? String(formSearchBy.report_status).split('|')
+  let current = formSearchBy[REPORT_STATUS]
+    ? String(formSearchBy[REPORT_STATUS]).split('|')
     : []
   const index = current.indexOf(statusRegex)
   if (index > -1) {
@@ -487,13 +616,13 @@ const toggleStatus = (statusRegex: string) => {
   } else {
     current.push(statusRegex)
   }
-  formSearchBy.report_status = current.join('|')
+  formSearchBy[REPORT_STATUS] = current.join('|')
   getSearchData()
 }
 
 const isStatusActive = (statusRegex: string) => {
-  if (!formSearchBy.report_status) return false
-  return String(formSearchBy.report_status).split('|').includes(statusRegex)
+  if (!formSearchBy[REPORT_STATUS]) return false
+  return String(formSearchBy[REPORT_STATUS]).split('|').includes(statusRegex)
 }
 
 const validateISOTimestamp = (value: string): boolean | string => {
@@ -537,7 +666,7 @@ const handleCreate = () => {
 }
 
 onMounted(() => {
-  getSearchData()
+  loadFromUrl()
   loadFactNames().then(refreshFactValues)
 })
 </script>

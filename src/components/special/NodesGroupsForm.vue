@@ -101,16 +101,31 @@
 
                 <div class="flex flex-col gap-3">
                   <div
-                    v-for="(part, partIdx) in rule.part"
+                    v-for="(part, partIdx) in rule.parts"
                     :key="partIdx"
                     class="grid grid-cols-1 md:grid-cols-12 gap-3 items-start border-b border-zinc-100 dark:border-zinc-900 pb-3 last:border-b-0 last:pb-0"
                   >
-                    <div class="md:col-span-4 flex flex-col gap-1">
+                    <div class="md:col-span-2 flex flex-col gap-1">
                       <label class="text-xs font-semibold text-zinc-500"
-                        >Fact</label
+                        >Type</label
                       >
+                      <Select
+                        v-model="part.filter"
+                        :options="filterOptions"
+                        option-label="label"
+                        option-value="value"
+                        :disabled="isFieldDisabled"
+                        @change="onFilterChange(ruleIdx, partIdx)"
+                        class="w-full"
+                      />
+                    </div>
+
+                    <div class="md:col-span-3 flex flex-col gap-1">
+                      <label class="text-xs font-semibold text-zinc-500">{{
+                        isFact(part) ? 'Fact' : 'Label'
+                      }}</label>
                       <AutoComplete
-                        v-model="part.fact"
+                        v-model="part.key"
                         :suggestions="
                           filteredFactSuggestions[ruleIdx + '-' + partIdx] || []
                         "
@@ -119,17 +134,21 @@
                         :disabled="isFieldDisabled"
                         :dropdown="true"
                         class="w-full"
-                        placeholder="Select or type a fact"
+                        :placeholder="
+                          isFact(part)
+                            ? 'Select or type a fact'
+                            : 'Type a label key'
+                        "
                       />
                       <span
-                        v-if="factErrors[part.fact]"
+                        v-if="isFact(part) && factErrors[part.key]"
                         class="text-xs text-rose-500 font-medium"
                       >
-                        {{ factErrors[part.fact] }}
+                        {{ factErrors[part.key] }}
                       </span>
                     </div>
 
-                    <div class="md:col-span-7 flex flex-col gap-1">
+                    <div class="md:col-span-6 flex flex-col gap-1">
                       <label class="text-xs font-semibold text-zinc-500"
                         >Values</label
                       >
@@ -144,8 +163,8 @@
                         @update:model-value="refreshRuleValues(ruleIdx)"
                         :disabled="
                           isFieldDisabled ||
-                          !part.fact ||
-                          !!factErrors[part.fact]
+                          !part.key ||
+                          (isFact(part) && !!factErrors[part.key])
                         "
                         class="w-full"
                         placeholder="Select or type values"
@@ -168,7 +187,7 @@
                   <Button
                     type="button"
                     icon="pi pi-plus"
-                    label="Add Fact Condition"
+                    label="Add Condition"
                     class="p-button-text p-button-sm"
                     :disabled="isFieldDisabled"
                     @click="addPart(ruleIdx)"
@@ -289,6 +308,7 @@ import AccordionContent from 'primevue/accordioncontent'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import AutoComplete from 'primevue/autocomplete'
+import Select from 'primevue/select'
 import ResponsiveToolbar from '@/components/shared/ResponsiveToolbar.vue'
 import api from '@/api/client'
 import { authStore } from '@/stores/auth'
@@ -316,6 +336,13 @@ const formData = reactive({
   teams: [] as string[],
   filters: [] as any[]
 })
+
+const FACT_FILTER = 'ext.puppet.fact'
+const filterOptions = [
+  { label: 'Fact', value: FACT_FILTER },
+  { label: 'Label', value: 'label' }
+]
+const isFact = (part: any) => part?.filter === FACT_FILTER
 
 const teamsChoices = ref<string[]>([])
 const nodesSearch = ref('')
@@ -349,8 +376,7 @@ const fetchFactValuesIfNeeded = async (factName: string) => {
   }
   if (!factTypesCache[factName]) {
     try {
-      // endpoint only supports fact_id / disabled / environment / fact / report_status
-      const data = await api.get<any>('/api/v1/nodes/_distinct_fact_values', {
+      const data = await api.get<any>('/api/v1/nodes_distinct_fact_values', {
         fact_id: factName
       })
       if (data && data.result) {
@@ -384,14 +410,19 @@ const fetchFactValuesIfNeeded = async (factName: string) => {
   }
 }
 
+// ponytail: label parts don't narrow fact suggestions
 const partContext = (rule: any, partIdx: number) =>
-  (rule?.part || [])
+  (rule?.parts || [])
     .slice(0, partIdx)
-    .filter((p: any) => p.fact && p.values?.length > 0)
-    .map((p: any) => `${p.fact}:in:str:${p.values.join(',')}`)
+    .filter((p: any) => isFact(p) && p.key && p.values?.length > 0)
+    .map((p: any) => `${p.key}:in:str:${p.values.join(',')}`)
 
 const searchFacts = async (event: any, ruleIdx: number, partIdx: number) => {
   const key = `${ruleIdx}-${partIdx}`
+  if (!isFact(formData.filters[ruleIdx]?.parts?.[partIdx])) {
+    filteredFactSuggestions[key] = []
+    return
+  }
   filteredFactSuggestions[key] = await searchFactNames(
     event.query,
     partContext(formData.filters[ruleIdx], partIdx)
@@ -400,18 +431,18 @@ const searchFacts = async (event: any, ruleIdx: number, partIdx: number) => {
 
 const refreshRuleValues = async (ruleIdx: number) => {
   const rule = formData.filters[ruleIdx]
-  for (let partIdx = 0; partIdx < (rule?.part?.length ?? 0); partIdx++) {
+  for (let partIdx = 0; partIdx < (rule?.parts?.length ?? 0); partIdx++) {
     const key = `${ruleIdx}-${partIdx}`
-    const part = rule.part[partIdx]
+    const part = rule.parts[partIdx]
     const context = partContext(rule, partIdx)
     // the first part (or one after empty parts) uses the unfiltered values
     // from factTypesCache
-    if (!part.fact || context.length === 0) {
+    if (!isFact(part) || !part.key || context.length === 0) {
       delete partValueOptions[key]
       continue
     }
     try {
-      const result = await fetchFactValues(part.fact, context)
+      const result = await fetchFactValues(part.key, context)
       partValueOptions[key] = result.map((r) => String(r.value))
     } catch (error) {
       console.error(error)
@@ -430,7 +461,7 @@ const refreshAllRuleValues = async () => {
 
 const valueOptionsFor = (ruleIdx: number, partIdx: number, part: any) =>
   partValueOptions[`${ruleIdx}-${partIdx}`] ??
-  factTypesCache[part.fact]?.values ??
+  (isFact(part) ? factTypesCache[part.key]?.values : undefined) ??
   []
 
 const valueSuggestions = reactive<Record<string, string[]>>({})
@@ -438,7 +469,7 @@ const valueSuggestions = reactive<Record<string, string[]>>({})
 // known values matching the query, plus the query itself so values no node
 // reports yet can still be entered (a group should also catch future nodes)
 const searchValues = (event: any, ruleIdx: number, partIdx: number) => {
-  const part = formData.filters[ruleIdx]?.part?.[partIdx]
+  const part = formData.filters[ruleIdx]?.parts?.[partIdx]
   if (!part) return
   const query = (event.query || '').trim()
   const selected = new Set(part.values || [])
@@ -453,20 +484,27 @@ const searchValues = (event: any, ruleIdx: number, partIdx: number) => {
 }
 
 const onFactChange = async (ruleIdx: number, partIdx: number) => {
-  const part = formData.filters[ruleIdx]?.part?.[partIdx]
+  const part = formData.filters[ruleIdx]?.parts?.[partIdx]
   if (part) {
     part.values = []
   }
-  const factName = part?.fact
-  if (factName) {
-    await fetchFactValuesIfNeeded(factName)
+  if (isFact(part) && part.key) {
+    await fetchFactValuesIfNeeded(part.key)
   }
   await refreshRuleValues(ruleIdx)
 }
 
+const onFilterChange = async (ruleIdx: number, partIdx: number) => {
+  const part = formData.filters[ruleIdx]?.parts?.[partIdx]
+  if (part) {
+    part.key = ''
+  }
+  await onFactChange(ruleIdx, partIdx)
+}
+
 const addRuleGroup = () => {
   formData.filters.push({
-    part: []
+    parts: []
   })
 }
 
@@ -476,17 +514,18 @@ const removeRuleGroup = (ruleIdx: number) => {
 }
 
 const addPart = (ruleIdx: number) => {
-  if (!formData.filters[ruleIdx].part) {
-    formData.filters[ruleIdx].part = []
+  if (!formData.filters[ruleIdx].parts) {
+    formData.filters[ruleIdx].parts = []
   }
-  formData.filters[ruleIdx].part.push({
-    fact: '',
+  formData.filters[ruleIdx].parts.push({
+    filter: FACT_FILTER,
+    key: '',
     values: []
   })
 }
 
 const removePart = (ruleIdx: number, partIdx: number) => {
-  formData.filters[ruleIdx].part.splice(partIdx, 1)
+  formData.filters[ruleIdx].parts.splice(partIdx, 1)
   refreshAllRuleValues()
 }
 
@@ -516,6 +555,20 @@ const getTeams = async () => {
   }
 }
 
+// membership lives on the nodes now, the group document has no node list
+// ponytail: stops at the API's maximum page size of 1000 nodes
+const getGroupNodes = async () => {
+  const groupRegex = nodeGroupId.value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const data = await api.get<any>('/api/v1/nodes', {
+    node_groups: `^${groupRegex}$`,
+    fields: ['id'],
+    limit: 1000
+  })
+  nodesTableData.value = (data?.result || []).map((node: any) => ({
+    name: node.id
+  }))
+}
+
 const formGetNodeGroupData = async () => {
   if (isNew.value) {
     formData.id = ''
@@ -532,19 +585,17 @@ const formGetNodeGroupData = async () => {
       formData.id = data.id
       formData.teams = data.teams || []
       formData.filters = data.filters || []
-      nodesTableData.value = (data.nodes || []).map((nodeName: string) => ({
-        name: nodeName
-      }))
       for (const rule of formData.filters) {
-        if (rule && Array.isArray(rule.part)) {
-          for (const part of rule.part) {
-            if (part && part.fact) {
-              await fetchFactValuesIfNeeded(part.fact)
+        if (rule && Array.isArray(rule.parts)) {
+          for (const part of rule.parts) {
+            if (isFact(part) && part.key) {
+              await fetchFactValuesIfNeeded(part.key)
             }
           }
         }
       }
       await refreshAllRuleValues()
+      await getGroupNodes()
     }
   } catch {
     toast.add({
@@ -559,7 +610,7 @@ const formGetNodeGroupData = async () => {
 const formSubmit = async () => {
   let hasErrors = false
   for (const rule of formData.filters) {
-    if (!rule.part || rule.part.length === 0) {
+    if (!rule.parts || rule.parts.length === 0) {
       toast.add({
         severity: 'error',
         summary: 'Validation Error',
@@ -568,12 +619,12 @@ const formSubmit = async () => {
       })
       return
     }
-    for (const part of rule.part) {
-      if (!part.fact) {
+    for (const part of rule.parts) {
+      if (!part.key) {
         toast.add({
           severity: 'error',
           summary: 'Validation Error',
-          detail: 'Fact name cannot be empty.',
+          detail: 'Fact or label name cannot be empty.',
           life: 3000
         })
         return
@@ -582,12 +633,13 @@ const formSubmit = async () => {
         toast.add({
           severity: 'error',
           summary: 'Validation Error',
-          detail: `Fact "${part.fact}" must have at least one value specified.`,
+          detail: `"${part.key}" must have at least one value specified.`,
           life: 3000
         })
         return
       }
-      const factName = part.fact
+      if (!isFact(part)) continue
+      const factName = part.key
       await fetchFactValuesIfNeeded(factName)
       if (factTypesCache[factName]?.hasNonString) {
         factErrors[factName] =

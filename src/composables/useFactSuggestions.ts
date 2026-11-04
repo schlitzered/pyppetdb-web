@@ -9,7 +9,7 @@ export interface FactValueOption {
 }
 
 // the editable state of one `fact:operator:type:value` filter; `kind` and
-// `values` are filled in from _distinct_fact_values
+// `values` are filled in from nodes_distinct_fact_values
 export interface FactFilterPart {
   operator: string
   type: string
@@ -104,14 +104,14 @@ export function useFactSuggestions(
   const withContext = (context: string[], params: Record<string, any> = {}) => {
     const merged = { ...baseParams(), ...params }
     if (context.length > 0) {
-      merged.fact = context
+      merged['ext.puppet.fact'] = context
     }
     return merged
   }
 
   const loadFactNames = async () => {
     try {
-      const data = await api.get<any>('/api/v1/nodes/_distinct_fact_names')
+      const data = await api.get<any>('/api/v1/nodes_distinct_fact_names')
       if (data && data.result) {
         availableFacts.value = data.result
       }
@@ -126,7 +126,7 @@ export function useFactSuggestions(
     if (Object.keys(params).length > 0) {
       try {
         const data = await cachedGet(
-          '/api/v1/nodes/_distinct_fact_names',
+          '/api/v1/nodes_distinct_fact_names',
           params
         )
         names = data?.result || []
@@ -143,7 +143,7 @@ export function useFactSuggestions(
     context: string[] = []
   ): Promise<{ value: any; count: number }[]> => {
     const data = await cachedGet(
-      '/api/v1/nodes/_distinct_fact_values',
+      '/api/v1/nodes_distinct_fact_values',
       withContext(context, { fact_id: fact })
     )
     return data?.result || []

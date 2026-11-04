@@ -15,6 +15,7 @@ import Textarea from 'primevue/textarea'
 import Button from 'primevue/button'
 import CAAuthoritiesForm from '../CAAuthoritiesForm.vue'
 import CAValidationConfig from '../CAValidationConfig.vue'
+import CARevokeDialog from '../CARevokeDialog.vue'
 
 
 const mockRoute = reactive({
@@ -342,7 +343,10 @@ describe(
             certificate: null,
             private_key: null,
             external_chain: null,
-            validation_config: wrapper.vm.formData.validation_config
+            validation_config: wrapper.vm.formData.validation_config,
+            certificate_retention_days: 365,
+            crl_urls: [],
+            issuer_urls: []
           }
         )
       }
@@ -384,7 +388,10 @@ describe(
             certificate: null,
             private_key: null,
             external_chain: null,
-            validation_config: wrapper.vm.formData.validation_config
+            validation_config: wrapper.vm.formData.validation_config,
+            certificate_retention_days: 365,
+            crl_urls: [],
+            issuer_urls: []
           }
         )
       }
@@ -427,7 +434,10 @@ describe(
             certificate: 'cert',
             private_key: 'key',
             external_chain: ['-----BEGIN CERTIFICATE-----\nchain\n-----END CERTIFICATE-----'],
-            validation_config: wrapper.vm.formData.validation_config
+            validation_config: wrapper.vm.formData.validation_config,
+            certificate_retention_days: 365,
+            crl_urls: [],
+            issuer_urls: []
           }
         )
       }
@@ -456,7 +466,10 @@ describe(
         ).toHaveBeenCalledWith(
           '/api/v1/ca/authorities/existing-ca',
           {
-            validation_config: wrapper.vm.formData.validation_config
+            validation_config: wrapper.vm.formData.validation_config,
+            certificate_retention_days: 365,
+            crl_urls: [],
+            issuer_urls: []
           }
         )
       }
@@ -573,14 +586,18 @@ describe(
           }
         )
         await flushPromises()
-        wrapper.vm.formRevoke()
+        wrapper.vm.formRevoke({
+          status: 'revoked',
+          revocation_reason: 'ca_compromise'
+        })
         await flushPromises()
         expect(
           api.put
         ).toHaveBeenCalledWith(
           '/api/v1/ca/authorities/existing-ca',
           {
-            status: 'revoked'
+            status: 'revoked',
+            revocation_reason: 'ca_compromise'
           }
         )
       }
@@ -606,7 +623,7 @@ describe(
         )
         await flushPromises()
         vi.mocked(api.put).mockRejectedValueOnce(new Error('Revoke failed'))
-        wrapper.vm.formRevoke()
+        wrapper.vm.formRevoke({ status: 'revoked', revocation_reason: 'unspecified' })
         await flushPromises()
         expect(
           mockToast.add
@@ -932,6 +949,186 @@ describe(
             {}
           )
         }
+      }
+    )
+
+    it(
+      'loads retention and URL lists, edits them and sends them on update',
+      async () => {
+        mockRoute.params.ca_id = 'existing-ca'
+        // stale wrappers from earlier tests also watch mockRoute, so a
+        // mockResolvedValueOnce could be consumed by them
+        vi.mocked(api.get).mockImplementation(() =>
+          Promise.resolve({
+          id: 'existing-ca',
+          status: 'active',
+          certificate_retention_days: 0,
+          crl_urls: ['http://crl.example/ca.crl'],
+          issuer_urls: null
+          })
+        )
+        const wrapper = mount(CAAuthoritiesForm, {
+          props: { resourceDef: createMockResourceDef() },
+          global: { stubs: customStubs }
+        })
+        await flushPromises()
+        expect(wrapper.vm.formData.certificate_retention_days).toBe(0)
+        expect(wrapper.vm.formData.crl_urls).toEqual([
+          'http://crl.example/ca.crl'
+        ])
+        expect(wrapper.vm.formData.issuer_urls).toEqual([])
+
+        wrapper.vm.isModifyMode = true
+        await wrapper.vm.$nextTick()
+        const issuerList = wrapper.find('[data-test="url-list-issuer_urls"]')
+        await issuerList
+          .findAll('button')
+          .find((b) => b.text().includes('Add Issuer URL'))
+          .trigger('click')
+        const issuerInput = issuerList.find('input')
+        await issuerInput.setValue('https://ca.example/ca.der')
+        // add a blank CRL row: blanks are dropped from the payload
+        const crlList = wrapper.find('[data-test="url-list-crl_urls"]')
+        await crlList
+          .findAll('button')
+          .find((b) => b.text().includes('Add CRL URL'))
+          .trigger('click')
+        expect(wrapper.vm.formData.crl_urls).toHaveLength(2)
+
+        await wrapper.vm.formSubmit()
+        expect(api.put).toHaveBeenCalledWith(
+          '/api/v1/ca/authorities/existing-ca',
+          {
+            validation_config: wrapper.vm.formData.validation_config,
+            certificate_retention_days: 0,
+            crl_urls: ['http://crl.example/ca.crl'],
+            issuer_urls: ['https://ca.example/ca.der']
+          }
+        )
+
+        // submit reloads and leaves modify mode; re-enter it to remove a row
+        wrapper.vm.isModifyMode = true
+        await wrapper.vm.$nextTick()
+        await wrapper
+          .find('[data-test="url-list-crl_urls"]')
+          .find('button[aria-label="Remove URL"]')
+          .trigger('click')
+        expect(wrapper.vm.formData.crl_urls).toEqual([])
+      }
+    )
+
+    it(
+      'caps URL lists at 8 entries',
+      async () => {
+        const wrapper = mount(CAAuthoritiesForm, {
+          props: { resourceDef: createMockResourceDef() },
+          global: { stubs: customStubs }
+        })
+        await flushPromises()
+        wrapper.vm.formData.crl_urls = Array(8).fill('https://x.example/')
+        await wrapper.vm.$nextTick()
+        const crlList = wrapper.find('[data-test="url-list-crl_urls"]')
+        expect(
+          crlList.findAll('button').some((b) => b.text().includes('Add CRL'))
+        ).toBe(false)
+      }
+    )
+
+    it(
+      'rejects non-positive validity days on create',
+      async () => {
+        const wrapper = mount(CAAuthoritiesForm, {
+          props: { resourceDef: createMockResourceDef() },
+          global: { stubs: customStubs }
+        })
+        await flushPromises()
+        wrapper.vm.formData.id = 'root-ca'
+        wrapper.vm.formData.validity_days = 0
+        await wrapper.vm.formSubmit()
+        expect(api.post).not.toHaveBeenCalled()
+        expect(mockToast.add).toHaveBeenCalledWith({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Validity Days must be greater than 0',
+          life: 3000
+        })
+      }
+    )
+
+    it(
+      'renders public DER download links',
+      async () => {
+        mockRoute.params.ca_id = 'existing-ca'
+        const wrapper = mount(CAAuthoritiesForm, {
+          props: { resourceDef: createMockResourceDef() },
+          global: { stubs: customStubs }
+        })
+        await flushPromises()
+        const hrefs = wrapper
+          .findAll('a[download]')
+          .map((a) => a.attributes('href'))
+        expect(hrefs).toContain(
+          '/api/v1/ca/authorities/existing-ca/certificate'
+        )
+        expect(hrefs).toContain('/api/v1/ca/authorities/existing-ca/crl.der')
+      }
+    )
+
+    it(
+      'opens the revoke dialog with authority reasons and revokes on confirm',
+      async () => {
+        mockRoute.params.ca_id = 'existing-ca'
+        const wrapper = mount(CAAuthoritiesForm, {
+          props: { resourceDef: createMockResourceDef() },
+          global: { stubs: customStubs }
+        })
+        await flushPromises()
+        wrapper.vm.isModifyMode = true
+        await wrapper.vm.$nextTick()
+        await wrapper
+          .findAll('button')
+          .find((b) => b.text().includes('Revoke'))
+          .trigger('click')
+        expect(mockConfirm.require).not.toHaveBeenCalled()
+        const dialog = wrapper.findComponent(CARevokeDialog)
+        expect(dialog.props('visible')).toBe(true)
+        expect(dialog.props('reasons').map((r) => r.value)).toContain(
+          'ca_compromise'
+        )
+        await dialog.vm.$emit('confirm', {
+          status: 'revoked',
+          revocation_reason: 'ca_compromise'
+        })
+        await flushPromises()
+        expect(api.put).toHaveBeenCalledWith(
+          '/api/v1/ca/authorities/existing-ca',
+          { status: 'revoked', revocation_reason: 'ca_compromise' }
+        )
+      }
+    )
+
+    it(
+      'shows revocation reason and invalidity date of a revoked authority',
+      async () => {
+        mockRoute.params.ca_id = 'existing-ca'
+        vi.mocked(api.get).mockImplementation(() =>
+          Promise.resolve({
+          id: 'existing-ca',
+          status: 'revoked',
+          revocation_date: '2026-06-01T00:00:00Z',
+          revocation_reason: 'ca_compromise',
+          invalidity_date: '2026-05-01T00:00:00Z'
+          })
+        )
+        const wrapper = mount(CAAuthoritiesForm, {
+          props: { resourceDef: createMockResourceDef() },
+          global: { stubs: customStubs }
+        })
+        await flushPromises()
+        expect(wrapper.find('#revocation-reason').element.value).toBe(
+          'CA Compromise'
+        )
+        expect(wrapper.find('#invalidity-date').exists()).toBe(true)
       }
     )
   }

@@ -320,7 +320,7 @@ describe('HieraLevelDataForm', () => {
       'hostname'
     )
     expect(api.get).toHaveBeenCalledWith(
-      '/api/v1/nodes/_distinct_fact_values',
+      '/api/v1/nodes_distinct_fact_values',
       {
         fact_id: 'hostname'
       },

@@ -151,6 +151,7 @@ const {
   tableExpPan,
   formSearchBy,
   getSearchData,
+  loadFromUrl,
   getSearchDataTableEvent
 } = useResourceListQuery({
   resourceDef: props.resourceDef
@@ -213,6 +214,6 @@ const handleSearch = () => {
 const debouncedSearch = debounce(handleSearch, 300)
 
 onMounted(() => {
-  getSearchData()
+  loadFromUrl()
 })
 </script>

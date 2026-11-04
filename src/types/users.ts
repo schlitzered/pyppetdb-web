@@ -8,4 +8,5 @@ export interface UserCredential {
   id: string
   user_id: string
   type: string
+  permissions?: string[] | null
 }

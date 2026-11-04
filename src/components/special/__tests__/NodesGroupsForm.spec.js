@@ -111,7 +111,7 @@ describe('NodesGroupsForm', () => {
           result: [{ id: 'team1' }, { id: 'team2' }]
         })
       }
-      if (url === '/api/v1/nodes/_distinct_fact_names') {
+      if (url === '/api/v1/nodes_distinct_fact_names') {
         return Promise.resolve({
           result: ['env', 'nested.value', 'custom']
         })
@@ -133,6 +133,8 @@ describe('NodesGroupsForm', () => {
 
     expect(api.get).toHaveBeenCalledWith('/api/v1/teams', { fields: ['id'] })
     expect(wrapper.vm.teamsChoices).toEqual(['team1', 'team2'])
+    wrapper.vm.addRuleGroup()
+    wrapper.vm.addPart(0)
     await wrapper.vm.searchFacts({ query: '' }, 0, 0)
     expect(wrapper.vm.filteredFactSuggestions['0-0']).toEqual([
       'env',
@@ -153,13 +155,15 @@ describe('NodesGroupsForm', () => {
           teams: ['team1'],
           filters: [
             {
-              part: [{ fact: 'env', values: ['prod'] }]
+              parts: [{ filter: 'ext.puppet.fact', key: 'env', values: ['prod'] }]
             }
-          ],
-          nodes: ['node1', 'node2']
+          ]
         })
       }
-      if (url === '/api/v1/nodes/_distinct_fact_values') {
+      if (url === '/api/v1/nodes') {
+        return Promise.resolve({ result: [{ id: 'node1' }, { id: 'node2' }] })
+      }
+      if (url === '/api/v1/nodes_distinct_fact_values') {
         return Promise.resolve({
           result: [{ value: 'prod' }]
         })
@@ -182,6 +186,11 @@ describe('NodesGroupsForm', () => {
       { name: 'node1' },
       { name: 'node2' }
     ])
+    expect(api.get).toHaveBeenCalledWith('/api/v1/nodes', {
+      node_groups: '^group-1$',
+      fields: ['id'],
+      limit: 1000
+    })
   })
 
   it('handles load group data error', async () => {
@@ -213,7 +222,7 @@ describe('NodesGroupsForm', () => {
 
   it('handles fetchFactValuesIfNeeded for non-string values', async () => {
     vi.mocked(api.get).mockImplementation((url) => {
-      if (url === '/api/v1/nodes/_distinct_fact_values') {
+      if (url === '/api/v1/nodes_distinct_fact_values') {
         return Promise.resolve({
           result: [{ value: 123 }]
         })
@@ -238,7 +247,7 @@ describe('NodesGroupsForm', () => {
 
   it('handles fetchFactValuesIfNeeded with empty/invalid results', async () => {
     vi.mocked(api.get).mockImplementation((url) => {
-      if (url === '/api/v1/nodes/_distinct_fact_values') {
+      if (url === '/api/v1/nodes_distinct_fact_values') {
         return Promise.resolve({
           result: null
         })
@@ -265,9 +274,11 @@ describe('NodesGroupsForm', () => {
     vi.mocked(api.get).mockImplementation((url) => {
       if (url === '/api/v1/nodes_groups/group-1') {
         return Promise.resolve({
-          id: 'group-1',
-          nodes: ['alpha', 'beta']
+          id: 'group-1'
         })
+      }
+      if (url === '/api/v1/nodes') {
+        return Promise.resolve({ result: [{ id: 'alpha' }, { id: 'beta' }] })
       }
       return Promise.resolve({ result: [] })
     })
@@ -301,14 +312,14 @@ describe('NodesGroupsForm', () => {
     expect(wrapper.vm.formData.filters.length).toBe(1)
 
     wrapper.vm.addPart(0)
-    expect(wrapper.vm.formData.filters[0].part.length).toBe(1)
+    expect(wrapper.vm.formData.filters[0].parts.length).toBe(1)
 
-    wrapper.vm.formData.filters[0].part[0].fact = 'env'
+    wrapper.vm.formData.filters[0].parts[0].key = 'env'
     await wrapper.vm.onFactChange(0, 0)
-    expect(wrapper.vm.formData.filters[0].part[0].values).toEqual([])
+    expect(wrapper.vm.formData.filters[0].parts[0].values).toEqual([])
 
     wrapper.vm.removePart(0, 0)
-    expect(wrapper.vm.formData.filters[0].part.length).toBe(0)
+    expect(wrapper.vm.formData.filters[0].parts.length).toBe(0)
 
     wrapper.vm.removeRuleGroup(0)
     expect(wrapper.vm.formData.filters.length).toBe(0)
@@ -333,6 +344,8 @@ describe('NodesGroupsForm', () => {
       team_id: 'search-team'
     })
 
+    wrapper.vm.addRuleGroup()
+    wrapper.vm.addPart(0)
     await wrapper.vm.searchFacts({ query: 'en' }, 0, 0)
     expect(wrapper.vm.filteredFactSuggestions['0-0']).toEqual(['env'])
   })
@@ -362,20 +375,20 @@ describe('NodesGroupsForm', () => {
     expect(mockToast.add).toHaveBeenCalledWith({
       severity: 'error',
       summary: 'Validation Error',
-      detail: 'Fact name cannot be empty.',
+      detail: 'Fact or label name cannot be empty.',
       life: 3000
     })
 
-    wrapper.vm.formData.filters[0].part[0].fact = 'env'
+    wrapper.vm.formData.filters[0].parts[0].key = 'env'
     await wrapper.vm.formSubmit()
     expect(mockToast.add).toHaveBeenCalledWith({
       severity: 'error',
       summary: 'Validation Error',
-      detail: 'Fact "env" must have at least one value specified.',
+      detail: '"env" must have at least one value specified.',
       life: 3000
     })
 
-    wrapper.vm.formData.filters[0].part[0].values = ['prod']
+    wrapper.vm.formData.filters[0].parts[0].values = ['prod']
     wrapper.vm.factTypesCache['env'] = {
       hasNonString: true,
       values: []
@@ -403,8 +416,8 @@ describe('NodesGroupsForm', () => {
     wrapper.vm.formData.id = 'new-group'
     wrapper.vm.addRuleGroup()
     wrapper.vm.addPart(0)
-    wrapper.vm.formData.filters[0].part[0].fact = 'env'
-    wrapper.vm.formData.filters[0].part[0].values = ['prod']
+    wrapper.vm.formData.filters[0].parts[0].key = 'env'
+    wrapper.vm.formData.filters[0].parts[0].values = ['prod']
     delete wrapper.vm.factErrors['env']
 
     vi.mocked(api.post).mockResolvedValueOnce({})
@@ -413,7 +426,7 @@ describe('NodesGroupsForm', () => {
     expect(api.post).toHaveBeenCalledWith('/api/v1/nodes_groups/new-group', {
       filters: [
         {
-          part: [{ fact: 'env', values: ['prod'] }]
+          parts: [{ filter: 'ext.puppet.fact', key: 'env', values: ['prod'] }]
         }
       ],
       teams: []
@@ -431,7 +444,7 @@ describe('NodesGroupsForm', () => {
           id: 'group-1',
           filters: [
             {
-              part: [{ fact: 'env', values: ['prod'] }]
+              parts: [{ filter: 'ext.puppet.fact', key: 'env', values: ['prod'] }]
             }
           ]
         })
@@ -456,7 +469,7 @@ describe('NodesGroupsForm', () => {
     expect(api.put).toHaveBeenCalledWith('/api/v1/nodes_groups/group-1', {
       filters: [
         {
-          part: [{ fact: 'env', values: ['prod'] }]
+          parts: [{ filter: 'ext.puppet.fact', key: 'env', values: ['prod'] }]
         }
       ],
       teams: []
@@ -604,7 +617,7 @@ describe('NodesGroupsForm', () => {
 
     wrapper.vm.formData.filters = [{}]
     wrapper.vm.addPart(0)
-    expect(wrapper.vm.formData.filters[0].part.length).toBe(1)
+    expect(wrapper.vm.formData.filters[0].parts.length).toBe(1)
   })
 
   it('handles searchTeams error gracefully', async () => {
@@ -634,7 +647,7 @@ describe('NodesGroupsForm', () => {
 
   it('handles fetchFactValuesIfNeeded api error', async () => {
     vi.mocked(api.get).mockImplementation((url) => {
-      if (url === '/api/v1/nodes/_distinct_fact_values') {
+      if (url === '/api/v1/nodes_distinct_fact_values') {
         return Promise.reject(new Error('Distinct values error'))
       }
       return Promise.resolve({ result: [] })
@@ -654,10 +667,43 @@ describe('NodesGroupsForm', () => {
     expect(wrapper.vm.factTypesCache['error-fact'].values).toEqual([])
   })
 
+  it('keeps label parts out of the fact lookups', async () => {
+    mockRoute.params.node_group = 'group-1'
+    const labelPart = { filter: 'label', key: 'tier', values: ['gold'] }
+    vi.mocked(api.get).mockImplementation((url) => {
+      if (url === '/api/v1/nodes_groups/group-1') {
+        return Promise.resolve({
+          id: 'group-1',
+          filters: [{ parts: [labelPart] }]
+        })
+      }
+      return Promise.resolve({ result: [] })
+    })
+
+    const wrapper = mount(NodesGroupsForm, {
+      props: {
+        resourceDef: createMockResourceDef()
+      },
+      global: {
+        stubs: customStubs
+      }
+    })
+    await flushPromises()
+
+    expect(api.get).not.toHaveBeenCalledWith(
+      '/api/v1/nodes_distinct_fact_values',
+      expect.anything()
+    )
+    const part = wrapper.vm.formData.filters[0].parts[0]
+    await wrapper.vm.onFilterChange(0, 0)
+    expect(part.key).toBe('')
+    expect(part.values).toEqual([])
+  })
+
   it('narrows values of later parts by the preceding parts of the rule', async () => {
     vi.mocked(api.get).mockImplementation((url, params) => {
-      if (url === '/api/v1/nodes/_distinct_fact_values') {
-        if (params.fact_id === 'role' && params.fact) {
+      if (url === '/api/v1/nodes_distinct_fact_values') {
+        if (params.fact_id === 'role' && params['ext.puppet.fact']) {
           return Promise.resolve({ result: [{ value: 'web', count: 2 }] })
         }
         return Promise.resolve({
@@ -675,21 +721,21 @@ describe('NodesGroupsForm', () => {
     wrapper.vm.addRuleGroup()
     wrapper.vm.addPart(0)
     wrapper.vm.addPart(0)
-    wrapper.vm.formData.filters[0].part[0].fact = 'env'
-    wrapper.vm.formData.filters[0].part[0].values = ['prod']
-    wrapper.vm.formData.filters[0].part[1].fact = 'role'
-    wrapper.vm.formData.filters[0].part[1].values = ['legacy']
+    wrapper.vm.formData.filters[0].parts[0].key = 'env'
+    wrapper.vm.formData.filters[0].parts[0].values = ['prod']
+    wrapper.vm.formData.filters[0].parts[1].key = 'role'
+    wrapper.vm.formData.filters[0].parts[1].values = ['legacy']
     await wrapper.vm.onFactChange(0, 1)
 
     expect(api.get).toHaveBeenCalledWith(
-      '/api/v1/nodes/_distinct_fact_values',
-      { fact_id: 'role', fact: ['env:in:str:prod'] },
+      '/api/v1/nodes_distinct_fact_values',
+      { fact_id: 'role', 'ext.puppet.fact': ['env:in:str:prod'] },
       true
     )
-    const part = wrapper.vm.formData.filters[0].part[1]
+    const part = wrapper.vm.formData.filters[0].parts[1]
     expect(wrapper.vm.valueOptionsFor(0, 1, part)).toEqual(['web'])
 
-    wrapper.vm.formData.filters[0].part[0].values = []
+    wrapper.vm.formData.filters[0].parts[0].values = []
     await wrapper.vm.refreshRuleValues(0)
     expect(wrapper.vm.valueOptionsFor(0, 1, part)).toEqual([
       'web',
@@ -707,8 +753,8 @@ describe('NodesGroupsForm', () => {
 
     wrapper.vm.addRuleGroup()
     wrapper.vm.addPart(0)
-    const part = wrapper.vm.formData.filters[0].part[0]
-    part.fact = 'role'
+    const part = wrapper.vm.formData.filters[0].parts[0]
+    part.key = 'role'
     part.values = ['web']
     wrapper.vm.factTypesCache['role'] = {
       hasNonString: false,

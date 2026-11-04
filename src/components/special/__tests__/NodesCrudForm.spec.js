@@ -5,6 +5,7 @@ import { expect } from 'vitest'
 import { vi } from 'vitest'
 import { beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { flushPromises } from '@vue/test-utils'
 import { primeVueStubs } from '@/__test_utils__/helpers'
 import { createMockResourceDef } from '@/__test_utils__/helpers'
 import api from '@/api/client'
@@ -124,32 +125,38 @@ describe(
             return Promise.resolve({
               id: 'node-1',
               disabled: false,
-              change_catalog: 'cat-change',
-              change_facts: 'facts-change',
-              change_last: 'last-change',
-              change_report: 'report-change',
-              report_status_computed: 'active',
-              facts: {
-                simple: 'val',
-                bool: true,
-                num: 42,
-                nullval: null,
-                arr: [
-                  1,
-                  {
-                    nested: 'val'
+              labels: [{ key: 'tier', value: 'gold' }],
+              ext: {
+                puppet: {
+                  change_catalog: 'cat-change',
+                  change_facts: 'facts-change',
+                  change_last: 'last-change',
+                  change_report: 'report-change',
+                  facts: {
+                    simple: 'val',
+                    bool: true,
+                    num: 42,
+                    nullval: null,
+                    arr: [
+                      1,
+                      {
+                        nested: 'val'
+                      }
+                    ],
+                    obj: {
+                      sub: 'val'
+                    }
+                  },
+                  facts_inject: {
+                    'custom.fact': 'custom'
                   }
-                ],
-                obj: {
-                  sub: 'val'
+                },
+                jobs: {
+                  remote_agent: {
+                    connected: true,
+                    via: 'agent'
+                  }
                 }
-              },
-              facts_inject: {
-                'custom.fact': 'custom'
-              },
-              remote_agent: {
-                connected: true,
-                via: 'agent'
               }
             })
           }
@@ -354,7 +361,19 @@ describe(
         await form.trigger('submit.prevent')
         expect(
           api.post
-        ).toHaveBeenCalled()
+        ).toHaveBeenCalledWith(
+          '/api/v1/nodes/new-node',
+          {
+            disabled: false,
+            labels: [],
+            ext: { puppet: { facts_inject: {} } }
+          }
+        )
+        await flushPromises()
+        // nothing to inject on a new node, so no second call
+        expect(
+          api.put
+        ).not.toHaveBeenCalled()
 
         mockRoute.params.node = 'node-1'
         api.put.mockResolvedValueOnce({})
@@ -391,9 +410,120 @@ describe(
         await wrapperEdit.vm.$nextTick()
         const formEdit = wrapperEdit.find('form')
         await formEdit.trigger('submit.prevent')
+        await flushPromises()
         expect(
           api.put
-        ).toHaveBeenCalled()
+        ).toHaveBeenCalledWith(
+          '/api/v1/nodes/node-1',
+          {
+            disabled: false,
+            labels: [{ key: 'tier', value: 'gold' }],
+            ext: { puppet: { facts_inject: { 'custom.fact': 'custom' } } }
+          }
+        )
+        expect(
+          api.put
+        ).toHaveBeenCalledTimes(1)
+      }
+    )
+
+    it(
+      'edits labels and rejects invalid keys before saving',
+      async () => {
+        mockRoute.params.node = '_new'
+        const wrapper = mount(
+          NodesCrudForm,
+          {
+            props: {
+              resourceDef: createMockResourceDef()
+            },
+            global: {
+              stubs: primeVueStubs
+            }
+          }
+        )
+        await flushPromises()
+        wrapper.vm.formData.id = 'new-node'
+        const submit = async () => {
+          await wrapper.find('form').trigger('submit.prevent')
+          await flushPromises()
+        }
+
+        wrapper.vm.addLabel()
+        await submit()
+        expect(
+          mockToast.add
+        ).toHaveBeenCalledWith(
+          expect.objectContaining({
+            detail: 'Label keys must not be empty or contain a colon.'
+          })
+        )
+
+        wrapper.vm.formData.labels[0].key = 'tier'
+        wrapper.vm.addLabel()
+        wrapper.vm.formData.labels[1].key = 'tier'
+        await submit()
+        expect(
+          mockToast.add
+        ).toHaveBeenCalledWith(
+          expect.objectContaining({ detail: 'Label keys must be unique.' })
+        )
+        expect(
+          api.post
+        ).not.toHaveBeenCalled()
+
+        wrapper.vm.removeLabel(1)
+        wrapper.vm.formData.labels[0].value = 'gold'
+        api.post.mockResolvedValueOnce({})
+        await submit()
+        expect(
+          api.post
+        ).toHaveBeenCalledWith(
+          '/api/v1/nodes/new-node',
+          {
+            disabled: false,
+            labels: [{ key: 'tier', value: 'gold' }],
+            ext: { puppet: { facts_inject: {} } }
+          }
+        )
+      }
+    )
+
+    it(
+      'sends injected facts of a new node with the create call',
+      async () => {
+        mockRoute.params.node = '_new'
+        api.post.mockResolvedValueOnce({})
+        api.put.mockResolvedValueOnce({})
+        const wrapper = mount(
+          NodesCrudForm,
+          {
+            props: {
+              resourceDef: createMockResourceDef()
+            },
+            global: {
+              stubs: primeVueStubs
+            }
+          }
+        )
+        await flushPromises()
+        wrapper.vm.formData.id = 'new-node'
+        wrapper.vm.formData.facts_inject = { role: 'web' }
+        await wrapper.find('form').trigger('submit.prevent')
+        await flushPromises()
+        expect(
+          api.post
+        ).toHaveBeenCalledWith(
+          '/api/v1/nodes/new-node',
+          {
+            disabled: false,
+            labels: [],
+            ext: { puppet: { facts_inject: { role: 'web' } } }
+          }
+        )
+        expect(
+          api.put
+        ).not.toHaveBeenCalled()
       }
     )
 
@@ -653,16 +783,9 @@ describe(
         api.get.mockResolvedValueOnce({
           id: 'node-1',
           disabled: false,
-          change_catalog: 'cat-change',
-          change_facts: 'facts-change',
-          change_last: 'last-change',
-          change_report: 'report-change',
-          report_status_computed: 'active',
-          facts: 'primitive-facts',
-          facts_inject: {},
-          remote_agent: {
-            connected: true,
-            via: 'agent'
+          ext: {
+            puppet: { facts: 'primitive-facts', facts_inject: {} },
+            jobs: { remote_agent: { connected: true, via: 'agent' } }
           }
         })
         const wrapper = mount(
@@ -702,16 +825,9 @@ describe(
         api.get.mockResolvedValueOnce({
           id: 'node-1',
           disabled: false,
-          change_catalog: 'cat-change',
-          change_facts: 'facts-change',
-          change_last: 'last-change',
-          change_report: 'report-change',
-          report_status_computed: 'active',
-          facts: null,
-          facts_inject: {},
-          remote_agent: {
-            connected: true,
-            via: 'agent'
+          ext: {
+            puppet: { facts: null, facts_inject: {} },
+            jobs: { remote_agent: { connected: true, via: 'agent' } }
           }
         })
         const wrapper = mount(
@@ -745,7 +861,7 @@ describe(
       async () => {
         mockRoute.params.node = 'node-1'
         mockRoute.query = {
-          fact: 'existing:eq:str:val'
+          'ext.puppet.fact': 'existing:eq:str:val'
         }
         const wrapper = mount(
           NodesCrudForm,
@@ -788,7 +904,7 @@ describe(
         ).toHaveBeenCalledWith({
           name: 'NodesSearch',
           query: {
-            fact: [
+            'ext.puppet.fact': [
               'simple:eq:str:val',
               'existing:eq:str:val'
             ]
@@ -838,6 +954,29 @@ describe(
         expect(
           mockRouter.replace
         ).toHaveBeenCalled()
+      }
+    )
+
+    it(
+      'embeds the audit panel only for existing nodes',
+      async () => {
+        const mountNode = async () => {
+          const wrapper = mount(NodesCrudForm, {
+            props: { resourceDef: createMockResourceDef() },
+            global: { stubs: primeVueStubs }
+          })
+          await new Promise((resolve) => setTimeout(resolve, 0))
+          return wrapper
+        }
+        mockRoute.params.node = '_new'
+        expect(
+          (await mountNode()).findComponent({ name: 'AuditPanel' }).exists()
+        ).toBe(false)
+
+        mockRoute.params.node = 'node-1'
+        expect(
+          (await mountNode()).findComponent({ name: 'AuditPanel' }).props()
+        ).toEqual({ objectKind: 'node', objectId: 'node-1' })
       }
     )
   }

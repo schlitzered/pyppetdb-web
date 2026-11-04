@@ -39,12 +39,12 @@ describe('useFactSuggestions', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(api.get).mockImplementation((url: string, params?: any) => {
-      if (url === '/api/v1/nodes/_distinct_fact_names') {
+      if (url === '/api/v1/nodes_distinct_fact_names') {
         return Promise.resolve({
-          result: params?.fact ? ['cpus'] : ['os.family', 'cpus']
+          result: params?.['ext.puppet.fact'] ? ['cpus'] : ['os.family', 'cpus']
         })
       }
-      if (url === '/api/v1/nodes/_distinct_fact_values') {
+      if (url === '/api/v1/nodes_distinct_fact_values') {
         return Promise.resolve({ result: VALUES[params.fact_id] || [] })
       }
       return Promise.resolve({ result: [] })
@@ -106,16 +106,16 @@ describe('useFactSuggestions', () => {
     expect(parts[1].operator).toBe('eq')
     expect(parts[2].kind).toBe(null)
     expect(api.get).toHaveBeenCalledWith(
-      '/api/v1/nodes/_distinct_fact_values',
+      '/api/v1/nodes_distinct_fact_values',
       {
         disabled: false,
         fact_id: 'cpus',
-        fact: ['os.family:regex:str:RedHat']
+        'ext.puppet.fact': ['os.family:regex:str:RedHat']
       },
       true
     )
     expect(api.get).not.toHaveBeenCalledWith(
-      '/api/v1/nodes/_distinct_fact_values',
+      '/api/v1/nodes_distinct_fact_values',
       expect.objectContaining({ fact_id: 'unknown' }),
       true
     )
@@ -135,7 +135,7 @@ describe('useFactSuggestions', () => {
       .mocked(api.get)
       .mock.calls.filter(
         ([url, params]) =>
-          url === '/api/v1/nodes/_distinct_fact_names' && params
+          url === '/api/v1/nodes_distinct_fact_names' && params
       )
     expect(contextCalls).toHaveLength(1)
   })

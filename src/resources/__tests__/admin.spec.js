@@ -6,7 +6,7 @@ import api from '@/api/client'
 import { teams } from '../admin'
 import { users } from '../admin'
 import { usersCredentials } from '../admin'
-import { pyppetdbNodes } from '../admin'
+import { instances } from '../admin'
 
 vi.mock(
   '@/api/client',
@@ -156,6 +156,28 @@ describe(
           usersCredentials.toolbar.crud.title(route)
         ).toBe('Credential 123')
 
+        const expires = usersCredentials.tableColumns[3].formatter
+        expect(
+          expires(null)
+        ).toBe('Never')
+        expect(
+          expires('2020-01-01 12:00:00+00:00')
+        ).toContain('(expired)')
+        expect(
+          expires('2999-01-01 12:00:00+00:00')
+        ).not.toContain('(expired)')
+
+        const permissions = usersCredentials.tableColumns[4].formatter
+        expect(
+          permissions(null)
+        ).toBe('Unrestricted')
+        expect(
+          permissions([])
+        ).toBe('Restricted (0)')
+        expect(
+          permissions(['A', 'B'])
+        ).toBe('Restricted (2)')
+
         const formatter = usersCredentials.tableColumns[2].formatter
         expect(
           formatter(null)
@@ -173,51 +195,6 @@ describe(
         ).toBe(true)
         expect(
           usersCredentials.permissions.delete(hasPerm)
-        ).toBe(true)
-      }
-    )
-
-    it(
-      'pyppetdbNodes formatter and permissions',
-      () => {
-        const route = {
-          params: {
-            node_id: 'node1'
-          }
-        }
-        expect(
-          pyppetdbNodes.breadcrumbs.crud(route).length
-        ).toBe(4)
-
-        expect(
-          pyppetdbNodes.toolbar.crud.title(route)
-        ).toBe('PyppetDB Node node1')
-
-        const formatter1 = pyppetdbNodes.tableColumns[1].formatter
-        const formatter2 = pyppetdbNodes.tableColumns[2].formatter
-        expect(
-          formatter1(null)
-        ).toBe('')
-        expect(
-          formatter1('2026-06-26T12:00:00Z')
-        ).toContain('2026')
-        expect(
-          formatter2(null)
-        ).toBe('')
-        expect(
-          formatter2('2026-06-26T12:00:00Z')
-        ).toContain('2026')
-
-        expect(
-          pyppetdbNodes.permissions.create()
-        ).toBe(false)
-        expect(
-          pyppetdbNodes.permissions.edit()
-        ).toBe(false)
-        expect(
-          pyppetdbNodes.permissions.delete(
-            () => true
-          )
         ).toBe(true)
       }
     )
@@ -255,6 +232,60 @@ describe(
         expect(
           users.permissions.delete(hasPerm)
         ).toBe(true)
+      }
+    )
+
+    it(
+      'instances show their status and only dead ones can be deleted',
+      () => {
+        const route = {
+          params: {
+            instance_id: 'i1'
+          }
+        }
+        expect(
+          instances.breadcrumbs.crud(route).length
+        ).toBe(4)
+        expect(
+          instances.toolbar.crud.title(route)
+        ).toBe('Instance i1')
+
+        const status = instances.tableColumns[4].formatter
+        expect(
+          status(true)
+        ).toBe('Alive')
+        expect(
+          status(undefined)
+        ).toBe('Dead')
+
+        const heartbeat = instances.tableColumns[5].formatter
+        expect(
+          heartbeat(null)
+        ).toBe('')
+        expect(
+          heartbeat('2026-06-26T12:00:00Z')
+        ).toContain('2026')
+
+        expect(
+          instances.tableColumns.filter((column) => column.sortable).map((column) => column.key)
+        ).toEqual(['id', 'host', 'heartbeat'])
+
+        const hasPerm = () => true
+        expect(
+          instances.permissions.create()
+        ).toBe(false)
+        expect(
+          instances.permissions.edit()
+        ).toBe(false)
+        expect(
+          instances.permissions.delete(hasPerm, { alive: true })
+        ).toBe(false)
+        expect(
+          instances.permissions.delete(hasPerm, { alive: false })
+        ).toBe(true)
+        expect(
+          instances.permissions.delete(() => false, { alive: false })
+        ).toBe(false)
       }
     )
   }

@@ -5,10 +5,12 @@ import { expect } from 'vitest'
 import { vi } from 'vitest'
 import { beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { flushPromises } from '@vue/test-utils'
 import { primeVueStubs } from '@/__test_utils__/helpers'
 import { createMockResourceDef } from '@/__test_utils__/helpers'
 import api from '@/api/client'
 import CASpacesForm from '../CASpacesForm.vue'
+import CAValidationConfig from '../CAValidationConfig.vue'
 
 const mockRouter = {
   push: vi.fn()
@@ -406,6 +408,32 @@ describe(
         })
       }
     )
+
+    it('passes 422 validation_config errors to CAValidationConfig', async () => {
+      api.post.mockRejectedValueOnce({
+        response: {
+          status: 422,
+          data: {
+            detail: [
+              {
+                loc: ['body', 'validation_config', 'renewal', 'window_days'],
+                msg: 'Input should be greater than 0'
+              }
+            ]
+          }
+        }
+      })
+      const wrapper = mount(CASpacesForm, {
+        props: { resourceDef: createMockResourceDef() },
+        global: { stubs: primeVueStubs }
+      })
+      await flushPromises()
+      await wrapper.find('form').trigger('submit.prevent')
+      await flushPromises()
+      expect(
+        wrapper.findComponent(CAValidationConfig).props('errors')
+      ).toEqual({ 'renewal.window_days': 'Input should be greater than 0' })
+    })
 
     it(
       'deletes space with confirmation',

@@ -104,14 +104,23 @@ describe(
 
         vi.mocked(api.get).mockResolvedValue({
           result: [
-            { id: 'node-1', environment: 'production', disabled: false }
+            {
+              id: 'node-1',
+              disabled: false,
+              ext: { puppet: { environment: 'production' } }
+            }
           ],
           meta: {
-            status_unchanged: 10,
-            status_changed: 2,
-            status_failed: 1,
-            status_unreported: 0,
-            status_outdated: 5
+            result_size: 1,
+            ext: {
+              puppet: {
+                status_unchanged: 10,
+                status_changed: 2,
+                status_failed: 1,
+                status_unreported: 0,
+                status_outdated: 5
+              }
+            }
           },
           total: 1
         })
@@ -160,7 +169,7 @@ describe(
         await flushPromises()
 
         wrapper.vm.formSearchBy.disabled = 'false'
-        wrapper.vm.formSearchBy.fact = [
+        wrapper.vm.formSearchBy['ext.puppet.fact'] = [
           { fact_name: 'os.family', operator: 'eq', type: 'str', value: 'RedHat' },
           { fact_name: '', operator: '', type: '', value: '' }
         ]
@@ -171,8 +180,8 @@ describe(
         expect(
           api.get
         ).toHaveBeenCalledWith(
-          '/api/v1/nodes/_distinct_fact_names',
-          { disabled: 'false', fact: ['os.family:eq:str:RedHat'] },
+          '/api/v1/nodes_distinct_fact_names',
+          { disabled: 'false', 'ext.puppet.fact': ['os.family:eq:str:RedHat'] },
           true
         )
         expect(
@@ -204,7 +213,7 @@ describe(
         await flushPromises()
 
         wrapper.vm.onSort({
-          sortField: 'environment',
+          sortField: 'ext.puppet.environment',
           sortOrder: 1
         })
         await flushPromises()
@@ -259,7 +268,7 @@ describe(
         wrapper.vm.formSearchByFactsAdd()
         await flushPromises()
         expect(
-          wrapper.vm.formSearchBy.fact.length
+          wrapper.vm.formSearchBy['ext.puppet.fact'].length
         ).toBe(1)
 
         const btn = wrapper.find('.bg-rose-600')
@@ -267,7 +276,51 @@ describe(
         await flushPromises()
 
         expect(
-          wrapper.vm.formSearchBy.fact.length
+          wrapper.vm.formSearchBy['ext.puppet.fact'].length
+        ).toBe(0)
+      }
+    )
+
+    it(
+      'adds and removes label filters and queries the label parameter',
+      async () => {
+        const wrapper = mount(
+          NodesSearchForm,
+          {
+            props: {
+              resourceDef: createMockResourceDef()
+            },
+            global: {
+              stubs: customStubs
+            }
+          }
+        )
+        await flushPromises()
+
+        wrapper.vm.formSearchByLabelsAdd()
+        wrapper.vm.formSearchBy.label[0].key = 'tier'
+        wrapper.vm.formSearchBy.label[0].value = 'gold'
+        wrapper.vm.getSearchData()
+        await flushPromises()
+
+        expect(
+          api.get
+        ).toHaveBeenCalledWith(
+          '/api/v1/nodes',
+          expect.objectContaining({
+            label: ['tier:eq:gold'],
+            meta: ['ext.puppet']
+          })
+        )
+        expect(
+          wrapper.vm.statusCounts.status_outdated
+        ).toBe(5)
+
+        wrapper.vm.formSearchByLabelsRemove(0)
+        await flushPromises()
+
+        expect(
+          wrapper.vm.formSearchBy.label.length
         ).toBe(0)
       }
     )
@@ -296,6 +349,15 @@ describe(
         expect(
           wrapper.vm.isStatusActive('^changed$')
         ).toBe(true)
+        await flushPromises()
+        expect(
+          api.get
+        ).toHaveBeenLastCalledWith(
+          '/api/v1/nodes',
+          expect.objectContaining({
+            'ext.puppet.report_status_computed': '^changed$'
+          })
+        )
 
         wrapper.vm.toggleStatus('^changed$')
         expect(
@@ -436,11 +498,11 @@ describe(
         ).toBe(true)
 
         wrapper.vm.tableExpPan = ['search', 'fact']
-        wrapper.vm.formSearchBy.fact = undefined
+        wrapper.vm.formSearchBy['ext.puppet.fact'] = undefined
         wrapper.vm.formSearchByFactsAdd()
         await flushPromises()
         expect(
-          wrapper.vm.formSearchBy.fact.length
+          wrapper.vm.formSearchBy['ext.puppet.fact'].length
         ).toBe(1)
       }
     )

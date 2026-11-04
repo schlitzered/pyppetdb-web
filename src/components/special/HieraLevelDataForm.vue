@@ -1170,12 +1170,11 @@ const searchFactSuggestions = async (
   field: string
 ) => {
   try {
-    // endpoint only supports fact_id / disabled / environment / fact / report_status
     const params: Record<string, any> = {
       fact_id: field
     }
     const response = await api.get<{ result: Array<{ value: any }> }>(
-      '/api/v1/nodes/_distinct_fact_values',
+      '/api/v1/nodes_distinct_fact_values',
       params,
       true
     )

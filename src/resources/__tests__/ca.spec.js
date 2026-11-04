@@ -140,4 +140,23 @@ describe('ca resources', () => {
     expect(caSpacesCerts.permissions.edit(hasPerm)).toBe(true)
     expect(caSpacesCerts.permissions.delete(hasPerm)).toBe(true)
   })
+
+  it('cert resources expose status, revocation_reason and key_id filters', () => {
+    for (const def of [caSpacesCerts, caAuthoritiesCerts]) {
+      const byKey = Object.fromEntries(def.searchFilters.map((f) => [f.key, f]))
+      expect(byKey.status.type).toBe('select')
+      expect(byKey.status.options.map((o) => o.value)).toEqual([
+        'requested',
+        'signed',
+        'superseded',
+        'revoked',
+        'expired'
+      ])
+      expect(byKey.revocation_reason.type).toBe('select')
+      expect(
+        byKey.revocation_reason.options.map((o) => o.value)
+      ).not.toContain('ca_compromise')
+      expect(byKey.key_id.type).toBe('text')
+    }
+  })
 })

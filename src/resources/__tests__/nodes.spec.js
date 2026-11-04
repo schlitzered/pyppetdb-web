@@ -3,6 +3,7 @@ import { it } from 'vitest'
 import { expect } from 'vitest'
 import { vi } from 'vitest'
 import { factFieldProcessor } from '../nodes'
+import { labelFieldProcessor } from '../nodes'
 import { nodes } from '../nodes'
 import { nodesGroups } from '../nodes'
 import { nodesReports } from '../nodes'
@@ -12,6 +13,30 @@ import { nodesDistinctFactValues } from '../nodes'
 describe(
   'nodes resources',
   () => {
+    it(
+      'labelFieldProcessor logic',
+      () => {
+        expect(
+          labelFieldProcessor.fromUrl('url:eq:https://a:8/b')
+        ).toEqual([{ key: 'url', operator: 'eq', value: 'https://a:8/b' }])
+        expect(
+          labelFieldProcessor.fromUrl(['a:eq:1', 'b:in:x,y']).length
+        ).toBe(2)
+
+        expect(
+          labelFieldProcessor.toUrl('not-array')
+        ).toBeUndefined()
+        expect(
+          labelFieldProcessor.toUrl([{ key: 'a', operator: 'eq', value: '' }])
+        ).toBeUndefined()
+        expect(
+          labelFieldProcessor.toUrl([
+            { key: 'tier', operator: 'regex', value: '^gold$' }
+          ])
+        ).toEqual(['tier:regex:^gold$'])
+      }
+    )
+
     it(
       'factFieldProcessor logic',
       () => {

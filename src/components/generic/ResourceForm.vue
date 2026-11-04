@@ -152,6 +152,35 @@
                 class="w-full"
               />
 
+              <div
+                v-else-if="field.type === 'datetime'"
+                class="flex flex-col gap-2"
+              >
+                <DatePicker
+                  v-model="formData[field.key]"
+                  :input-id="field.key"
+                  show-time
+                  hour-format="24"
+                  show-clear
+                  placeholder="Never"
+                  :disabled="isFieldDisabled(field)"
+                  class="w-full"
+                />
+                <div
+                  v-if="field.presetDays && !isFieldDisabled(field)"
+                  class="flex flex-wrap gap-2"
+                >
+                  <Button
+                    v-for="days in field.presetDays"
+                    :key="days"
+                    type="button"
+                    :label="`${days} days`"
+                    class="p-button-outlined p-button-sm text-zinc-700 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                    @click="setDaysFromNow(field.key, days)"
+                  />
+                </div>
+              </div>
+
               <span
                 v-else-if="field.type === 'readonly'"
                 class="py-2 text-zinc-400 font-mono text-sm"
@@ -163,7 +192,35 @@
                 v-else-if="field.type === 'permission-grid'"
                 class="col-span-full mt-2 flex flex-col gap-3"
               >
-                <div class="flex gap-2">
+                <div v-if="field.restrictable" class="flex flex-col gap-1">
+                  <label class="flex items-center gap-2 text-sm">
+                    <ToggleSwitch
+                      :model-value="formData[field.key] != null"
+                      :disabled="isFieldDisabled(field) || restrictionLocked"
+                      @update:model-value="
+                        (val) => (formData[field.key] = val ? [] : null)
+                      "
+                    />
+                    Restrict permissions
+                  </label>
+                  <small class="text-zinc-500">
+                    {{
+                      formData[field.key] == null
+                        ? 'Unrestricted: acts with all rights of its owner.'
+                        : 'Only the rights of its owner that are enabled below; none enabled grants nothing. This cannot be undone: an unrestricted credential has to be newly created.'
+                    }}
+                  </small>
+                  <small class="text-zinc-500">
+                    Tip: a credential restricted to only
+                    <span class="font-mono">METRICS::GET</span> is the intended
+                    way to give Prometheus access to /metrics.
+                  </small>
+                </div>
+
+                <div
+                  v-if="!field.restrictable || formData[field.key] != null"
+                  class="flex gap-2"
+                >
                   <InputText
                     v-model="permissionSearchQuery"
                     placeholder="Search permissions..."
@@ -172,6 +229,7 @@
                 </div>
 
                 <DataTable
+                  v-if="!field.restrictable || formData[field.key] != null"
                   :value="filteredPermissions"
                   class="p-datatable-sm border border-zinc-200 dark:border-zinc-800 rounded-lg overflow-hidden"
                 >
@@ -324,6 +382,7 @@ import Select from 'primevue/select'
 import ToggleSwitch from 'primevue/toggleswitch'
 import Chip from 'primevue/chip'
 import AutoComplete from 'primevue/autocomplete'
+import DatePicker from 'primevue/datepicker'
 import MultiSelect from 'primevue/multiselect'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -384,6 +443,7 @@ const formData = reactive<Record<string, any>>({})
 const suggestions = reactive<Record<string, string[]>>({})
 
 const permissionSearchQuery = ref('')
+const restrictionLocked = ref(false)
 const confirmPassword = ref<Record<string, string>>({})
 const showSecretDialog = ref(false)
 const createdSecret = ref('')
@@ -411,7 +471,13 @@ const handleCloseSecretDialog = () => {
 }
 
 const filteredPermissions = computed(() => {
-  const allPerms = suggestions['permissions'] || []
+  // stored ones stay visible even if the list of available ones lacks them
+  const allPerms = [
+    ...new Set([
+      ...(suggestions['permissions'] || []),
+      ...(formData.permissions || [])
+    ])
+  ]
   if (!permissionSearchQuery.value) {
     return allPerms.map((p) => ({ name: p }))
   }
@@ -440,6 +506,12 @@ const handleTogglePermission = (
   formData[fieldKey] = list
 }
 
+const setDaysFromNow = (fieldKey: string, days: number) => {
+  const date = new Date()
+  date.setDate(date.getDate() + days)
+  formData[fieldKey] = date
+}
+
 const isFieldDisabled = (field: FieldDefinition): boolean => {
   if (isNew.value) {
     return field.readonly === true
@@ -457,7 +529,9 @@ const { remove } = useDeleteResource(props.resourceDef)
 
 const initFormData = () => {
   fields.value.forEach((field) => {
-    if (
+    if (field.restrictable || field.type === 'datetime') {
+      formData[field.key] = null
+    } else if (
       field.type === 'chip-list' ||
       field.type === 'permission-grid' ||
       (field.type === 'autocomplete' && field.autocomplete?.multiple)
@@ -523,6 +597,12 @@ const loadMultipleAutocompleteOptions = async () => {
   }
 }
 
+const updateRestrictionLock = () => {
+  restrictionLocked.value = fields.value.some(
+    (field) => field.restrictable && formData[field.key] != null
+  )
+}
+
 const loadData = async () => {
   if (isNew.value || props.resourceDef.writeOnly) {
     initFormData()
@@ -535,6 +615,15 @@ const loadData = async () => {
       if (data) {
         Object.keys(formData).forEach((k) => delete formData[k])
         Object.assign(formData, data)
+        updateRestrictionLock()
+        fields.value.forEach((field) => {
+          if (field.type === 'datetime' && formData[field.key]) {
+            // the api answers "2026-12-31 12:00:00+00:00"
+            formData[field.key] = new Date(
+              String(formData[field.key]).replace(' ', 'T')
+            )
+          }
+        })
       }
     } catch {
       toast.add({
@@ -547,7 +636,7 @@ const loadData = async () => {
   }
   await loadMultipleAutocompleteOptions()
   fields.value.forEach((field) => {
-    if (field.type === 'permission-grid') {
+    if (field.type === 'permission-grid' && !field.restrictable) {
       const currentPermissions: string[] = formData[field.key] || []
       const availablePermissions: string[] = suggestions[field.key] || []
       if (currentPermissions.length > 0 && availablePermissions.length > 0) {
@@ -672,6 +761,13 @@ const handleSave = async () => {
           delete payload[field.key]
         }
       }
+      if (field.restrictable && payload[field.key] == null) {
+        delete payload[field.key]
+      }
+      if (field.type === 'datetime' && field.key in payload) {
+        // null clears the value, '' would be rejected
+        payload[field.key] = payload[field.key]?.toISOString() ?? null
+      }
     })
 
     if (props.resourceDef.name === 'users') {
@@ -715,6 +811,7 @@ const handleSave = async () => {
     } else {
       await update(idParam.value, payload, route)
       isModifyMode.value = false
+      updateRestrictionLock()
       confirmPassword.value = {}
       if (formData.password) formData.password = ''
       if (formData.password_change) formData.password_change = ''

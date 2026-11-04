@@ -180,6 +180,104 @@
                 class="bg-zinc-50 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50"
               />
             </div>
+
+            <div class="flex flex-col gap-1" v-if="formData.key_id">
+              <label
+                for="key-id"
+                class="text-sm font-semibold text-zinc-600 dark:text-zinc-300"
+              >
+                Key ID
+              </label>
+              <InputText
+                id="key-id"
+                v-model="formData.key_id"
+                disabled
+                class="bg-zinc-50 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50 font-mono text-xs"
+              />
+            </div>
+
+            <template v-if="formData.status === 'revoked'">
+              <div class="flex flex-col gap-1">
+                <label
+                  for="revocation-date"
+                  class="text-sm font-semibold text-zinc-600 dark:text-zinc-300"
+                >
+                  Revocation Date
+                </label>
+                <InputText
+                  id="revocation-date"
+                  :model-value="formatDate(formData.revocation_date)"
+                  disabled
+                  class="bg-zinc-50 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50"
+                />
+              </div>
+
+              <div class="flex flex-col gap-1">
+                <label
+                  for="revocation-reason"
+                  class="text-sm font-semibold text-zinc-600 dark:text-zinc-300"
+                >
+                  Revocation Reason
+                </label>
+                <InputText
+                  id="revocation-reason"
+                  :model-value="revocationReasonLabel"
+                  disabled
+                  class="bg-zinc-50 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50"
+                />
+              </div>
+
+              <div class="flex flex-col gap-1" v-if="formData.invalidity_date">
+                <label
+                  for="invalidity-date"
+                  class="text-sm font-semibold text-zinc-600 dark:text-zinc-300"
+                >
+                  Invalidity Date
+                </label>
+                <InputText
+                  id="invalidity-date"
+                  :model-value="formatDate(formData.invalidity_date)"
+                  disabled
+                  class="bg-zinc-50 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50"
+                />
+              </div>
+            </template>
+
+            <div class="flex flex-col gap-1" v-if="formData.superseded_by">
+              <span
+                class="text-sm font-semibold text-zinc-600 dark:text-zinc-300"
+              >
+                Superseded By
+              </span>
+              <router-link
+                data-test="superseded-by-link"
+                :to="{
+                  name: 'CASpacesCertsCRUD',
+                  params: {
+                    space_id: route.params.space_id,
+                    cert_id: formData.superseded_by
+                  }
+                }"
+                class="text-sm font-mono text-zinc-700 dark:text-zinc-300 hover:underline py-2"
+              >
+                {{ formData.superseded_by }}
+              </router-link>
+            </div>
+
+            <div class="flex flex-col gap-1" v-if="formData.superseded_until">
+              <label
+                for="superseded-until"
+                class="text-sm font-semibold text-zinc-600 dark:text-zinc-300"
+              >
+                Superseded Until
+              </label>
+              <InputText
+                id="superseded-until"
+                :model-value="formatDate(formData.superseded_until)"
+                disabled
+                class="bg-zinc-50 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50"
+              />
+            </div>
           </div>
 
           <div class="grid grid-cols-1 gap-4 mt-2">
@@ -294,18 +392,32 @@
               <Button
                 v-if="
                   formData.status === 'requested' ||
-                  formData.status === 'signed'
+                  formData.status === 'signed' ||
+                  formData.status === 'superseded'
                 "
                 label="Revoke"
                 icon="pi pi-ban"
                 class="bg-rose-600 hover:bg-rose-700 text-white border-none px-4 py-2 font-medium"
-                @click="certAction('revoked')"
+                @click="revokeDialogVisible = true"
               />
             </div>
           </div>
         </form>
       </template>
     </Card>
+
+    <AuditPanel
+      v-if="formData.id"
+      object-kind="ca_certificate"
+      :object-id="String(route.params.cert_id)"
+    />
+
+    <CARevokeDialog
+      v-model:visible="revokeDialogVisible"
+      header="Revoke Certificate"
+      :message="`Revoke certificate ${formData.id}?`"
+      @confirm="certRevoke"
+    />
   </div>
 </template>
 
@@ -326,10 +438,15 @@ import Tag from 'primevue/tag'
 import ToggleSwitch from 'primevue/toggleswitch'
 import Button from 'primevue/button'
 import ResponsiveToolbar from '@/components/shared/ResponsiveToolbar.vue'
+import AuditPanel from '@/components/special/AuditPanel.vue'
+import CARevokeDialog from '@/components/special/CARevokeDialog.vue'
+import type { RevokePayload } from '@/components/special/CARevokeDialog.vue'
 import api from '@/api/client'
 import { authStore } from '@/stores/auth'
 import { PERMISSIONS } from '@/constants/permissions'
 import type { ResourceDefinition } from '@/types/resources'
+import { CERT_REVOCATION_REASONS } from '@/constants/ca'
+import { getCertStatusSeverity } from '@/constants/ca'
 
 const route = useRoute()
 const router = useRouter()
@@ -344,6 +461,7 @@ defineProps<{
 const isModifyMode = ref(false)
 const nodeExists = ref(false)
 const checkingNode = ref(false)
+const revokeDialogVisible = ref(false)
 
 const formData = reactive<Record<string, any>>({
   id: '',
@@ -364,6 +482,11 @@ const formData = reactive<Record<string, any>>({
   created: '',
   cert_uniqueness: '',
   revocation_date: '',
+  revocation_reason: '',
+  invalidity_date: '',
+  key_id: '',
+  superseded_by: '',
+  superseded_until: '',
   ca: '',
   ca_chain: [],
   sans: []
@@ -387,18 +510,18 @@ const formattedNotAfter = computed(() => {
   return formData.not_after ? new Date(formData.not_after).toLocaleString() : ''
 })
 
-const getStatusSeverity = (status: string) => {
-  if (status === 'signed') {
-    return 'success'
-  }
-  if (status === 'requested') {
-    return 'warn'
-  }
-  if (status === 'revoked') {
-    return 'danger'
-  }
-  return 'secondary'
+const getStatusSeverity = getCertStatusSeverity
+
+const formatDate = (value: string | null | undefined) => {
+  return value ? new Date(value).toLocaleString() : ''
 }
+
+const revocationReasonLabel = computed(() => {
+  const match = CERT_REVOCATION_REASONS.find(
+    (r) => r.value === formData.revocation_reason
+  )
+  return match ? match.label : formData.revocation_reason || ''
+})
 
 const checkNodeExists = async (cn: string) => {
   if (!cn) {
@@ -452,35 +575,42 @@ const handleBack = () => {
   })
 }
 
-const certAction = (action: 'signed' | 'revoked') => {
+const putStatus = async (
+  action: 'signed' | 'revoked',
+  payload: Record<string, any>
+) => {
+  try {
+    const url = `/api/v1/ca/spaces/${route.params.space_id}/certs/${formData.id}`
+    await api.put(url, payload)
+    toast.add({
+      severity: 'success',
+      summary: 'Success',
+      detail: `Certificate has been ${action}.`,
+      life: 3000
+    })
+    isModifyMode.value = false
+    await formGetData()
+  } catch {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Failed to update certificate status.',
+      life: 3000
+    })
+  }
+}
+
+const certAction = (action: 'signed') => {
   confirm.require({
     message: `Are you sure you want to ${action} certificate: ${formData.id}?`,
     header: 'Confirmation',
     icon: 'pi pi-exclamation-triangle',
-    acceptClass: action === 'revoked' ? 'p-button-danger' : 'p-button-success',
-    accept: async () => {
-      try {
-        const url = `/api/v1/ca/spaces/${route.params.space_id}/certs/${formData.id}`
-        await api.put(url, { status: action })
-        toast.add({
-          severity: 'success',
-          summary: 'Success',
-          detail: `Certificate has been ${action}.`,
-          life: 3000
-        })
-        isModifyMode.value = false
-        await formGetData()
-      } catch {
-        toast.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to update certificate status.',
-          life: 3000
-        })
-      }
-    }
+    acceptClass: 'p-button-success',
+    accept: () => putStatus(action, { status: action })
   })
 }
+
+const certRevoke = (payload: RevokePayload) => putStatus('revoked', payload)
 
 const initializeFormState = async () => {
   isModifyMode.value = false

@@ -6,8 +6,11 @@ import { ALL_PERMISSIONS } from '@/constants/permissions'
 
 const getPermissions = async (): Promise<string[]> => {
   try {
+    // needs TEAMS::GET, which someone managing credentials may lack
     const response = await api.get<{ static: string[]; dynamic: string[] }>(
-      '/api/v1/permissions'
+      '/api/v1/permissions',
+      undefined,
+      true
     )
     if (response) {
       return [...(response.static || []), ...(response.dynamic || [])]
@@ -16,6 +19,16 @@ const getPermissions = async (): Promise<string[]> => {
     console.error(e)
   }
   return [...ALL_PERMISSIONS]
+}
+
+const permissionsAutocomplete = {
+  endpoint: async (formData: Record<string, any>, query: string) => {
+    const all = await getPermissions()
+    if (!query) return all
+    return all.filter((p) => p.toLowerCase().includes(query.toLowerCase()))
+  },
+  field: 'permission',
+  multiple: true
 }
 
 export const teams: ResourceDefinition = {
@@ -97,17 +110,7 @@ export const teams: ResourceDefinition = {
       key: 'permissions',
       label: 'Permissions',
       type: 'permission-grid',
-      autocomplete: {
-        endpoint: async (formData: Record<string, any>, query: string) => {
-          const all = await getPermissions()
-          if (!query) return all
-          return all.filter((p) =>
-            p.toLowerCase().includes(query.toLowerCase())
-          )
-        },
-        field: 'permission',
-        multiple: true
-      }
+      autocomplete: permissionsAutocomplete
     }
   ],
   permissions: {
@@ -316,6 +319,27 @@ export const usersCredentials: ResourceDefinition = {
       formatter: (value: unknown) => {
         return value ? new Date(String(value)).toLocaleString() : ''
       }
+    },
+    {
+      key: 'expires',
+      label: 'Expires',
+      sortable: true,
+      formatter: (value: unknown) => {
+        if (!value) return 'Never'
+        const expires = new Date(String(value).replace(' ', 'T'))
+        return expires <= new Date()
+          ? `${expires.toLocaleString()} (expired)`
+          : expires.toLocaleString()
+      }
+    },
+    {
+      key: 'permissions',
+      label: 'Permissions',
+      formatter: (value: unknown) => {
+        return Array.isArray(value)
+          ? `Restricted (${value.length})`
+          : 'Unrestricted'
+      }
     }
   ],
   searchFilters: [],
@@ -337,6 +361,19 @@ export const usersCredentials: ResourceDefinition = {
       label: 'Description',
       type: 'text',
       required: true
+    },
+    {
+      key: 'expires',
+      label: 'Expires',
+      type: 'datetime',
+      presetDays: [30, 90, 365]
+    },
+    {
+      key: 'permissions',
+      label: 'Permissions',
+      type: 'permission-grid',
+      restrictable: true,
+      autocomplete: permissionsAutocomplete
     }
   ],
   permissions: {
@@ -346,95 +383,101 @@ export const usersCredentials: ResourceDefinition = {
   }
 }
 
-export const pyppetdbNodes: ResourceDefinition = {
-  name: 'pyppetdb/nodes',
-  label: 'PyppetDB Node',
-  labelPlural: 'PyppetDB Nodes',
-  apiBase: '/api/v1/pyppetdb_nodes',
-  routeParam: 'node_id',
+const formatTimestamp = (value: unknown) => {
+  return value ? new Date(String(value)).toLocaleString() : ''
+}
+
+export const instances: ResourceDefinition = {
+  name: 'instances',
+  label: 'Instance',
+  labelPlural: 'Instances',
+  apiBase: '/api/v1/instances',
+  routeParam: 'instance_id',
   routeNames: {
-    search: 'PyppetdbNodesSearch',
-    crud: 'PyppetdbNodesCRUD'
+    search: 'InstancesSearch',
+    crud: 'InstancesCRUD'
   },
-  path: '/admin/pyppetdb/nodes',
-  crudPath: '/admin/pyppetdb/nodes/:node_id',
+  path: '/admin/instances',
+  crudPath: '/admin/instances/:instance_id',
   nav: {
-    label: 'PyppetDB Nodes',
+    label: 'Instances',
     icon: 'Cpu',
     group: 'Administration',
     groupOrder: 6,
-    order: 3
+    order: 3,
+    requiredPermission: PERMISSIONS.INSTANCES.GET
   },
   breadcrumbs: {
     search: [
       { title: 'Pyppetdb', to: { name: 'Home' } },
       { title: 'Administration' },
-      { title: 'PyppetDB Nodes' }
+      { title: 'Instances' }
     ],
     crud: (route: RouteLocationNormalized) => [
       { title: 'Pyppetdb', to: { name: 'Home' } },
       { title: 'Administration' },
-      { title: 'PyppetDB Nodes', to: { name: 'PyppetdbNodesSearch' } },
-      { title: String(route.params.node_id) }
+      { title: 'Instances', to: { name: 'InstancesSearch' } },
+      { title: String(route.params.instance_id) }
     ]
   },
   toolbar: {
     search: {
-      title: 'PyppetDB Nodes',
+      title: 'Instances',
       items: []
     },
     crud: {
       title: (route: RouteLocationNormalized) =>
-        `PyppetDB Node ${route.params.node_id}`,
+        `Instance ${route.params.instance_id}`,
       items: []
     }
   },
   tableColumns: [
     {
       key: 'id',
-      label: 'Node ID',
+      label: 'Instance ID',
       sortable: true,
-      linkRoute: 'PyppetdbNodesCRUD',
-      linkParam: 'node_id'
+      linkRoute: 'InstancesCRUD',
+      linkParam: 'instance_id'
+    },
+    { key: 'host', label: 'Host', sortable: true },
+    { key: 'port', label: 'Port' },
+    { key: 'version', label: 'Version' },
+    {
+      key: 'alive',
+      label: 'Status',
+      formatter: (value: unknown) => (value ? 'Alive' : 'Dead')
     },
     {
       key: 'heartbeat',
       label: 'Heartbeat',
       sortable: true,
-      formatter: (value: unknown) => {
-        return value ? new Date(String(value)).toLocaleString() : ''
-      }
+      formatter: formatTimestamp
     },
     {
       key: 'online_since',
       label: 'Online Since',
-      sortable: true,
-      formatter: (value: unknown) => {
-        return value ? new Date(String(value)).toLocaleString() : ''
-      }
+      formatter: formatTimestamp
     }
   ],
-  searchFilters: [],
+  searchFilters: [
+    { key: 'instance_id', label: 'Instance ID (Regex)', type: 'text' },
+    { key: 'host', label: 'Host (Regex)', type: 'text' }
+  ],
   fields: [
-    {
-      key: 'id',
-      label: 'Node ID',
-      type: 'readonly'
-    },
-    {
-      key: 'heartbeat',
-      label: 'Heartbeat',
-      type: 'readonly'
-    },
-    {
-      key: 'online_since',
-      label: 'Online Since',
-      type: 'readonly'
-    }
+    { key: 'id', label: 'Instance ID', type: 'readonly' },
+    { key: 'host', label: 'Host', type: 'readonly' },
+    { key: 'port', label: 'Port', type: 'readonly' },
+    { key: 'ssl', label: 'SSL', type: 'readonly' },
+    { key: 'version', label: 'Version', type: 'readonly' },
+    { key: 'alive', label: 'Alive', type: 'readonly' },
+    { key: 'heartbeat', label: 'Heartbeat', type: 'readonly' },
+    { key: 'online_since', label: 'Online Since', type: 'readonly' }
   ],
   permissions: {
     create: () => false,
     edit: () => false,
-    delete: (hasPerm) => hasPerm(PERMISSIONS.PYPPETDB.NODES.DELETE)
+    // the api refuses to delete an alive instance
+    delete: (hasPerm, item) =>
+      hasPerm(PERMISSIONS.INSTANCES.DELETE) && !item?.alive
   }
 }

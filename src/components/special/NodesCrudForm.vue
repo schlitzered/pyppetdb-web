@@ -89,6 +89,57 @@
             </div>
           </div>
 
+          <div class="flex flex-col gap-2">
+            <span
+              class="text-sm font-semibold text-zinc-600 dark:text-zinc-300"
+            >
+              Labels
+            </span>
+            <div
+              v-for="(label, index) in formData.labels"
+              :key="index"
+              class="grid grid-cols-1 md:grid-cols-12 gap-2 items-center"
+            >
+              <InputText
+                v-model="label.key"
+                :disabled="isFieldDisabled"
+                placeholder="Key"
+                class="md:col-span-5 bg-zinc-50 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50"
+              />
+              <InputText
+                v-model="label.value"
+                :disabled="isFieldDisabled"
+                placeholder="Value"
+                class="md:col-span-6 bg-zinc-50 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50"
+              />
+              <div class="md:col-span-1 flex justify-end">
+                <Button
+                  v-if="!isFieldDisabled"
+                  type="button"
+                  icon="pi pi-trash"
+                  aria-label="Remove label"
+                  class="p-button-text p-button-sm text-rose-500"
+                  @click="removeLabel(index)"
+                />
+              </div>
+            </div>
+            <span
+              v-if="isFieldDisabled && !formData.labels?.length"
+              class="text-sm text-zinc-400 italic"
+            >
+              None
+            </span>
+            <div v-if="!isFieldDisabled">
+              <Button
+                type="button"
+                label="Add Label"
+                icon="pi pi-plus"
+                class="p-button-outlined p-button-sm text-zinc-700 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                @click="addLabel"
+              />
+            </div>
+          </div>
+
           <div
             class="flex justify-between items-center mt-6 pt-4 border-t border-zinc-200 dark:border-zinc-800"
           >
@@ -314,10 +365,34 @@
                 {{ formData.remote_agent?.via || 'N/A' }}
               </span>
             </div>
+            <div class="flex flex-col gap-1 md:col-span-2">
+              <span class="text-xs font-semibold text-zinc-500"
+                >Running Jobs</span
+              >
+              <div
+                v-if="formData.remote_agent?.current_job_id?.length"
+                class="flex flex-wrap gap-2"
+              >
+                <router-link
+                  v-for="jobId in formData.remote_agent.current_job_id"
+                  :key="jobId"
+                  :to="{
+                    name: 'JobsNodesJobsCRUD',
+                    params: { node_job_id: `${jobId}:${formData.id}` }
+                  }"
+                  class="text-sm font-mono text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:underline bg-zinc-50 dark:bg-zinc-800 p-2 rounded border border-zinc-100 dark:border-zinc-700"
+                >
+                  {{ jobId }}
+                </router-link>
+              </div>
+              <span v-else class="text-sm font-medium text-zinc-500">None</span>
+            </div>
           </div>
         </AccordionContent>
       </AccordionPanel>
     </Accordion>
+
+    <AuditPanel v-if="!isNew" object-kind="node" :object-id="nodeId" />
 
     <Dialog
       v-model:visible="dialogFactsInject"
@@ -394,6 +469,7 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Dialog from 'primevue/dialog'
 import ResponsiveToolbar from '@/components/shared/ResponsiveToolbar.vue'
+import AuditPanel from '@/components/special/AuditPanel.vue'
 import api from '@/api/client'
 import { authStore } from '@/stores/auth'
 import { PERMISSIONS } from '@/constants/permissions'
@@ -418,17 +494,17 @@ const isFieldDisabled = computed(() => {
 const formData = reactive<Record<string, any>>({
   id: '',
   disabled: false,
+  labels: [],
   facts_inject: {},
   facts: [],
   change_catalog: '',
   change_facts: '',
   change_last: '',
   change_report: '',
-  report_status_computed: '',
-  report: null,
   remote_agent: {
     connected: false,
-    via: ''
+    via: '',
+    current_job_id: []
   }
 })
 
@@ -559,45 +635,46 @@ const formGetNodeData = async () => {
     })
     formData.id = ''
     formData.disabled = false
+    formData.labels = []
     formData.facts_inject = {}
     formData.facts = []
     return
   }
   try {
     // only the fields this form actually renders; drops the large `catalog`
-    // and `report` blobs. `report_status_computed` is appended by the backend
-    // regardless of `fields`, so it stays available.
+    // and `report` blobs
     const data = await api.get<any>(
       `/api/v1/nodes/${encodeURIComponent(nodeId.value)}`,
       {
         fields: [
           'id',
           'disabled',
-          'change_catalog',
-          'change_facts',
-          'change_last',
-          'change_report',
-          'facts',
-          'facts_inject',
-          'remote_agent.connected',
-          'remote_agent.via'
+          'labels',
+          'ext.puppet.change_catalog',
+          'ext.puppet.change_facts',
+          'ext.puppet.change_last',
+          'ext.puppet.change_report',
+          'ext.puppet.facts',
+          'ext.puppet.facts_inject',
+          'ext.jobs.remote_agent'
         ]
       }
     )
     if (data) {
+      const puppet = data.ext?.puppet
       formData.id = data.id
       formData.disabled = data.disabled
-      formData.change_catalog = data.change_catalog
-      formData.change_facts = data.change_facts
-      formData.change_last = data.change_last
-      formData.change_report = data.change_report
-      formData.report_status_computed = data.report_status_computed
-      formData.facts = flattenFacts(data.facts)
-      formData.facts_inject = data.facts_inject || {}
-      formData.report = data.report
-      formData.remote_agent = data.remote_agent || {
+      formData.labels = data.labels || []
+      formData.change_catalog = puppet?.change_catalog
+      formData.change_facts = puppet?.change_facts
+      formData.change_last = puppet?.change_last
+      formData.change_report = puppet?.change_report
+      formData.facts = flattenFacts(puppet?.facts)
+      formData.facts_inject = puppet?.facts_inject || {}
+      formData.remote_agent = data.ext?.jobs?.remote_agent || {
         connected: false,
-        via: ''
+        via: '',
+        current_job_id: []
       }
     }
   } catch {
@@ -610,12 +687,42 @@ const formGetNodeData = async () => {
   }
 }
 
+const addLabel = () => {
+  formData.labels.push({ key: '', value: '' })
+}
+
+const removeLabel = (index: number) => {
+  formData.labels.splice(index, 1)
+}
+
+const labelsError = () => {
+  const keys = formData.labels.map((label: any) => label.key)
+  if (keys.some((key: string) => !key || key.includes(':'))) {
+    return 'Label keys must not be empty or contain a colon.'
+  }
+  if (new Set(keys).size !== keys.length) {
+    return 'Label keys must be unique.'
+  }
+  return null
+}
+
 const formSubmit = async () => {
+  const labelError = labelsError()
+  if (labelError) {
+    toast.add({
+      severity: 'error',
+      summary: 'Validation Error',
+      detail: labelError,
+      life: 3000
+    })
+    return
+  }
   const targetId = isNew.value ? formData.id : nodeId.value
   let url = `/api/v1/nodes/${encodeURIComponent(targetId)}`
-  let payload = {
+  const payload = {
     disabled: formData.disabled,
-    facts_inject: formData.facts_inject || {}
+    labels: formData.labels,
+    ext: { puppet: { facts_inject: formData.facts_inject || {} } }
   }
   try {
     if (isNew.value) {
@@ -790,15 +897,16 @@ const onFactKeyClick = (key: string) => {
 }
 
 const onFactValueClick = (key: string, value: any) => {
-  const currentFacts = Array.isArray(route.query.fact)
-    ? route.query.fact
-    : route.query.fact
-      ? [route.query.fact]
+  const factQuery = route.query['ext.puppet.fact']
+  const currentFacts = Array.isArray(factQuery)
+    ? factQuery
+    : factQuery
+      ? [factQuery]
       : []
   const newFactParam = `${key}:eq:str:${value}`
   router.push({
     name: 'NodesSearch',
-    query: { fact: [newFactParam, ...currentFacts] }
+    query: { 'ext.puppet.fact': [newFactParam, ...currentFacts] }
   })
 }
 

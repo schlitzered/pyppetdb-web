@@ -143,7 +143,7 @@ describe(
         const socket = MockWebSocket.instances[0]
         expect(
           socket.url
-        ).toBe('ws://localhost:3000/api/v1/ws/logs/')
+        ).toBe('ws://localhost:3000/api/v1/ws')
 
         socket.triggerOpen()
         expect(
@@ -156,14 +156,15 @@ describe(
         expect(
           JSON.parse(socket.sentMessages[0])
         ).toEqual({
-          msg_type: 'authenticate',
-          msg_body: { token: 'test-token' }
+          op: 'auth',
+          token: 'test-token'
         })
         expect(
           JSON.parse(socket.sentMessages[1])
         ).toEqual({
-          msg_type: 'subscribe_job_logs',
-          msg_body: { id: 'job123' }
+          op: 'subscribe',
+          id: 'logs',
+          topic: 'jobs.node_jobs.logs:job123'
         })
       }
     )
@@ -194,18 +195,25 @@ describe(
         const socket = MockWebSocket.instances[0]
         socket.triggerOpen()
 
+        const logs = [{ line_nr: 1, msg: 'hello log' }]
+        socket.triggerMessage({ op: 'ok', id: 'logs' })
         socket.triggerMessage({
-          msg_type: 'log_message',
-          msg_body: { logs: 'hello log' }
+          op: 'event',
+          type: 'jobs.node_jobs.log',
+          payload: { node_job_id: 'job123', logs }
         })
 
         expect(
           onLog
-        ).toHaveBeenCalledWith('hello log')
+        ).toHaveBeenCalledTimes(1)
+        expect(
+          onLog
+        ).toHaveBeenCalledWith(logs)
 
         socket.triggerMessage({
-          msg_type: 'job_finished',
-          msg_body: { status: 'success' }
+          op: 'event',
+          type: 'jobs.node_jobs.finished',
+          payload: { status: 'success' }
         })
 
         expect(
@@ -214,6 +222,34 @@ describe(
         expect(
           onFinished
         ).toHaveBeenCalledWith({ status: 'success' })
+      }
+    )
+
+    it(
+      'flags an error frame from the server',
+      async () => {
+        vi.mocked(api.post).mockResolvedValueOnce({ token: 'test-token' })
+        const { connect, isError } = useLogStream()
+
+        connect('job123')
+
+        await vi.waitFor(
+          () => {
+            expect(
+              MockWebSocket.instances.length
+            ).toBeGreaterThan(0)
+          }
+        )
+
+        MockWebSocket.instances[0].triggerMessage({
+          op: 'error',
+          id: 'logs',
+          error: { code: 'forbidden' }
+        })
+
+        expect(
+          isError.value
+        ).toBe(true)
       }
     )
 
@@ -342,10 +378,7 @@ describe(
 
         expect(
           JSON.parse(socket.sentMessages[2])
-        ).toEqual({
-          msg_type: 'unsubscribe_job_logs',
-          msg_body: { id: 'job123' }
-        })
+        ).toEqual({ op: 'unsubscribe', topic: 'jobs.node_jobs.logs:job123' })
         expect(
           isConnected.value
         ).toBe(false)

@@ -265,17 +265,19 @@
               >
                 <Column field="id" header="Node ID" sortable />
                 <Column
-                  field="remote_agent.connected"
+                  field="ext.jobs.remote_agent.connected"
                   header="Connected"
                   sortable
                 >
                   <template #body="slotProps">
                     <Tag
                       :value="
-                        slotProps.data.remote_agent?.connected ? 'Yes' : 'No'
+                        slotProps.data.ext?.jobs?.remote_agent?.connected
+                          ? 'Yes'
+                          : 'No'
                       "
                       :severity="
-                        slotProps.data.remote_agent?.connected
+                        slotProps.data.ext?.jobs?.remote_agent?.connected
                           ? 'success'
                           : 'danger'
                       "
@@ -354,6 +356,12 @@
           </form>
         </template>
       </Card>
+
+      <AuditPanel
+        v-if="String(route.params.job_id) !== '_new'"
+        object-kind="job"
+        :object-id="String(route.params.job_id)"
+      />
     </div>
   </div>
 </template>
@@ -381,6 +389,7 @@ import { authStore } from '@/stores/auth'
 import { PERMISSIONS } from '@/constants/permissions'
 import JobParamInput from '@/components/special/JobParamInput.vue'
 import FactValueInput from '@/components/special/FactValueInput.vue'
+import AuditPanel from '@/components/special/AuditPanel.vue'
 import { useFactSuggestions } from '@/composables/useFactSuggestions'
 import { formatFactFilter } from '@/composables/useFactSuggestions'
 import { operatorsFor } from '@/composables/useFactSuggestions'
@@ -455,9 +464,6 @@ const combinedNodes = computed(() => {
       const statusInfo = nodeJobStatuses.value[id] || {}
       combined.push({
         id: id,
-        remote_agent: {
-          connected: false
-        },
         state: 'original_only',
         node_job_id: statusInfo.id,
         status: statusInfo.status
@@ -659,8 +665,8 @@ const updateMatchingNodes = async () => {
   try {
     // we only render the node id and connection state below, so only ask for those
     const data = await api.get<any>('/api/v1/nodes', {
-      fact: filters,
-      fields: ['id', 'remote_agent.connected'],
+      'ext.puppet.fact': filters,
+      fields: ['id', 'ext.jobs.remote_agent'],
       limit: 1000
     })
     if (data) {
