@@ -111,11 +111,16 @@ describe(
             }
           ],
           meta: {
-            status_unchanged: 10,
-            status_changed: 2,
-            status_failed: 1,
-            status_unreported: 0,
-            status_outdated: 5
+            result_size: 1,
+            ext: {
+              puppet: {
+                status_unchanged: 10,
+                status_changed: 2,
+                status_failed: 1,
+                status_unreported: 0,
+                status_outdated: 5
+              }
+            }
           },
           total: 1
         })
@@ -301,9 +306,15 @@ describe(
         expect(
           api.get
         ).toHaveBeenCalledWith(
-          '/api/v1/nodes_status',
-          expect.objectContaining({ label: ['tier:eq:gold'] })
+          '/api/v1/nodes',
+          expect.objectContaining({
+            label: ['tier:eq:gold'],
+            meta: ['ext.puppet']
+          })
         )
+        expect(
+          wrapper.vm.statusCounts.status_outdated
+        ).toBe(5)
 
         wrapper.vm.formSearchByLabelsRemove(0)
         await flushPromises()
@@ -338,6 +349,15 @@ describe(
         expect(
           wrapper.vm.isStatusActive('^changed$')
         ).toBe(true)
+        await flushPromises()
+        expect(
+          api.get
+        ).toHaveBeenLastCalledWith(
+          '/api/v1/nodes',
+          expect.objectContaining({
+            'ext.puppet.report_status_computed': '^changed$'
+          })
+        )
 
         wrapper.vm.toggleStatus('^changed$')
         expect(

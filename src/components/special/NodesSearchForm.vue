@@ -79,7 +79,7 @@
               </label>
               <InputText
                 id="outdated_threshold"
-                v-model="formSearchBy.outdated_threshold"
+                v-model="formSearchBy['ext.puppet.outdated_threshold']"
                 @input="handleThresholdInput"
                 placeholder="YYYY-MM-DDTHH:MM:SS"
                 class="p-inputtext-sm bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700"
@@ -256,7 +256,7 @@
         <span
           class="text-sm font-bold bg-emerald-100 dark:bg-emerald-900/30 px-2 py-0.5 rounded text-emerald-800 dark:text-emerald-400"
         >
-          {{ tableItemsMeta.status_unchanged ?? 0 }}
+          {{ statusCounts.status_unchanged ?? 0 }}
         </span>
       </button>
 
@@ -277,7 +277,7 @@
         <span
           class="text-sm font-bold bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 rounded text-amber-800 dark:text-amber-400"
         >
-          {{ tableItemsMeta.status_changed ?? 0 }}
+          {{ statusCounts.status_changed ?? 0 }}
         </span>
       </button>
 
@@ -298,7 +298,7 @@
         <span
           class="text-sm font-bold bg-rose-100 dark:bg-rose-900/30 px-2 py-0.5 rounded text-rose-800 dark:text-rose-400"
         >
-          {{ tableItemsMeta.status_failed ?? 0 }}
+          {{ statusCounts.status_failed ?? 0 }}
         </span>
       </button>
 
@@ -319,7 +319,7 @@
         <span
           class="text-sm font-bold bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded text-zinc-700 dark:text-zinc-300"
         >
-          {{ tableItemsMeta.status_unreported ?? 0 }}
+          {{ statusCounts.status_unreported ?? 0 }}
         </span>
       </button>
 
@@ -340,7 +340,7 @@
         <span
           class="text-sm font-bold bg-zinc-200 dark:bg-zinc-700 px-2 py-0.5 rounded text-zinc-800 dark:text-zinc-200"
         >
-          {{ tableItemsMeta.status_outdated ?? 0 }}
+          {{ statusCounts.status_outdated ?? 0 }}
         </span>
       </button>
     </div>
@@ -419,7 +419,10 @@
             {{ formatDate(slotProps.data.ext?.puppet?.change_report) }}
           </template>
         </Column>
-        <Column field="report_status_computed" header="Report Status" />
+        <Column
+          field="ext.puppet.report_status_computed"
+          header="Report Status"
+        />
         <Column
           field="ext.jobs.remote_agent.connected"
           header="Agent Connected"
@@ -597,9 +600,15 @@ const formSearchByLabelsRemove = (index: number) => {
   getSearchData()
 }
 
+const REPORT_STATUS = 'ext.puppet.report_status_computed'
+
+const statusCounts = computed<Record<string, number>>(
+  () => (tableItemsMeta.value as any).ext?.puppet || {}
+)
+
 const toggleStatus = (statusRegex: string) => {
-  let current = formSearchBy.report_status
-    ? String(formSearchBy.report_status).split('|')
+  let current = formSearchBy[REPORT_STATUS]
+    ? String(formSearchBy[REPORT_STATUS]).split('|')
     : []
   const index = current.indexOf(statusRegex)
   if (index > -1) {
@@ -607,13 +616,13 @@ const toggleStatus = (statusRegex: string) => {
   } else {
     current.push(statusRegex)
   }
-  formSearchBy.report_status = current.join('|')
+  formSearchBy[REPORT_STATUS] = current.join('|')
   getSearchData()
 }
 
 const isStatusActive = (statusRegex: string) => {
-  if (!formSearchBy.report_status) return false
-  return String(formSearchBy.report_status).split('|').includes(statusRegex)
+  if (!formSearchBy[REPORT_STATUS]) return false
+  return String(formSearchBy[REPORT_STATUS]).split('|').includes(statusRegex)
 }
 
 const validateISOTimestamp = (value: string): boolean | string => {

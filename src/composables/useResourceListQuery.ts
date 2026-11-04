@@ -123,6 +123,7 @@ export function useResourceListQuery(config: ResourceListQueryConfig) {
       if (resourceDef.apiFields) {
         _params.fields = resourceDef.apiFields
       }
+      Object.assign(_params, resourceDef.apiParams)
       if (_params.page) {
         _params.page = Number(_params.page) - 1
       }

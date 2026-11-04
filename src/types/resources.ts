@@ -164,6 +164,8 @@ export interface ResourceDefinition {
   permissions: ResourcePermissions
   defaultSort?: { field: string; order: SortOrder }
   apiFields?: string[]
+  // extra query parameters sent with every list request (not put in the URL)
+  apiParams?: Record<string, unknown>
   // 'client' for endpoints without server-side pagination/sort (e.g.
   // /nodes_distinct_fact_values): fetch the full set and let the table
   // paginate/sort in the browser. Defaults to 'server'.

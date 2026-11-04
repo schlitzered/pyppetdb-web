@@ -63,9 +63,9 @@ export const nodes: ResourceDefinition = {
   name: 'nodes',
   label: 'Node',
   labelPlural: 'Nodes',
-  // read-only view of /api/v1/nodes that adds report_status_computed, the
-  // status_* counts and the report_status / outdated_threshold filters
-  apiBase: '/api/v1/nodes_status',
+  apiBase: '/api/v1/nodes',
+  // status_* counts per computed report status, returned in meta.ext.puppet
+  apiParams: { meta: ['ext.puppet'] },
   // only the fields the search table renders — keeps the list call from pulling
   // facts / catalog / full report blobs for every row
   apiFields: [
@@ -76,6 +76,7 @@ export const nodes: ResourceDefinition = {
     'ext.puppet.change_facts',
     'ext.puppet.change_last',
     'ext.puppet.change_report',
+    'ext.puppet.report_status_computed',
     'ext.jobs.remote_agent'
   ],
   routeParam: 'node',
@@ -144,14 +145,22 @@ export const nodes: ResourceDefinition = {
       linkParam: 'node'
     },
     { key: 'ext.puppet.environment', label: 'Environment', sortable: true },
-    { key: 'report_status_computed', label: 'Report Status' }
+    { key: 'ext.puppet.report_status_computed', label: 'Report Status' }
   ],
   searchFilters: [
     { key: 'node_id', label: 'Node Name', type: 'text' },
     { key: 'disabled', label: 'Disabled', type: 'text' },
     { key: 'ext.puppet.environment', label: 'Environment', type: 'text' },
-    { key: 'report_status', label: 'Report Status', type: 'text' },
-    { key: 'outdated_threshold', label: 'Outdated Threshold', type: 'text' },
+    {
+      key: 'ext.puppet.report_status_computed',
+      label: 'Report Status',
+      type: 'text'
+    },
+    {
+      key: 'ext.puppet.outdated_threshold',
+      label: 'Outdated Threshold',
+      type: 'text'
+    },
     {
       key: 'ext.puppet.fact',
       label: 'Fact',
