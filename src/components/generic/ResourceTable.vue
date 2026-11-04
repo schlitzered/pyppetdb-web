@@ -127,6 +127,12 @@
         <Column v-if="canDelete" header="Actions" class="w-24 text-center">
           <template #body="slotProps">
             <Button
+              v-if="
+                resourceDef.permissions.delete?.(
+                  auth.hasPermission,
+                  slotProps.data
+                )
+              "
               icon="pi pi-trash"
               class="p-button-text p-button-danger p-button-sm"
               @click="handleDeleteRow(slotProps.data)"
@@ -186,6 +192,7 @@ const {
   tableExpPan,
   formSearchBy,
   getSearchData,
+  loadFromUrl,
   getSearchDataTableEvent,
   reload
 } = useResourceListQuery({
@@ -405,6 +412,6 @@ const getLinkParams = (col: TableColumn, data: Record<string, any>) => {
 }
 
 onMounted(() => {
-  getSearchData()
+  loadFromUrl()
 })
 </script>

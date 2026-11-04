@@ -1,6 +1,8 @@
 import type { RouteLocationNormalized } from 'vue-router'
 import type { ResourceDefinition } from '@/types/resources'
 import { PERMISSIONS } from '@/constants/permissions'
+import { CERT_STATUS_OPTIONS } from '@/constants/ca'
+import { CERT_REVOCATION_REASONS } from '@/constants/ca'
 import router from '@/router'
 import CASpacesCertsSearch from '@/components/special/CASpacesCertsSearch.vue'
 import CASpacesCertsForm from '@/components/special/CASpacesCertsForm.vue'
@@ -8,6 +10,7 @@ import CAAuthoritiesSearch from '@/components/special/CAAuthoritiesSearch.vue'
 import CAAuthoritiesForm from '@/components/special/CAAuthoritiesForm.vue'
 import CASpacesSearch from '@/components/special/CASpacesSearch.vue'
 import CASpacesForm from '@/components/special/CASpacesForm.vue'
+import CACompromisedKeysForm from '@/components/special/CACompromisedKeysForm.vue'
 
 export const caAuthorities: ResourceDefinition = {
   name: 'ca/authorities',
@@ -165,7 +168,22 @@ export const caAuthoritiesCerts: ResourceDefinition = {
     },
     { key: 'status', label: 'Status', sortable: true }
   ],
-  searchFilters: [{ key: 'cn', label: 'Common Name', type: 'text' }],
+  searchFilters: [
+    { key: 'cn', label: 'Common Name', type: 'text' },
+    {
+      key: 'status',
+      label: 'Status',
+      type: 'select',
+      options: CERT_STATUS_OPTIONS
+    },
+    {
+      key: 'revocation_reason',
+      label: 'Revocation Reason',
+      type: 'select',
+      options: CERT_REVOCATION_REASONS
+    },
+    { key: 'key_id', label: 'Key ID', type: 'text' }
+  ],
   fields: [],
   permissions: {
     // GET/PUT-only endpoint: no create, no delete.
@@ -459,9 +477,21 @@ export const caSpacesCerts: ResourceDefinition = {
   searchFilters: [
     { key: 'cert_id', label: 'Cert ID', type: 'text' },
     { key: 'cn', label: 'Common Name', type: 'text' },
-    { key: 'status', label: 'Status', type: 'text' },
+    {
+      key: 'status',
+      label: 'Status',
+      type: 'select',
+      options: CERT_STATUS_OPTIONS
+    },
     { key: 'fingerprint', label: 'Fingerprint', type: 'text' },
-    { key: 'serial_number', label: 'Serial Number', type: 'text' }
+    { key: 'serial_number', label: 'Serial Number', type: 'text' },
+    {
+      key: 'revocation_reason',
+      label: 'Revocation Reason',
+      type: 'select',
+      options: CERT_REVOCATION_REASONS
+    },
+    { key: 'key_id', label: 'Key ID', type: 'text' }
   ],
   fields: [],
   customSearchComponent: CASpacesCertsSearch,
@@ -479,5 +509,113 @@ export const caSpacesCerts: ResourceDefinition = {
       const spaceId = router.currentRoute.value.params.space_id
       return hasPerm(PERMISSIONS.CA.SPACES.CERTS.DELETE(String(spaceId)))
     }
+  }
+}
+
+const REASON_OPTIONS = [
+  'unspecified',
+  'key_compromise',
+  'ca_compromise',
+  'affiliation_changed',
+  'superseded',
+  'cessation_of_operation',
+  'privilege_withdrawn'
+].map((value) => ({ label: value, value }))
+
+export const caCompromisedKeys: ResourceDefinition = {
+  name: 'ca/compromised_keys',
+  label: 'Compromised Key',
+  labelPlural: 'Compromised Keys',
+  apiBase: '/api/v1/ca/compromised_keys',
+  routeParam: 'key_id',
+  routeNames: {
+    search: 'CACompromisedKeysSearch',
+    crud: 'CACompromisedKeysCRUD'
+  },
+  path: '/ca/compromised_keys',
+  crudPath: '/ca/compromised_keys/:key_id',
+  nav: {
+    label: 'Compromised Keys',
+    icon: 'ShieldAlert',
+    group: 'CA',
+    groupOrder: 4,
+    order: 4,
+    requiredPermission: PERMISSIONS.CA.GET
+  },
+  breadcrumbs: {
+    search: [
+      { title: 'Pyppetdb', to: { name: 'Home' } },
+      { title: 'CA' },
+      { title: 'Compromised Keys' }
+    ],
+    crud: (route: RouteLocationNormalized) => [
+      { title: 'Pyppetdb', to: { name: 'Home' } },
+      { title: 'CA' },
+      { title: 'Compromised Keys', to: { name: 'CACompromisedKeysSearch' } },
+      { title: String(route.params.key_id) }
+    ]
+  },
+  toolbar: {
+    search: {
+      title: 'Compromised Keys',
+      items: []
+    },
+    crud: {
+      title: (route: RouteLocationNormalized) =>
+        `Compromised Key ${route.params.key_id}`,
+      items: []
+    }
+  },
+  defaultSort: { field: 'created', order: 'desc' },
+  tableColumns: [
+    {
+      key: 'id',
+      label: 'Key ID',
+      sortable: true,
+      linkRoute: 'CACompromisedKeysCRUD',
+      linkParam: 'key_id'
+    },
+    { key: 'key_type', label: 'Key Type' },
+    { key: 'reason', label: 'Reason' },
+    {
+      key: 'source',
+      label: 'Source',
+      formatter: (value: unknown) => {
+        const source = value as Record<string, string> | null
+        if (!source) return ''
+        return source.cn ? `${source.kind}: ${source.cn}` : source.kind
+      }
+    },
+    {
+      key: 'created',
+      label: 'Created',
+      sortable: true,
+      formatter: (value: unknown) =>
+        value ? new Date(String(value)).toLocaleString() : ''
+    }
+  ],
+  searchFilters: [
+    { key: 'key_id', label: 'Key ID (Regex)', type: 'text' },
+    { key: 'cn', label: 'Common Name (Regex)', type: 'text' },
+    { key: 'space_id', label: 'Space ID (Regex)', type: 'text' },
+    { key: 'ca_id', label: 'CA ID (Regex)', type: 'text' },
+    { key: 'source_id', label: 'Source ID (Regex)', type: 'text' },
+    {
+      key: 'source_kind',
+      label: 'Source Kind',
+      type: 'select',
+      options: ['certificate', 'request', 'authority', 'manual'].map(
+        (value) => ({ label: value, value })
+      )
+    },
+    { key: 'reason', label: 'Reason', type: 'select', options: REASON_OPTIONS }
+  ],
+  fields: [],
+  customFormComponent: CACompromisedKeysForm,
+  permissions: {
+    create: (hasPerm) => hasPerm(PERMISSIONS.CA.COMPROMISED_KEYS.CREATE),
+    // compromised keys are permanent: no update, no delete
+    edit: () => false,
+    delete: () => false
   }
 }

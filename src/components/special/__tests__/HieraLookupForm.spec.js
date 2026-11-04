@@ -52,7 +52,7 @@ describe('HieraLookupForm', () => {
           result: []
         })
       }
-      if (url === '/api/v1/nodes/_distinct_fact_values') {
+      if (url === '/api/v1/nodes_distinct_fact_values') {
         return Promise.resolve({
           result: []
         })
@@ -216,7 +216,7 @@ describe('HieraLookupForm', () => {
 
   it('searches fact suggestions with searchFactSuggestions', async () => {
     vi.mocked(api.get).mockImplementation((url) => {
-      if (url === '/api/v1/nodes/_distinct_fact_values') {
+      if (url === '/api/v1/nodes_distinct_fact_values') {
         return Promise.resolve({
           result: [{ value: 'RedHat' }, { value: 'Debian' }]
         })
@@ -239,7 +239,7 @@ describe('HieraLookupForm', () => {
     )
 
     expect(api.get).toHaveBeenCalledWith(
-      '/api/v1/nodes/_distinct_fact_values',
+      '/api/v1/nodes_distinct_fact_values',
       {
         fact_id: 'osfamily'
       },
@@ -255,7 +255,7 @@ describe('HieraLookupForm', () => {
           result: [{ id: '{osfamily}' }]
         })
       }
-      if (url === '/api/v1/nodes/_distinct_fact_values') {
+      if (url === '/api/v1/nodes_distinct_fact_values') {
         return Promise.resolve({
           result: [{ value: 'RedHat' }]
         })
@@ -289,7 +289,7 @@ describe('HieraLookupForm', () => {
 
   it('offers all fact values again when a value is already selected', async () => {
     vi.mocked(api.get).mockImplementation((url) => {
-      if (url === '/api/v1/nodes/_distinct_fact_values') {
+      if (url === '/api/v1/nodes_distinct_fact_values') {
         return Promise.resolve({
           result: [{ value: 'RedHat' }, { value: 'Debian' }]
         })
@@ -314,14 +314,14 @@ describe('HieraLookupForm', () => {
       vi
         .mocked(api.get)
         .mock.calls.filter(
-          ([url]) => url === '/api/v1/nodes/_distinct_fact_values'
+          ([url]) => url === '/api/v1/nodes_distinct_fact_values'
         )
     ).toHaveLength(1)
   })
 
   it('handles searchFactSuggestions error gracefully', async () => {
     vi.mocked(api.get).mockImplementation((url) => {
-      if (url === '/api/v1/nodes/_distinct_fact_values') {
+      if (url === '/api/v1/nodes_distinct_fact_values') {
         return Promise.reject(new Error('Suggestions error'))
       }
       return Promise.resolve({ result: [] })

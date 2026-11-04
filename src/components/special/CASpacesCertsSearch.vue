@@ -20,7 +20,7 @@
             icon="pi pi-ban"
             class="bg-rose-600 hover:bg-rose-700 text-white border-none py-2 px-4 font-medium"
             :disabled="!canRevokeSelected"
-            @click="batchAction('revoked')"
+            @click="revokeDialogVisible = true"
           />
         </div>
       </template>
@@ -109,6 +109,40 @@
                 class="p-inputtext-sm bg-zinc-50 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50"
               />
             </div>
+
+            <div class="flex flex-col gap-1">
+              <label
+                for="revocation_reason"
+                class="text-xs font-semibold text-zinc-500 dark:text-zinc-400"
+              >
+                Revocation Reason
+              </label>
+              <Select
+                id="revocation_reason"
+                v-model="formSearchBy.revocation_reason"
+                :options="CERT_REVOCATION_REASONS"
+                option-label="label"
+                option-value="value"
+                show-clear
+                @change="handleSearch"
+                class="p-dropdown-sm bg-zinc-50 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50"
+              />
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <label
+                for="key_id"
+                class="text-xs font-semibold text-zinc-500 dark:text-zinc-400"
+              >
+                Key ID
+              </label>
+              <InputText
+                id="key_id"
+                v-model="formSearchBy.key_id"
+                @input="debouncedSearch"
+                class="p-inputtext-sm bg-zinc-50 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50"
+              />
+            </div>
           </div>
         </AccordionContent>
       </AccordionPanel>
@@ -182,6 +216,13 @@
         </Column>
       </DataTable>
     </div>
+
+    <CARevokeDialog
+      v-model:visible="revokeDialogVisible"
+      header="Revoke Certificates"
+      :message="`Revoke ${selectedCerts.length} selected certificate(s)?`"
+      @confirm="batchRevoke"
+    />
   </div>
 </template>
 
@@ -203,17 +244,18 @@ import Select from 'primevue/select'
 import Tag from 'primevue/tag'
 import Button from 'primevue/button'
 import ResponsiveToolbar from '@/components/shared/ResponsiveToolbar.vue'
+import CARevokeDialog from '@/components/special/CARevokeDialog.vue'
+import type { RevokePayload } from '@/components/special/CARevokeDialog.vue'
 import { debounce } from '@/utils/debounce'
 import api from '@/api/client'
 import { useResourceListQuery } from '@/composables/useResourceListQuery'
 import type { ResourceDefinition } from '@/types/resources'
+import { CERT_STATUS_OPTIONS } from '@/constants/ca'
+import { CERT_REVOCATION_REASONS } from '@/constants/ca'
+import { getCertStatusSeverity } from '@/constants/ca'
 
-const statusOptions = [
-  { label: 'Requested', value: 'requested' },
-  { label: 'Signed', value: 'signed' },
-  { label: 'Revoked', value: 'revoked' },
-  { label: 'Expired', value: 'expired' }
-]
+const statusOptions = CERT_STATUS_OPTIONS
+const getStatusSeverity = getCertStatusSeverity
 
 const route = useRoute()
 const confirm = useConfirm()
@@ -224,6 +266,7 @@ const props = defineProps<{
 }>()
 
 const selectedCerts = ref<any[]>([])
+const revokeDialogVisible = ref(false)
 
 const {
   tableItems,
@@ -236,6 +279,7 @@ const {
   tableExpPan,
   formSearchBy,
   getSearchData,
+  loadFromUrl,
   getSearchDataTableEvent,
   reload
 } = useResourceListQuery({
@@ -256,54 +300,52 @@ const canRevokeSelected = computed(() => {
     return false
   }
   return selectedCerts.value.every((c) => {
-    return c.status === 'requested' || c.status === 'signed'
+    return (
+      c.status === 'requested' ||
+      c.status === 'signed' ||
+      c.status === 'superseded'
+    )
   })
 })
 
-const getStatusSeverity = (status: string) => {
-  if (status === 'signed') {
-    return 'success'
+const runBatch = async (
+  action: 'signed' | 'revoked',
+  payload: Record<string, any>
+) => {
+  try {
+    for (const cert of selectedCerts.value) {
+      const url = `/api/v1/ca/spaces/${route.params.space_id}/certs/${cert.id}`
+      await api.put(url, payload)
+    }
+    toast.add({
+      severity: 'success',
+      summary: 'Batch Operation Successful',
+      detail: `Selected certificates have been ${action}.`,
+      life: 3000
+    })
+    selectedCerts.value = []
+    reload()
+  } catch {
+    toast.add({
+      severity: 'error',
+      summary: 'Batch Operation Failed',
+      detail: 'Failed to process some certificates.',
+      life: 3000
+    })
   }
-  if (status === 'requested') {
-    return 'warn'
-  }
-  if (status === 'revoked') {
-    return 'danger'
-  }
-  return 'secondary'
 }
 
-const batchAction = (action: 'signed' | 'revoked') => {
+const batchAction = (action: 'signed') => {
   confirm.require({
     message: `Are you sure you want to ${action} all selected certificates?`,
     header: 'Confirmation',
     icon: 'pi pi-exclamation-triangle',
-    acceptClass: action === 'revoked' ? 'p-button-danger' : 'p-button-success',
-    accept: async () => {
-      try {
-        for (const cert of selectedCerts.value) {
-          const url = `/api/v1/ca/spaces/${route.params.space_id}/certs/${cert.id}`
-          await api.put(url, { status: action })
-        }
-        toast.add({
-          severity: 'success',
-          summary: 'Batch Operation Successful',
-          detail: `Selected certificates have been ${action}.`,
-          life: 3000
-        })
-        selectedCerts.value = []
-        reload()
-      } catch {
-        toast.add({
-          severity: 'error',
-          summary: 'Batch Operation Failed',
-          detail: 'Failed to process some certificates.',
-          life: 3000
-        })
-      }
-    }
+    acceptClass: 'p-button-success',
+    accept: () => runBatch(action, { status: action })
   })
 }
+
+const batchRevoke = (payload: RevokePayload) => runBatch('revoked', payload)
 
 interface PageEvent {
   page: number
@@ -349,6 +391,6 @@ const handleSearch = () => {
 const debouncedSearch = debounce(handleSearch, 300)
 
 onMounted(() => {
-  getSearchData()
+  loadFromUrl()
 })
 </script>

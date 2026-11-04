@@ -198,6 +198,7 @@
                   id="validity-days"
                   v-model="formData.validity_days"
                   type="number"
+                  min="1"
                   class="bg-zinc-50 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50"
                 />
               </div>
@@ -296,7 +297,120 @@
                   class="bg-zinc-50 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50"
                 />
               </div>
+
+              <div
+                class="flex flex-col gap-1"
+                v-if="
+                  formData.status === 'revoked' && formData.revocation_reason
+                "
+              >
+                <label
+                  for="revocation-reason"
+                  class="text-sm font-semibold text-zinc-600 dark:text-zinc-300"
+                >
+                  Revocation Reason
+                </label>
+                <InputText
+                  id="revocation-reason"
+                  :model-value="revocationReasonLabel"
+                  disabled
+                  class="bg-zinc-50 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50"
+                />
+              </div>
+
+              <div
+                class="flex flex-col gap-1"
+                v-if="formData.status === 'revoked' && formData.invalidity_date"
+              >
+                <label
+                  for="invalidity-date"
+                  class="text-sm font-semibold text-zinc-600 dark:text-zinc-300"
+                >
+                  Invalidity Date
+                </label>
+                <InputText
+                  id="invalidity-date"
+                  :model-value="
+                    new Date(formData.invalidity_date).toLocaleString()
+                  "
+                  disabled
+                  class="bg-zinc-50 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50"
+                />
+              </div>
             </template>
+
+            <div class="flex flex-col gap-1">
+              <label
+                for="certificate-retention-days"
+                class="text-sm font-semibold text-zinc-600 dark:text-zinc-300"
+              >
+                Certificate Retention Days
+              </label>
+              <InputNumber
+                v-model="formData.certificate_retention_days"
+                input-id="certificate-retention-days"
+                :min="0"
+                :use-grouping="false"
+                :disabled="isFieldDisabled"
+                class="w-full"
+              />
+              <small class="text-xs text-zinc-500">
+                Days to keep expired and revoked certificates after notAfter. 0
+                = delete at notAfter.
+              </small>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div
+              v-for="list in urlLists"
+              :key="list.key"
+              class="flex flex-col gap-2"
+              :data-test="`url-list-${list.key}`"
+            >
+              <span
+                class="text-sm font-semibold text-zinc-600 dark:text-zinc-300"
+              >
+                {{ list.label }} URLs
+              </span>
+              <div
+                v-for="(_, idx) in formData[list.key]"
+                :key="idx"
+                class="flex gap-2"
+              >
+                <InputText
+                  v-model="formData[list.key][idx]"
+                  type="url"
+                  pattern="https?://\S+"
+                  maxlength="2048"
+                  placeholder="https://"
+                  :disabled="isFieldDisabled"
+                  class="flex-grow bg-zinc-50 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50"
+                />
+                <Button
+                  v-if="!isFieldDisabled"
+                  type="button"
+                  icon="pi pi-trash"
+                  aria-label="Remove URL"
+                  class="p-button-text p-button-danger"
+                  @click="formData[list.key].splice(idx, 1)"
+                />
+              </div>
+              <span
+                v-if="isFieldDisabled && formData[list.key].length === 0"
+                class="text-xs text-zinc-500"
+                >None</span
+              >
+              <Button
+                v-if="!isFieldDisabled && formData[list.key].length < 8"
+                type="button"
+                :label="`Add ${list.label} URL`"
+                icon="pi pi-plus"
+                class="p-button-text p-button-sm self-start"
+                @click="formData[list.key].push('')"
+              />
+              <small class="text-xs text-zinc-500">{{ list.hint }}</small>
+            </div>
           </div>
 
           <div
@@ -377,6 +491,7 @@
             <CAValidationConfig
               v-model="formData.validation_config"
               :readonly="isFieldDisabled"
+              :errors="validationErrors"
             />
           </div>
 
@@ -453,6 +568,22 @@
               class="p-button-outlined p-button-sm text-zinc-700 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800"
               @click="downloadChain"
             />
+            <a
+              :href="`${caApiUrl}/certificate`"
+              download
+              class="p-button p-button-outlined p-button-sm text-zinc-700 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2"
+            >
+              <i class="pi pi-download"></i>
+              Certificate (DER)
+            </a>
+            <a
+              :href="`${caApiUrl}/crl.der`"
+              download
+              class="p-button p-button-outlined p-button-sm text-zinc-700 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2"
+            >
+              <i class="pi pi-download"></i>
+              CRL (DER)
+            </a>
           </div>
 
           <div
@@ -482,7 +613,7 @@
                 label="Revoke"
                 icon="pi pi-ban"
                 class="bg-amber-600 hover:bg-amber-700 text-white border-none px-4 py-2 font-medium"
-                @click="formRevoke"
+                @click="revokeDialogVisible = true"
               />
               <Button
                 type="submit"
@@ -495,6 +626,16 @@
         </form>
       </template>
     </Card>
+
+    <AuditPanel v-if="!isNew" object-kind="ca_authority" :object-id="caId" />
+
+    <CARevokeDialog
+      v-model:visible="revokeDialogVisible"
+      header="Revoke CA Authority"
+      :message="`Revoke CA Authority ${caId}?`"
+      :reasons="AUTHORITY_REVOCATION_REASONS"
+      @confirm="formRevoke"
+    />
   </div>
 </template>
 
@@ -515,13 +656,19 @@ import Select from 'primevue/select'
 import ToggleSwitch from 'primevue/toggleswitch'
 import Button from 'primevue/button'
 import Tag from 'primevue/tag'
+import InputNumber from 'primevue/inputnumber'
 import ResponsiveToolbar from '@/components/shared/ResponsiveToolbar.vue'
+import AuditPanel from '@/components/special/AuditPanel.vue'
 import CAValidationConfig from '@/components/special/CAValidationConfig.vue'
+import CARevokeDialog from '@/components/special/CARevokeDialog.vue'
+import type { RevokePayload } from '@/components/special/CARevokeDialog.vue'
+import { AUTHORITY_REVOCATION_REASONS } from '@/constants/ca'
 import api from '@/api/client'
 import { authStore } from '@/stores/auth'
 import { PERMISSIONS } from '@/constants/permissions'
 import type { ResourceDefinition } from '@/types/resources'
 import { useCAValidationConfig } from '@/composables/useCAValidationConfig'
+import { validationConfigErrors } from '@/composables/useCAValidationConfig'
 
 const route = useRoute()
 const router = useRouter()
@@ -530,6 +677,7 @@ const toast = useToast()
 const auth = authStore()
 const { getDefaultValidationConfig, ensureValidationConfig } =
   useCAValidationConfig()
+const validationErrors = ref<Record<string, string>>({})
 
 defineProps<{
   resourceDef: ResourceDefinition
@@ -538,6 +686,23 @@ defineProps<{
 const caId = computed(() => String(route.params.ca_id))
 const isNew = computed(() => caId.value === '_new')
 const isModifyMode = ref(false)
+const revokeDialogVisible = ref(false)
+const caApiUrl = computed(
+  () => `/api/v1/ca/authorities/${encodeURIComponent(caId.value)}`
+)
+
+const urlLists = [
+  {
+    key: 'crl_urls',
+    label: 'CRL',
+    hint: 'CRL Distribution Points written into issued certificates (max 8).'
+  },
+  {
+    key: 'issuer_urls',
+    label: 'Issuer',
+    hint: 'AIA CA Issuers URLs written into issued certificates (max 8).'
+  }
+]
 
 const isFieldDisabled = computed(() => {
   if (isNew.value) return false
@@ -572,6 +737,9 @@ const formData = reactive<Record<string, any>>({
   status: 'active',
   crl: null,
   chain: [],
+  certificate_retention_days: 365,
+  crl_urls: [],
+  issuer_urls: [],
   validation_config: getDefaultValidationConfig()
 })
 
@@ -606,6 +774,19 @@ const getStatusSeverity = (status: string) => {
   }
   return 'secondary'
 }
+
+const revocationReasonLabel = computed(() => {
+  const match = AUTHORITY_REVOCATION_REASONS.find(
+    (r) => r.value === formData.revocation_reason
+  )
+  return match ? match.label : formData.revocation_reason || ''
+})
+
+const urlSettings = () => ({
+  certificate_retention_days: formData.certificate_retention_days ?? 365,
+  crl_urls: formData.crl_urls.filter((u: string) => u.trim()),
+  issuer_urls: formData.issuer_urls.filter((u: string) => u.trim())
+})
 
 const getCAChoices = async () => {
   caChoicesLoading.value = true
@@ -646,6 +827,9 @@ const formGetData = async () => {
     formData.status = 'active'
     formData.crl = null
     formData.chain = []
+    formData.certificate_retention_days = 365
+    formData.crl_urls = []
+    formData.issuer_urls = []
     formData.validation_config = getDefaultValidationConfig()
     await getCAChoices()
   } else {
@@ -655,6 +839,8 @@ const formGetData = async () => {
       )
       if (data) {
         Object.assign(formData, data)
+        formData.crl_urls = data.crl_urls ?? []
+        formData.issuer_urls = data.issuer_urls ?? []
         ensureValidationConfig(formData)
       }
     } catch {
@@ -669,6 +855,20 @@ const formGetData = async () => {
 }
 
 const formSubmit = async () => {
+  validationErrors.value = {}
+  if (
+    isNew.value &&
+    caCreationMode.value !== 'external' &&
+    !(Number(formData.validity_days) > 0)
+  ) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Validity Days must be greater than 0',
+      life: 3000
+    })
+    return
+  }
   const url = `/api/v1/ca/authorities/${encodeURIComponent(formData.id)}`
   try {
     if (isNew.value) {
@@ -701,7 +901,8 @@ const formSubmit = async () => {
                 .filter((c: string) => c.trim())
                 .map((c: string) => c + '-----END CERTIFICATE-----')
             : null,
-        validation_config: formData.validation_config
+        validation_config: formData.validation_config,
+        ...urlSettings()
       }
 
       await api.post(url, payload)
@@ -719,7 +920,8 @@ const formSubmit = async () => {
       })
     } else {
       const payload = {
-        validation_config: formData.validation_config
+        validation_config: formData.validation_config,
+        ...urlSettings()
       }
       await api.put(url, payload)
       toast.add({
@@ -731,7 +933,8 @@ const formSubmit = async () => {
       isModifyMode.value = false
       await formGetData()
     }
-  } catch {
+  } catch (error) {
+    validationErrors.value = validationConfigErrors(error)
     toast.add({
       severity: 'error',
       summary: 'Error',
@@ -759,34 +962,25 @@ const goToCerts = () => {
   })
 }
 
-const formRevoke = () => {
-  confirm.require({
-    message: `Are you sure you want to revoke CA Authority: ${caId.value}?`,
-    header: 'Confirmation',
-    icon: 'pi pi-exclamation-triangle',
-    acceptClass: 'p-button-danger',
-    accept: async () => {
-      try {
-        const url = `/api/v1/ca/authorities/${encodeURIComponent(caId.value)}`
-        await api.put(url, { status: 'revoked' })
-        toast.add({
-          severity: 'success',
-          summary: 'Revoked',
-          detail: 'CA Authority revoked successfully',
-          life: 3000
-        })
-        isModifyMode.value = false
-        await formGetData()
-      } catch {
-        toast.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to revoke CA Authority',
-          life: 3000
-        })
-      }
-    }
-  })
+const formRevoke = async (payload: RevokePayload) => {
+  try {
+    await api.put(caApiUrl.value, payload)
+    toast.add({
+      severity: 'success',
+      summary: 'Revoked',
+      detail: 'CA Authority revoked successfully',
+      life: 3000
+    })
+    isModifyMode.value = false
+    await formGetData()
+  } catch {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Failed to revoke CA Authority',
+      life: 3000
+    })
+  }
 }
 
 const formDelete = () => {

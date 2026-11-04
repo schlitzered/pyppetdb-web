@@ -15,6 +15,8 @@ import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 import Textarea from 'primevue/textarea'
 import Button from 'primevue/button'
+import InputNumber from 'primevue/inputnumber'
+import MultiSelect from 'primevue/multiselect'
 import CAValidationConfig from '../CAValidationConfig.vue'
 
 vi.mock('@/api/client', () => {
@@ -605,5 +607,132 @@ describe('CAValidationConfig', () => {
       'GITHUB_TOKEN',
       'VAULT_TOKEN'
     ])
+  })
+
+  const mountWith = (modelValue, extraProps = {}) => {
+    const model = ref(modelValue)
+    const wrapper = mount(CAValidationConfig, {
+      props: {
+        modelValue: model.value,
+        'onUpdate:modelValue': (val) => {
+          model.value = val
+        },
+        ...extraProps
+      },
+      global: {
+        stubs: primeVueStubs
+      }
+    })
+    return { wrapper, model }
+  }
+
+  const baseConfig = () => ({
+    enforce_rfc1123: true,
+    allowed_extensions: [],
+    key_usages: [],
+    extended_key_usages: [],
+    san_validation: null,
+    san_injection: null
+  })
+
+  it('toggles key policy, subject attributes and renewal sections', async () => {
+    const { wrapper, model } = mountWith(baseConfig())
+    await flushPromises()
+
+    wrapper.vm.hasKeyPolicy = true
+    expect(model.value.key_policy).toEqual({
+      key_types: null,
+      rsa_min_key_size: null,
+      ec_curves: null
+    })
+    wrapper.vm.hasKeyPolicy = false
+    expect(model.value.key_policy).toBeNull()
+
+    wrapper.vm.hasRenewal = true
+    expect(model.value.renewal).toEqual({
+      grace_seconds: null,
+      window_days: null
+    })
+    wrapper.vm.hasRenewal = false
+    expect(model.value.renewal).toBeNull()
+
+    wrapper.vm.hasSubjectAttributes = true
+    expect(model.value.subject_attributes).toEqual({})
+    wrapper.vm.setSubjectAttribute('country', 'DE')
+    wrapper.vm.setSubjectAttribute('organization', 'ACME')
+    wrapper.vm.setSubjectAttribute('organization', '')
+    expect(model.value.subject_attributes).toEqual({ country: 'DE' })
+    wrapper.vm.hasSubjectAttributes = false
+    expect(model.value.subject_attributes).toBeNull()
+  })
+
+  it('enables SAN validation with recheck_on_sign false', async () => {
+    const { wrapper, model } = mountWith(baseConfig())
+    await flushPromises()
+    wrapper.vm.hasSanValidation = true
+    expect(model.value.san_validation.recheck_on_sign).toBe(false)
+  })
+
+  it('renders new fields and stores empty multiselects as null', async () => {
+    const { wrapper, model } = mountWith({
+      ...baseConfig(),
+      denied_extensions: ['1.2.3', 'nope'],
+      certificate_validity_days: 90,
+      key_policy: {
+        key_types: ['rsa'],
+        rsa_min_key_size: 2048,
+        ec_curves: null
+      },
+      subject_attributes: { country: 'DE' },
+      renewal: { grace_seconds: 0, window_days: 30 }
+    })
+    wrapper.vm.activePanels = [
+      'general',
+      'key_policy',
+      'subject_attributes',
+      'renewal'
+    ]
+    await flushPromises()
+
+    expect(wrapper.vm.invalidOids).toEqual(['nope'])
+    expect(wrapper.text()).toContain('Not a valid OID: nope')
+    expect(wrapper.findAllComponents(InputNumber).length).toBe(4)
+
+    const multiSelects = wrapper.findAllComponents(MultiSelect)
+    expect(multiSelects.length).toBe(2)
+    multiSelects[0].vm.$emit('update:modelValue', [])
+    multiSelects[1].vm.$emit('update:modelValue', ['secp384r1'])
+    expect(model.value.key_policy.key_types).toBeNull()
+    expect(model.value.key_policy.ec_curves).toEqual(['secp384r1'])
+
+    const denied = wrapper
+      .findAllComponents(AutoComplete)
+      .find((ac) => ac.props('placeholder') === 'e.g. 1.3.6.1.5.5.7.1.1')
+    denied.vm.$emit('update:modelValue', [])
+    expect(model.value.denied_extensions).toBeNull()
+  })
+
+  it('shows 422 errors next to fields and others on top', async () => {
+    const { wrapper } = mountWith({
+      ...baseConfig(),
+      renewal: { grace_seconds: null, window_days: 1 }
+    })
+    await flushPromises()
+    await wrapper.setProps({
+      errors: {
+        'renewal.window_days': 'must be at least 30',
+        certificate_validity_days: 'exceeds the authority',
+        'san_validation.http_checks.url': 'Field required'
+      }
+    })
+    await flushPromises()
+
+    expect(wrapper.vm.activePanels).toEqual(
+      expect.arrayContaining(['general', 'renewal', 'san_validation'])
+    )
+    const errors = wrapper.findAll('small.text-red-500').map((e) => e.text())
+    expect(errors).toContain('must be at least 30')
+    expect(errors).toContain('exceeds the authority')
+    expect(errors).toContain('san_validation.http_checks.url: Field required')
   })
 })

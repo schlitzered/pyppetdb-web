@@ -9,6 +9,7 @@ import { primeVueStubs } from '@/__test_utils__/helpers'
 import { createMockResourceDef } from '@/__test_utils__/helpers'
 import api from '@/api/client'
 import CASpacesCertsSearch from '../CASpacesCertsSearch.vue'
+import CARevokeDialog from '../CARevokeDialog.vue'
 
 const mockRouter = {
   push: vi.fn(),
@@ -266,6 +267,21 @@ describe(
           (el) => el.text().includes('Revoke')
         )
         await revokeBtn.trigger('click')
+        expect(mockConfirm.require).not.toHaveBeenCalled()
+        const dialog = wrapper.findComponent(CARevokeDialog)
+        expect(dialog.props('visible')).toBe(true)
+        await dialog.vm.$emit('confirm', {
+          status: 'revoked',
+          revocation_reason: 'key_compromise'
+        })
+        await new Promise((resolve) => setTimeout(resolve, 0))
+        expect(api.put).toHaveBeenCalledWith(
+          '/api/v1/ca/spaces/space1/certs/cert-2',
+          {
+            status: 'revoked',
+            revocation_reason: 'key_compromise'
+          }
+        )
         expect(
           mockToast.add
         ).toHaveBeenCalledWith({
@@ -373,7 +389,7 @@ describe(
     it(
       'renders status tags for all statuses',
       () => {
-        const statuses = ['signed', 'requested', 'revoked', 'expired']
+        const statuses = ['signed', 'requested', 'superseded', 'revoked', 'expired']
         for (const status of statuses) {
           const wrapper = mount(
             CASpacesCertsSearch,
@@ -407,6 +423,46 @@ describe(
           )
           expect(wrapper.exists()).toBe(true)
         }
+      }
+    )
+
+    it(
+      'allows revoking superseded certs but not revoked or expired ones',
+      async () => {
+        const wrapper = mount(CASpacesCertsSearch, {
+          props: { resourceDef: createMockResourceDef() },
+          global: { stubs: globalStubs }
+        })
+        wrapper.vm.selectedCerts = [
+          { id: 'a', status: 'signed' },
+          { id: 'b', status: 'superseded' }
+        ]
+        expect(wrapper.vm.canRevokeSelected).toBe(true)
+        wrapper.vm.selectedCerts = [{ id: 'c', status: 'expired' }]
+        expect(wrapper.vm.canRevokeSelected).toBe(false)
+        wrapper.vm.selectedCerts = [{ id: 'd', status: 'revoked' }]
+        expect(wrapper.vm.canRevokeSelected).toBe(false)
+      }
+    )
+
+    it(
+      'maps new statuses to badge severities and offers new filters',
+      () => {
+        const wrapper = mount(CASpacesCertsSearch, {
+          props: { resourceDef: createMockResourceDef() },
+          global: { stubs: globalStubs }
+        })
+        expect(wrapper.vm.getStatusSeverity('superseded')).toBe('info')
+        expect(wrapper.vm.getStatusSeverity('expired')).toBe('secondary')
+        expect(wrapper.vm.statusOptions.map((o) => o.value)).toEqual([
+          'requested',
+          'signed',
+          'superseded',
+          'revoked',
+          'expired'
+        ])
+        expect(wrapper.find('#key_id').exists()).toBe(true)
+        expect(wrapper.find('#revocation_reason').exists()).toBe(true)
       }
     )
   }

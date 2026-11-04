@@ -186,7 +186,10 @@ describe(
 
         expect(
           api.get
-        ).toHaveBeenCalledWith('/api/v1/jobs/nodes_jobs/node-job-123')
+        ).toHaveBeenCalledWith(
+          '/api/v1/jobs/nodes_jobs/node-job-123',
+          { fields: expect.arrayContaining(['log_blobs']) }
+        )
         expect(
           mockConnect
         ).toHaveBeenCalledWith(

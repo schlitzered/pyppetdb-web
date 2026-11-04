@@ -1,7 +1,7 @@
 import { teams } from '@/resources/admin'
 import { users } from '@/resources/admin'
 import { usersCredentials } from '@/resources/admin'
-import { pyppetdbNodes } from '@/resources/admin'
+import { instances } from '@/resources/admin'
 import { nodes } from '@/resources/nodes'
 import { nodesGroups } from '@/resources/nodes'
 import { nodesReports } from '@/resources/nodes'
@@ -18,15 +18,18 @@ import { caAuthoritiesCerts } from '@/resources/ca'
 import { caSecrets } from '@/resources/ca'
 import { caSpaces } from '@/resources/ca'
 import { caSpacesCerts } from '@/resources/ca'
+import { caCompromisedKeys } from '@/resources/ca'
 import { jobs } from '@/resources/jobs'
 import { jobDefinitions } from '@/resources/jobs'
 import { jobNodeRuns } from '@/resources/jobs'
+import { audit } from '@/resources/audit'
+import { auditConfig } from '@/resources/audit'
 
 export const resources = {
   teams,
   users,
   usersCredentials,
-  pyppetdbNodes,
+  instances,
   nodes,
   nodesGroups,
   nodesReports,
@@ -43,9 +46,12 @@ export const resources = {
   caSecrets,
   caSpaces,
   caSpacesCerts,
+  caCompromisedKeys,
   jobs,
   jobDefinitions,
-  jobNodeRuns
+  jobNodeRuns,
+  audit,
+  auditConfig
 }
 
 export default resources

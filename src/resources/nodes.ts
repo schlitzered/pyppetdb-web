@@ -37,19 +37,46 @@ export const factFieldProcessor = {
   }
 }
 
+export const labelFieldProcessor = {
+  fromUrl: (urlValue: any) => {
+    const label_values = Array.isArray(urlValue) ? urlValue : [urlValue]
+    return label_values.map((label_value: string) => {
+      // only the first two colons separate: a label value may contain more
+      const [, key = '', operator = '', value = ''] =
+        label_value.match(/^([^:]*):([^:]*):(.*)$/s) || []
+      return { key, operator, value }
+    })
+  },
+
+  toUrl: (formValue: any) => {
+    if (!Array.isArray(formValue)) {
+      return undefined
+    }
+    const labels = formValue
+      .filter((label: any) => label.key && label.operator && label.value)
+      .map((label: any) => `${label.key}:${label.operator}:${label.value}`)
+    return labels.length > 0 ? labels : undefined
+  }
+}
+
 export const nodes: ResourceDefinition = {
   name: 'nodes',
   label: 'Node',
   labelPlural: 'Nodes',
-  apiBase: '/api/v1/nodes',
+  // read-only view of /api/v1/nodes that adds report_status_computed, the
+  // status_* counts and the report_status / outdated_threshold filters
+  apiBase: '/api/v1/nodes_status',
   // only the fields the search table renders — keeps the list call from pulling
   // facts / catalog / full report blobs for every row
   apiFields: [
     'id',
-    'environment',
-    'report.status',
-    'change_report',
-    'disabled'
+    'labels',
+    'ext.puppet.environment',
+    'ext.puppet.change_catalog',
+    'ext.puppet.change_facts',
+    'ext.puppet.change_last',
+    'ext.puppet.change_report',
+    'ext.jobs.remote_agent'
   ],
   routeParam: 'node',
   customSearchComponent: NodesSearchForm,
@@ -116,20 +143,26 @@ export const nodes: ResourceDefinition = {
       linkRoute: 'NodesCRUD',
       linkParam: 'node'
     },
-    { key: 'environment', label: 'Environment', sortable: true },
-    { key: 'report.status', label: 'Report Status', sortable: true }
+    { key: 'ext.puppet.environment', label: 'Environment', sortable: true },
+    { key: 'report_status_computed', label: 'Report Status' }
   ],
   searchFilters: [
     { key: 'node_id', label: 'Node Name', type: 'text' },
     { key: 'disabled', label: 'Disabled', type: 'text' },
-    { key: 'environment', label: 'Environment', type: 'text' },
+    { key: 'ext.puppet.environment', label: 'Environment', type: 'text' },
     { key: 'report_status', label: 'Report Status', type: 'text' },
     { key: 'outdated_threshold', label: 'Outdated Threshold', type: 'text' },
     {
-      key: 'fact',
+      key: 'ext.puppet.fact',
       label: 'Fact',
       type: 'array',
       processor: factFieldProcessor
+    },
+    {
+      key: 'label',
+      label: 'Label',
+      type: 'array',
+      processor: labelFieldProcessor
     }
   ],
 
@@ -142,7 +175,7 @@ export const nodes: ResourceDefinition = {
       readonlyOnEdit: true
     },
     {
-      key: 'environment',
+      key: 'ext.puppet.environment',
       label: 'Environment',
       type: 'text',
       required: true,
@@ -162,7 +195,7 @@ export const nodesGroups: ResourceDefinition = {
   label: 'Node Group',
   labelPlural: 'Node Groups',
   apiBase: '/api/v1/nodes_groups',
-  // list only renders id + teams; drops filters + embedded nodes list
+  // list only renders id + teams; drops filters
   apiFields: ['id', 'teams'],
   routeParam: 'node_group',
   customFormComponent: NodesGroupsForm,
@@ -320,7 +353,7 @@ export const nodesSecretsRedactor: ResourceDefinition = {
   name: 'nodes_secrets_redactor',
   label: 'Secrets Redactor',
   labelPlural: 'Secrets Redactor',
-  apiBase: '/api/v1/nodes_secrets_redactor',
+  apiBase: '/api/v1/secrets_redactor',
   routeParam: 'secret_id',
   routeNames: {
     search: 'NodesSecretsRedactorSearch',
@@ -416,7 +449,7 @@ export const nodesDistinctFactValues: ResourceDefinition = {
   name: 'nodes/distinct_fact_values',
   label: 'Distinct Fact Values',
   labelPlural: 'Distinct Fact Values',
-  apiBase: '/api/v1/nodes/_distinct_fact_values',
+  apiBase: '/api/v1/nodes_distinct_fact_values',
   // endpoint returns the full set with no server-side pagination/sort
   dataTableType: 'client',
   routeParam: 'fact',
@@ -460,7 +493,7 @@ export const nodesDistinctFactValues: ResourceDefinition = {
       key: 'fact_id',
       label: 'Fact Name',
       type: 'autocomplete',
-      suggestionsUrl: '/api/v1/nodes/_distinct_fact_names'
+      suggestionsUrl: '/api/v1/nodes_distinct_fact_names'
     }
   ],
   fields: [],

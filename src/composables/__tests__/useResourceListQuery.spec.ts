@@ -338,6 +338,72 @@ describe(
     )
 
     it(
+      'loadFromUrl keeps page and limit from the URL on initial load',
+      () => {
+        vi.mocked(api.get).mockResolvedValueOnce({
+          result: []
+        })
+        setRouteQuery({ page: '3', limit: '25' })
+
+        const {
+          loadFromUrl,
+          tablePage
+        } = useResourceListQuery({
+          resourceDef: mockResourceDef
+        })
+
+        loadFromUrl()
+
+        expect(
+          tablePage.value
+        ).toBe(3)
+        expect(
+          vi.mocked(api.get)
+        ).toHaveBeenCalledWith(
+          '/api/v1/test',
+          expect.objectContaining({ page: 2, limit: 25 })
+        )
+        expect(
+          mockRouterInstance.replace
+        ).toHaveBeenCalledWith({
+          name: 'TestSearch',
+          query: expect.objectContaining({ page: 3, limit: 25 })
+        })
+      }
+    )
+
+    it(
+      'syncs page and limit state from table events',
+      () => {
+        vi.mocked(api.get).mockResolvedValue({
+          result: []
+        })
+
+        const {
+          getSearchDataTableEvent,
+          tablePage,
+          tableItemsPerPage
+        } = useResourceListQuery({
+          resourceDef: mockResourceDef
+        })
+
+        getSearchDataTableEvent({
+          page: 4,
+          itemsPerPage: 50,
+          sortBy: [{ key: 'name', order: 'asc' }],
+          searchBy: []
+        })
+
+        expect(
+          tablePage.value
+        ).toBe(4)
+        expect(
+          tableItemsPerPage.value
+        ).toBe(50)
+      }
+    )
+
+    it(
       'handles getSearchDataExpPanelEvent and triggers search',
       async () => {
         vi.mocked(api.get).mockResolvedValueOnce({
@@ -465,7 +531,7 @@ describe(
 
         expect(
           tablePage.value
-        ).toBe(1)
+        ).toBe(5)
         expect(
           tableItemsPerPage.value
         ).toBe(50)

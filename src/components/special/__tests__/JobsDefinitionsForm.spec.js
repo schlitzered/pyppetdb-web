@@ -340,4 +340,18 @@ describe('JobsDefinitionsForm', () => {
       name: 'JobsDefinitionsSearch'
     })
   })
+
+  it('embeds the audit panel only for existing definitions', async () => {
+    const wrapperNew = mountForm()
+    await flushPromises()
+    expect(wrapperNew.findComponent({ name: 'AuditPanel' }).exists()).toBe(false)
+
+    mockRoute.params.definition_id = 'deploy'
+    const wrapper = mountForm()
+    await flushPromises()
+    expect(wrapper.findComponent({ name: 'AuditPanel' }).props()).toEqual({
+      objectKind: 'job_definition',
+      objectId: 'deploy'
+    })
+  })
 })

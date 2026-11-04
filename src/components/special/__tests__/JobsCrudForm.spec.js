@@ -110,7 +110,7 @@ const slotStubs = {
   },
   Column: {
     template:
-      "<span><slot name=\"body\" :data=\"{ id: 'node-1', remote_agent: { connected: true }, state: 'original_only', node_job_id: 'nj-1', status: 'success' }\"></slot></span>"
+      "<span><slot name=\"body\" :data=\"{ id: 'node-1', ext: { jobs: { remote_agent: { connected: true } } }, state: 'original_only', node_job_id: 'nj-1', status: 'success' }\"></slot></span>"
   },
   Tag: {
     template: '<span><slot></slot></span>'
@@ -136,10 +136,10 @@ describe('JobsCrudForm', () => {
       }
       if (url === '/api/v1/nodes') {
         return Promise.resolve({
-          result: [{ id: 'node-1', remote_agent: { connected: true } }]
+          result: [{ id: 'node-1', ext: { jobs: { remote_agent: { connected: true } } } }]
         })
       }
-      if (url === '/api/v1/nodes/_distinct_fact_names') {
+      if (url === '/api/v1/nodes_distinct_fact_names') {
         return Promise.resolve({ result: ['os.family', 'kernel'] })
       }
       if (url.startsWith('/api/v1/jobs/definitions/')) {
@@ -196,7 +196,7 @@ describe('JobsCrudForm', () => {
     })
     await flushPromises()
 
-    expect(api.get).toHaveBeenCalledWith('/api/v1/nodes/_distinct_fact_names')
+    expect(api.get).toHaveBeenCalledWith('/api/v1/nodes_distinct_fact_names')
     await wrapper.vm.searchFacts({ query: 'OS' }, 0, 0)
     expect(wrapper.vm.factSuggestions).toEqual(['os.family'])
   })
@@ -205,12 +205,12 @@ describe('JobsCrudForm', () => {
     const mountNew = async (valuesByFact) => {
       mockAuthStore.hasPermission.mockReturnValue(true)
       vi.mocked(api.get).mockImplementation((url, params) => {
-        if (url === '/api/v1/nodes/_distinct_fact_names') {
+        if (url === '/api/v1/nodes_distinct_fact_names') {
           return Promise.resolve({
-            result: params?.fact ? ['kernel'] : ['os.family', 'kernel', 'cpus']
+            result: params?.['ext.puppet.fact'] ? ['kernel'] : ['os.family', 'kernel', 'cpus']
           })
         }
-        if (url === '/api/v1/nodes/_distinct_fact_values') {
+        if (url === '/api/v1/nodes_distinct_fact_values') {
           return Promise.resolve({ result: valuesByFact[params.fact_id] || [] })
         }
         return Promise.resolve({ result: [] })
@@ -266,20 +266,20 @@ describe('JobsCrudForm', () => {
       await wrapper.vm.refreshFactValues()
 
       expect(api.get).toHaveBeenCalledWith(
-        '/api/v1/nodes/_distinct_fact_values',
+        '/api/v1/nodes_distinct_fact_values',
         { fact_id: 'os.family' },
         true
       )
       expect(api.get).toHaveBeenCalledWith(
-        '/api/v1/nodes/_distinct_fact_values',
-        { fact_id: 'kernel', fact: ['os.family:eq:str:RedHat'] },
+        '/api/v1/nodes_distinct_fact_values',
+        { fact_id: 'kernel', 'ext.puppet.fact': ['os.family:eq:str:RedHat'] },
         true
       )
 
       await wrapper.vm.searchFacts({ query: '' }, 0, 1)
       expect(api.get).toHaveBeenCalledWith(
-        '/api/v1/nodes/_distinct_fact_names',
-        { fact: ['os.family:eq:str:RedHat'] },
+        '/api/v1/nodes_distinct_fact_names',
+        { 'ext.puppet.fact': ['os.family:eq:str:RedHat'] },
         true
       )
       expect(wrapper.vm.factSuggestions).toEqual(['kernel'])
@@ -296,7 +296,7 @@ describe('JobsCrudForm', () => {
       expect(wrapper.vm.operatorsFor(part)).toContain('regex')
       expect(usesValueChoices(part)).toBe(false)
       expect(api.get).not.toHaveBeenCalledWith(
-        '/api/v1/nodes/_distinct_fact_values',
+        '/api/v1/nodes_distinct_fact_values',
         expect.anything(),
         true
       )
@@ -479,8 +479,8 @@ describe('JobsCrudForm', () => {
     await flushPromises()
 
     expect(api.get).toHaveBeenCalledWith('/api/v1/nodes', {
-      fact: ['osfamily:eq:str:RedHat'],
-      fields: ['id', 'remote_agent.connected'],
+      'ext.puppet.fact': ['osfamily:eq:str:RedHat'],
+      fields: ['id', 'ext.jobs.remote_agent'],
       limit: 1000
     })
     expect(wrapper.vm.currentlyMatchingNodes.length).toBe(1)
@@ -569,7 +569,6 @@ describe('JobsCrudForm', () => {
       },
       {
         id: 'node-2',
-        remote_agent: { connected: false },
         state: 'original_only',
         node_job_id: 'nj-2',
         status: 'failed'
@@ -904,7 +903,7 @@ describe('JobsCrudForm', () => {
       }
       if (url === '/api/v1/nodes') {
         return Promise.resolve({
-          result: [{ id: 'node-1', remote_agent: { connected: true } }]
+          result: [{ id: 'node-1', ext: { jobs: { remote_agent: { connected: true } } } }]
         })
       }
       return Promise.resolve({ result: [] })
@@ -1059,7 +1058,7 @@ describe('JobsCrudForm', () => {
       }
       if (url === '/api/v1/nodes') {
         return Promise.resolve({
-          result: [{ id: 'node-1', remote_agent: { connected: true } }]
+          result: [{ id: 'node-1', ext: { jobs: { remote_agent: { connected: true } } } }]
         })
       }
       if (url === '/api/v1/jobs/nodes_jobs') {
@@ -1081,5 +1080,25 @@ describe('JobsCrudForm', () => {
     await flushPromises()
 
     expect(wrapper.exists()).toBe(true)
+  })
+
+  it('embeds the audit panel only for existing jobs', async () => {
+    mockAuthStore.hasPermission.mockReturnValue(true)
+    const mountJob = async () => {
+      const wrapper = mount(JobsCrudForm, {
+        props: { resourceDef: createMockResourceDef() },
+        global: { stubs: standardStubs }
+      })
+      await flushPromises()
+      return wrapper
+    }
+    expect(
+      (await mountJob()).findComponent({ name: 'AuditPanel' }).exists()
+    ).toBe(false)
+
+    mockRoute.params.job_id = 'job-1'
+    expect(
+      (await mountJob()).findComponent({ name: 'AuditPanel' }).props()
+    ).toEqual({ objectKind: 'job', objectId: 'job-1' })
   })
 })

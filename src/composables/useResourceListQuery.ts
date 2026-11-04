@@ -110,6 +110,8 @@ export function useResourceListQuery(config: ResourceListQueryConfig) {
       tableItemsPerPage.value = 100
       event.itemsPerPage = 100
     }
+    tablePage.value = event.page
+    tableItemsPerPage.value = event.itemsPerPage
 
     syncPaginationToUrl(query, event.page, event.itemsPerPage)
     syncSortToUrl(query, event.sortBy, tableSortBy)
@@ -187,14 +189,15 @@ export function useResourceListQuery(config: ResourceListQueryConfig) {
     getSearchData(_event, force)
   }
 
-  function getSearchDataExpPanelEvent(): void {
+  // keeps the current page, unlike getSearchDataInputEvent which resets to 1
+  function getSearchDataCurrentPage(force: boolean = false): void {
     const _event: TableEvent = {
       page: tablePage.value,
       itemsPerPage: tableItemsPerPage.value,
       sortBy: [...tableSortBy],
       searchBy: getParamsSearchBy()
     }
-    getSearchData(_event)
+    getSearchData(_event, force)
   }
 
   function getSearchDataTableEvent(event: TableEvent): void {
@@ -247,14 +250,14 @@ export function useResourceListQuery(config: ResourceListQueryConfig) {
         query: route.query as Record<string, string>
       })
       oldUrlParams = null
-      getSearchDataInputEvent(true)
+      getSearchDataCurrentPage(true)
     }
   )
 
   watch(
     () => tableExpPan.value,
     () => {
-      getSearchDataExpPanelEvent()
+      getSearchDataCurrentPage()
     },
     { deep: true }
   )
@@ -272,7 +275,8 @@ export function useResourceListQuery(config: ResourceListQueryConfig) {
     formSearchBy,
     getSearchData: getSearchDataInputEvent,
     getSearchDataTableEvent,
-    getSearchDataExpPanelEvent,
+    getSearchDataExpPanelEvent: () => getSearchDataCurrentPage(),
+    loadFromUrl: () => getSearchDataCurrentPage(true),
     getParamsSearchBy,
     reload: () => getSearchDataInputEvent(true)
   }

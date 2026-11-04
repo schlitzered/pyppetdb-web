@@ -195,6 +195,19 @@ const formData = reactive<Record<string, any>>({
   log_blobs: []
 })
 
+// log_blobs is not part of the endpoint's default fields
+const NODE_JOB_FIELDS = [
+  'id',
+  'job_id',
+  'definition_id',
+  'node_id',
+  'status',
+  'created_by',
+  'created_at',
+  'dispatched_at',
+  'log_blobs'
+]
+
 const logsMap = reactive(new Map<string, any>())
 
 const allLines = computed(() => {
@@ -343,7 +356,8 @@ const handleJobFinished = (body: any) => {
   formData.status = body.status
   api
     .get<any>(
-      `/api/v1/jobs/nodes_jobs/${encodeURIComponent(String(route.params.node_job_id))}`
+      `/api/v1/jobs/nodes_jobs/${encodeURIComponent(String(route.params.node_job_id))}`,
+      { fields: NODE_JOB_FIELDS }
     )
     .then((res) => {
       if (res) {
@@ -362,7 +376,8 @@ const formGetData = async () => {
   loading.value = true
   try {
     const data = await api.get<any>(
-      `/api/v1/jobs/nodes_jobs/${encodeURIComponent(String(route.params.node_job_id))}`
+      `/api/v1/jobs/nodes_jobs/${encodeURIComponent(String(route.params.node_job_id))}`,
+      { fields: NODE_JOB_FIELDS }
     )
     if (data) {
       Object.assign(formData, data)

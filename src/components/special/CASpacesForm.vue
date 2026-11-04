@@ -98,6 +98,7 @@
             <CAValidationConfig
               v-model="formData.validation_config"
               :readonly="isFieldDisabled"
+              :errors="validationErrors"
             />
           </div>
 
@@ -160,6 +161,8 @@
         </form>
       </template>
     </Card>
+
+    <AuditPanel v-if="!isNew" object-kind="ca_space" :object-id="spaceId" />
   </div>
 </template>
 
@@ -179,12 +182,14 @@ import Select from 'primevue/select'
 import ToggleSwitch from 'primevue/toggleswitch'
 import Button from 'primevue/button'
 import ResponsiveToolbar from '@/components/shared/ResponsiveToolbar.vue'
+import AuditPanel from '@/components/special/AuditPanel.vue'
 import CAValidationConfig from '@/components/special/CAValidationConfig.vue'
 import api from '@/api/client'
 import { authStore } from '@/stores/auth'
 import { PERMISSIONS } from '@/constants/permissions'
 import type { ResourceDefinition } from '@/types/resources'
 import { useCAValidationConfig } from '@/composables/useCAValidationConfig'
+import { validationConfigErrors } from '@/composables/useCAValidationConfig'
 
 const route = useRoute()
 const router = useRouter()
@@ -193,6 +198,7 @@ const toast = useToast()
 const auth = authStore()
 const { getDefaultValidationConfig, ensureValidationConfig } =
   useCAValidationConfig()
+const validationErrors = ref<Record<string, string>>({})
 
 defineProps<{
   resourceDef: ResourceDefinition
@@ -276,6 +282,7 @@ const formGetData = async () => {
 }
 
 const formSubmit = async () => {
+  validationErrors.value = {}
   const url = `/api/v1/ca/spaces/${encodeURIComponent(formData.id)}`
   const payload = {
     ca_id: formData.ca_id,
@@ -308,7 +315,8 @@ const formSubmit = async () => {
       isModifyMode.value = false
       await formGetData()
     }
-  } catch {
+  } catch (error) {
+    validationErrors.value = validationConfigErrors(error)
     toast.add({
       severity: 'error',
       summary: 'Error',

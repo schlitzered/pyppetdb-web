@@ -133,6 +133,7 @@ describe('ResourceTable', () => {
   let mockTableExpPan
   let mockFormSearchBy
   let mockGetSearchData
+  let mockLoadFromUrl
   let mockGetSearchDataTableEvent
   let mockReload
   let mockConfirm
@@ -156,6 +157,7 @@ describe('ResourceTable', () => {
       secret_id: ''
     })
     mockGetSearchData = vi.fn()
+    mockLoadFromUrl = vi.fn()
     mockGetSearchDataTableEvent = vi.fn()
     mockReload = vi.fn()
 
@@ -170,6 +172,7 @@ describe('ResourceTable', () => {
       tableExpPan: mockTableExpPan,
       formSearchBy: mockFormSearchBy,
       getSearchData: mockGetSearchData,
+      loadFromUrl: mockLoadFromUrl,
       getSearchDataTableEvent: mockGetSearchDataTableEvent,
       reload: mockReload
     })
@@ -265,7 +268,8 @@ describe('ResourceTable', () => {
       }
     })
     expect(wrapper.exists()).toBe(true)
-    expect(mockGetSearchData).toHaveBeenCalled()
+    expect(mockLoadFromUrl).toHaveBeenCalled()
+    expect(mockGetSearchData).not.toHaveBeenCalled()
   })
 
   it('triggers search methods for inputs, select, and boolean filters', async () => {
@@ -338,7 +342,7 @@ describe('ResourceTable', () => {
       key: 'fact_id',
       label: 'Fact Name',
       type: 'autocomplete',
-      suggestionsUrl: '/api/v1/nodes/_distinct_fact_names'
+      suggestionsUrl: '/api/v1/nodes_distinct_fact_names'
     }
     const wrapper = mount(ResourceTable, {
       props: {
@@ -350,7 +354,7 @@ describe('ResourceTable', () => {
     await wrapper.vm.searchFilterSuggestions(filter, { query: 'OS' })
 
     expect(api.get).toHaveBeenCalledWith(
-      '/api/v1/nodes/_distinct_fact_names',
+      '/api/v1/nodes_distinct_fact_names',
       {},
       true
     )
@@ -697,6 +701,27 @@ describe('ResourceTable', () => {
     })
     await deleteBtn.trigger('click')
     expect(mockConfirm.require).toHaveBeenCalled()
+  })
+
+  it('hides the delete button of rows that cannot be deleted', () => {
+    mockTableItems.value = [
+      { id: 1, alive: true },
+      { id: 2, alive: false }
+    ]
+    const wrapper = mount(ResourceTable, {
+      props: {
+        resourceDef: getMockResourceDef({
+          tableColumns: [{ key: 'id', label: 'ID' }],
+          permissions: {
+            delete: (hasPerm, item) => !item?.alive
+          }
+        })
+      },
+      global: {
+        stubs: customStubs
+      }
+    })
+    expect(wrapper.findAll('.pi-trash, [icon="pi pi-trash"]')).toHaveLength(1)
   })
 
   it('returns false for canDelete if permissions.delete is not defined', () => {

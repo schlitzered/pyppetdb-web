@@ -216,6 +216,12 @@
         </form>
       </template>
     </Card>
+
+    <AuditPanel
+      v-if="!isNew"
+      object-kind="job_definition"
+      :object-id="definitionId"
+    />
   </div>
 </template>
 
@@ -234,6 +240,7 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import Button from 'primevue/button'
 import ResponsiveToolbar from '@/components/shared/ResponsiveToolbar.vue'
 import JobParamsEditor from '@/components/special/JobParamsEditor.vue'
+import AuditPanel from '@/components/special/AuditPanel.vue'
 import api from '@/api/client'
 import { authStore } from '@/stores/auth'
 import { PERMISSIONS } from '@/constants/permissions'

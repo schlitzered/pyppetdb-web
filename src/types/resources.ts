@@ -13,6 +13,7 @@ export type FieldType =
   | 'readonly'
   | 'number'
   | 'permission-grid'
+  | 'datetime'
 
 export interface FieldOption {
   label: string
@@ -44,6 +45,10 @@ export interface FieldDefinition {
   hiddenOnEdit?: boolean
   cols?: number
   appendSlot?: string
+  // permission-grid only: null means no restriction, [] grants nothing
+  restrictable?: boolean
+  // datetime only: buttons that set the value to this many days from now
+  presetDays?: number[]
 }
 
 export type SortOrder = 'asc' | 'desc'
@@ -63,7 +68,7 @@ export interface TableColumn {
 export interface SearchFilterType {
   key: string
   label: string
-  type: 'text' | 'select' | 'boolean' | 'array' | 'autocomplete'
+  type: 'text' | 'select' | 'boolean' | 'array' | 'autocomplete' | 'datetime'
   apiKey?: string
   options?: FieldOption[]
   // 'autocomplete': endpoint returning `{ result: string[] }`, filtered
@@ -160,7 +165,7 @@ export interface ResourceDefinition {
   defaultSort?: { field: string; order: SortOrder }
   apiFields?: string[]
   // 'client' for endpoints without server-side pagination/sort (e.g.
-  // /nodes/_distinct_fact_values): fetch the full set and let the table
+  // /nodes_distinct_fact_values): fetch the full set and let the table
   // paginate/sort in the browser. Defaults to 'server'.
   dataTableType?: 'server' | 'client'
   batchActions?: BatchAction[]

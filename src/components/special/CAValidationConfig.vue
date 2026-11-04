@@ -1,6 +1,15 @@
 <template>
   <div v-if="model" class="flex flex-col gap-4">
-    <Accordion multiple :value="activePanels">
+    <div
+      v-if="otherErrors.length"
+      class="p-3 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-800 rounded-lg flex flex-col gap-1"
+    >
+      <small v-for="[key, msg] in otherErrors" :key="key" class="text-red-500">
+        <code v-if="key">{{ key }}</code
+        >{{ key ? ': ' : '' }}{{ msg }}
+      </small>
+    </div>
+    <Accordion v-model:value="activePanels" multiple>
       <AccordionPanel value="general">
         <AccordionHeader>General Validation</AccordionHeader>
         <AccordionContent>
@@ -32,6 +41,70 @@
                 class="w-full"
                 input-class="w-full bg-zinc-50 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50"
               />
+              <small
+                v-if="fieldError('allowed_extensions')"
+                class="text-red-500"
+              >
+                {{ fieldError('allowed_extensions') }}
+              </small>
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <label
+                class="text-xs font-semibold text-zinc-500 dark:text-zinc-400"
+                >Denied Extensions (OIDs)</label
+              >
+              <AutoComplete
+                :model-value="model.denied_extensions ?? []"
+                multiple
+                :typeahead="false"
+                :disabled="readonly"
+                placeholder="e.g. 1.3.6.1.5.5.7.1.1"
+                class="w-full"
+                input-class="w-full bg-zinc-50 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50"
+                @update:model-value="
+                  (val) => (model.denied_extensions = val?.length ? val : null)
+                "
+              />
+              <small class="text-xs text-zinc-500">
+                Added to the built-in deny list (basicConstraints, keyUsage,
+                extKeyUsage, nameConstraints, certificatePolicies, …), which
+                always applies. Must not overlap Allowed Extensions.
+              </small>
+              <small v-if="invalidOids.length" class="text-red-500">
+                Not a valid OID: {{ invalidOids.join(', ') }}
+              </small>
+              <small
+                v-if="fieldError('denied_extensions')"
+                class="text-red-500"
+              >
+                {{ fieldError('denied_extensions') }}
+              </small>
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <label
+                for="certificate_validity_days"
+                class="text-xs font-semibold text-zinc-500 dark:text-zinc-400"
+                >Certificate Validity (days)</label
+              >
+              <InputNumber
+                v-model="model.certificate_validity_days"
+                input-id="certificate_validity_days"
+                :min="1"
+                :use-grouping="false"
+                :disabled="readonly"
+                placeholder="Not set (inherit)"
+              />
+              <small class="text-xs text-zinc-500">
+                On a space at most the authority's value.
+              </small>
+              <small
+                v-if="fieldError('certificate_validity_days')"
+                class="text-red-500"
+              >
+                {{ fieldError('certificate_validity_days') }}
+              </small>
             </div>
 
             <div class="flex flex-col gap-1">
@@ -120,6 +193,21 @@
                   :disabled="readonly"
                   class="bg-zinc-50 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50"
                 />
+              </div>
+
+              <div class="flex items-center gap-2">
+                <Checkbox
+                  v-model="model.san_validation.recheck_on_sign"
+                  input-id="recheck_on_sign"
+                  binary
+                  :disabled="readonly"
+                />
+                <label
+                  for="recheck_on_sign"
+                  class="text-sm text-zinc-700 dark:text-zinc-300"
+                >
+                  Re-run SAN checks when a stored request is signed later
+                </label>
               </div>
 
               <div
@@ -274,7 +362,9 @@
                       </div>
                       <div class="flex flex-col gap-1 md:col-span-2">
                         <label class="text-xs text-zinc-500">URL</label>
-                        <div class="flex flex-wrap md:flex-nowrap items-start gap-2">
+                        <div
+                          class="flex flex-wrap md:flex-nowrap items-start gap-2"
+                        >
                           <InputText
                             v-model="check.url"
                             :disabled="readonly"
@@ -286,7 +376,8 @@
                             :options="URL_PLACEHOLDERS"
                             placeholder="Insert placeholder…"
                             @insert="
-                              (token) => (check.url = appendText(check.url, token))
+                              (token) =>
+                                (check.url = appendText(check.url, token))
                             "
                           />
                         </div>
@@ -411,7 +502,10 @@
                         rows="3"
                         class="font-mono text-xs bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 w-full"
                       />
-                      <div v-if="!readonly" class="flex flex-wrap justify-end gap-2">
+                      <div
+                        v-if="!readonly"
+                        class="flex flex-wrap justify-end gap-2"
+                      >
                         <CAInsertPicker
                           :options="BODY_PLACEHOLDERS"
                           placeholder="Insert placeholder…"
@@ -440,9 +534,9 @@
                         Placeholders use double braces:
                         <code>{{ BODY_PLACEHOLDERS[0] }}</code> (string) and
                         <code>{{ BODY_PLACEHOLDERS[1] }}</code> (JSON array — no
-                        quotes). <code>$secrets[…]</code> allowed. If left empty,
-                        a default <code>{{ DEFAULT_BODY_EXAMPLE }}</code> body is
-                        sent.
+                        quotes). <code>$secrets[…]</code> allowed. If left
+                        empty, a default
+                        <code>{{ DEFAULT_BODY_EXAMPLE }}</code> body is sent.
                       </small>
                     </div>
 
@@ -807,6 +901,241 @@
           </div>
         </AccordionContent>
       </AccordionPanel>
+
+      <AccordionPanel value="key_policy">
+        <AccordionHeader>Key Policy</AccordionHeader>
+        <AccordionContent>
+          <div class="flex flex-col gap-4">
+            <div class="flex items-center gap-2">
+              <ToggleSwitch
+                id="enable_key_policy"
+                v-model="hasKeyPolicy"
+                :disabled="readonly"
+              />
+              <label
+                for="enable_key_policy"
+                class="text-sm font-semibold text-zinc-700 dark:text-zinc-300"
+              >
+                Enable Key Policy
+              </label>
+            </div>
+            <small class="text-xs text-zinc-500">
+              Both the authority and the space policy must accept a key. Empty
+              fields are not restricted.
+            </small>
+            <small v-if="fieldError('key_policy')" class="text-red-500">
+              {{ fieldError('key_policy') }}
+            </small>
+
+            <template v-if="hasKeyPolicy && model.key_policy">
+              <div class="flex flex-col gap-1">
+                <label
+                  class="text-xs font-semibold text-zinc-500 dark:text-zinc-400"
+                  >Key Types</label
+                >
+                <MultiSelect
+                  :model-value="model.key_policy.key_types ?? []"
+                  :options="KEY_TYPES"
+                  :disabled="readonly"
+                  placeholder="Any key type"
+                  class="w-full"
+                  @update:model-value="
+                    (val) =>
+                      (model.key_policy.key_types = val?.length ? val : null)
+                  "
+                />
+                <small
+                  v-if="fieldError('key_policy.key_types')"
+                  class="text-red-500"
+                >
+                  {{ fieldError('key_policy.key_types') }}
+                </small>
+              </div>
+
+              <div class="flex flex-col gap-1">
+                <label
+                  for="rsa_min_key_size"
+                  class="text-xs font-semibold text-zinc-500 dark:text-zinc-400"
+                  >RSA Minimum Key Size (bits)</label
+                >
+                <InputNumber
+                  v-model="model.key_policy.rsa_min_key_size"
+                  input-id="rsa_min_key_size"
+                  :min="1024"
+                  :use-grouping="false"
+                  :disabled="readonly"
+                  placeholder="Not set"
+                />
+                <small
+                  v-if="fieldError('key_policy.rsa_min_key_size')"
+                  class="text-red-500"
+                >
+                  {{ fieldError('key_policy.rsa_min_key_size') }}
+                </small>
+              </div>
+
+              <div class="flex flex-col gap-1">
+                <label
+                  class="text-xs font-semibold text-zinc-500 dark:text-zinc-400"
+                  >EC Curves</label
+                >
+                <MultiSelect
+                  :model-value="model.key_policy.ec_curves ?? []"
+                  :options="EC_CURVES"
+                  :disabled="readonly"
+                  placeholder="Any curve"
+                  class="w-full"
+                  @update:model-value="
+                    (val) =>
+                      (model.key_policy.ec_curves = val?.length ? val : null)
+                  "
+                />
+                <small
+                  v-if="fieldError('key_policy.ec_curves')"
+                  class="text-red-500"
+                >
+                  {{ fieldError('key_policy.ec_curves') }}
+                </small>
+              </div>
+            </template>
+          </div>
+        </AccordionContent>
+      </AccordionPanel>
+
+      <AccordionPanel value="subject_attributes">
+        <AccordionHeader>Subject Attributes</AccordionHeader>
+        <AccordionContent>
+          <div class="flex flex-col gap-4">
+            <div class="flex items-center gap-2">
+              <ToggleSwitch
+                id="enable_subject_attributes"
+                v-model="hasSubjectAttributes"
+                :disabled="readonly"
+              />
+              <label
+                for="enable_subject_attributes"
+                class="text-sm font-semibold text-zinc-700 dark:text-zinc-300"
+              >
+                Enable Subject Attributes
+              </label>
+            </div>
+            <small class="text-xs text-zinc-500">
+              Added to the CN of signed certificates. On a space each attribute
+              overrides the authority's; empty attributes are not set.
+            </small>
+            <small v-if="fieldError('subject_attributes')" class="text-red-500">
+              {{ fieldError('subject_attributes') }}
+            </small>
+
+            <div
+              v-if="hasSubjectAttributes && model.subject_attributes"
+              class="grid grid-cols-1 md:grid-cols-2 gap-4"
+            >
+              <div
+                v-for="attr in SUBJECT_ATTRIBUTES"
+                :key="attr.key"
+                class="flex flex-col gap-1"
+              >
+                <label
+                  :for="`subject_${attr.key}`"
+                  class="text-xs font-semibold text-zinc-500 dark:text-zinc-400"
+                  >{{ attr.label }}</label
+                >
+                <InputText
+                  :id="`subject_${attr.key}`"
+                  :model-value="model.subject_attributes[attr.key] ?? ''"
+                  :maxlength="attr.max"
+                  :disabled="readonly"
+                  class="bg-zinc-50 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50"
+                  @update:model-value="
+                    (val) => setSubjectAttribute(attr.key, val)
+                  "
+                />
+                <small class="text-xs text-zinc-500">{{ attr.hint }}</small>
+              </div>
+            </div>
+          </div>
+        </AccordionContent>
+      </AccordionPanel>
+
+      <AccordionPanel value="renewal">
+        <AccordionHeader>Renewal</AccordionHeader>
+        <AccordionContent>
+          <div class="flex flex-col gap-4">
+            <div class="flex items-center gap-2">
+              <ToggleSwitch
+                id="enable_renewal"
+                v-model="hasRenewal"
+                :disabled="readonly"
+              />
+              <label
+                for="enable_renewal"
+                class="text-sm font-semibold text-zinc-700 dark:text-zinc-300"
+              >
+                Enable Renewal Policy
+              </label>
+            </div>
+            <small v-if="fieldError('renewal')" class="text-red-500">
+              {{ fieldError('renewal') }}
+            </small>
+
+            <template v-if="hasRenewal && model.renewal">
+              <div class="flex flex-col gap-1">
+                <label
+                  for="renewal_grace_seconds"
+                  class="text-xs font-semibold text-zinc-500 dark:text-zinc-400"
+                  >Grace Period (seconds)</label
+                >
+                <InputNumber
+                  v-model="model.renewal.grace_seconds"
+                  input-id="renewal_grace_seconds"
+                  :min="0"
+                  :use-grouping="false"
+                  :disabled="readonly"
+                  placeholder="Not set"
+                />
+                <small class="text-xs text-zinc-500">
+                  How long the old certificate stays valid after renewal.
+                </small>
+                <small
+                  v-if="fieldError('renewal.grace_seconds')"
+                  class="text-red-500"
+                >
+                  {{ fieldError('renewal.grace_seconds') }}
+                </small>
+              </div>
+
+              <div class="flex flex-col gap-1">
+                <label
+                  for="renewal_window_days"
+                  class="text-xs font-semibold text-zinc-500 dark:text-zinc-400"
+                  >Renewal Window (days)</label
+                >
+                <InputNumber
+                  v-model="model.renewal.window_days"
+                  input-id="renewal_window_days"
+                  :min="1"
+                  :use-grouping="false"
+                  :disabled="readonly"
+                  placeholder="Not set"
+                />
+                <small class="text-xs text-zinc-500">
+                  Renewal is only allowed within this many days before
+                  <code>notAfter</code>. For <code>puppet-ca</code> this must be
+                  at least the agents' <code>hostcert_renewal_interval</code>
+                  (30 days), otherwise agents cannot renew.
+                </small>
+                <small
+                  v-if="fieldError('renewal.window_days')"
+                  class="text-red-500"
+                >
+                  {{ fieldError('renewal.window_days') }}
+                </small>
+              </div>
+            </template>
+          </div>
+        </AccordionContent>
+      </AccordionPanel>
     </Accordion>
   </div>
 </template>
@@ -828,6 +1157,9 @@ import AccordionHeader from 'primevue/accordionheader'
 import AccordionContent from 'primevue/accordioncontent'
 import Tag from 'primevue/tag'
 import AutoComplete from 'primevue/autocomplete'
+import InputNumber from 'primevue/inputnumber'
+import MultiSelect from 'primevue/multiselect'
+import Checkbox from 'primevue/checkbox'
 import api from '@/api/client'
 import CAInsertPicker from '@/components/special/CAInsertPicker.vue'
 import { useCAValidationConfig } from '@/composables/useCAValidationConfig'
@@ -899,11 +1231,122 @@ const model = defineModel<any>({
   })
 })
 
-defineProps<{
+const props = defineProps<{
   readonly?: boolean
+  // field key (loc path below validation_config, e.g. 'renewal.window_days')
+  // -> message, as built by validationConfigErrors()
+  errors?: Record<string, string>
 }>()
 
 const activePanels = ref<string[]>(['general'])
+
+const KEY_TYPES = ['rsa', 'ec', 'ed25519', 'ed448']
+const EC_CURVES = ['secp256r1', 'secp384r1', 'secp521r1']
+const SUBJECT_ATTRIBUTES = [
+  { key: 'country', label: 'Country', max: 2, hint: 'Exactly 2 characters' },
+  { key: 'state', label: 'State', max: 128, hint: 'Up to 128 characters' },
+  {
+    key: 'locality',
+    label: 'Locality',
+    max: 128,
+    hint: 'Up to 128 characters'
+  },
+  {
+    key: 'organization',
+    label: 'Organization',
+    max: 64,
+    hint: 'Up to 64 characters'
+  },
+  {
+    key: 'organizational_unit',
+    label: 'Organizational Unit',
+    max: 64,
+    hint: 'Up to 64 characters'
+  }
+]
+const OID_RE = /^\d+(\.\d+)+$/
+
+// keys rendered next to a field; anything else goes to the box on top
+const FIELD_ERROR_KEYS = [
+  'allowed_extensions',
+  'denied_extensions',
+  'certificate_validity_days',
+  'key_policy',
+  'key_policy.key_types',
+  'key_policy.rsa_min_key_size',
+  'key_policy.ec_curves',
+  'subject_attributes',
+  'renewal',
+  'renewal.grace_seconds',
+  'renewal.window_days'
+]
+
+const fieldError = (key: string): string | undefined => props.errors?.[key]
+
+const otherErrors = computed(() =>
+  Object.entries(props.errors || {}).filter(
+    ([key]) => !FIELD_ERROR_KEYS.includes(key)
+  )
+)
+
+// open the panels that hold an error so the message is visible
+watch(
+  () => props.errors,
+  (errors) => {
+    const panels = Object.keys(errors || {}).map((key) => {
+      const root = key.split('.')[0]
+      return [
+        'key_policy',
+        'subject_attributes',
+        'renewal',
+        'san_validation',
+        'san_injection'
+      ].includes(root)
+        ? root
+        : 'general'
+    })
+    activePanels.value = [...new Set([...activePanels.value, ...panels])]
+  }
+)
+
+const invalidOids = computed<string[]>(() =>
+  (model.value?.denied_extensions || []).filter(
+    (oid: string) => !OID_RE.test(oid)
+  )
+)
+
+// optional sections: null means not set (inherit), toggling on creates an
+// empty object
+const sectionToggle = (key: string, init: () => any) =>
+  computed({
+    get: () => !!model.value?.[key],
+    set: (val: boolean) => {
+      if (!model.value) {
+        model.value = getDefaultValidationConfig()
+      }
+      model.value[key] = val ? init() : null
+    }
+  })
+
+const hasKeyPolicy = sectionToggle('key_policy', () => ({
+  key_types: null,
+  rsa_min_key_size: null,
+  ec_curves: null
+}))
+const hasSubjectAttributes = sectionToggle('subject_attributes', () => ({}))
+const hasRenewal = sectionToggle('renewal', () => ({
+  grace_seconds: null,
+  window_days: null
+}))
+
+const setSubjectAttribute = (key: string, val: string | undefined) => {
+  if (!model.value?.subject_attributes) return
+  if (val) {
+    model.value.subject_attributes[key] = val
+  } else {
+    delete model.value.subject_attributes[key]
+  }
+}
 
 const commonKeyUsages = [
   'digital_signature',
@@ -940,7 +1383,8 @@ const hasSanValidation = computed({
         max_san_count: 10,
         regex_list: [],
         http_checks: [],
-        script_checks: []
+        script_checks: [],
+        recheck_on_sign: false
       }
     } else {
       model.value.san_validation = null

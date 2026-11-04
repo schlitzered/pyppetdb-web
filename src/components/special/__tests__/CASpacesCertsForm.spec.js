@@ -9,6 +9,7 @@ import { primeVueStubs } from '@/__test_utils__/helpers'
 import { createMockResourceDef } from '@/__test_utils__/helpers'
 import api from '@/api/client'
 import CASpacesCertsForm from '../CASpacesCertsForm.vue'
+import CARevokeDialog from '../CARevokeDialog.vue'
 
 const mockRouter = {
   push: vi.fn()
@@ -370,6 +371,22 @@ describe(
           (el) => el.text().includes('Revoke')
         )
         await revokeBtn.trigger('click')
+        const dialog = wrapper.findComponent(CARevokeDialog)
+        expect(dialog.props('visible')).toBe(true)
+        await dialog.vm.$emit('confirm', {
+          status: 'revoked',
+          revocation_reason: 'superseded',
+          invalidity_date: '2026-01-01T00:00:00.000Z'
+        })
+        await new Promise((resolve) => setTimeout(resolve, 0))
+        expect(api.put).toHaveBeenCalledWith(
+          '/api/v1/ca/spaces/space1/certs/cert1',
+          {
+            status: 'revoked',
+            revocation_reason: 'superseded',
+            invalidity_date: '2026-01-01T00:00:00.000Z'
+          }
+        )
         expect(
           mockToast.add
         ).toHaveBeenCalledWith({
@@ -519,6 +536,89 @@ describe(
             )
           }
         )
+      }
+    )
+
+    it(
+      'shows revocation and supersession details with a link to the successor',
+      async () => {
+        api.get.mockImplementation((url) => {
+          if (url.includes('/api/v1/nodes/')) {
+            return Promise.resolve({ id: 'node1' })
+          }
+          return Promise.resolve({
+            id: 'cert1',
+            space_id: 'space1',
+            status: 'revoked',
+            cn: 'node1',
+            key_id: 'keyid-abc',
+            revocation_date: '2026-06-01T00:00:00Z',
+            revocation_reason: 'key_compromise',
+            invalidity_date: '2026-05-01T00:00:00Z',
+            superseded_by: 'cert2',
+            superseded_until: '2026-07-01T00:00:00Z'
+          })
+        })
+        const wrapper = mount(CASpacesCertsForm, {
+          props: { resourceDef: createMockResourceDef() },
+          global: {
+            stubs: {
+              ...primeVueStubs,
+              'router-link': {
+                props: ['to'],
+                template: '<a :data-to="JSON.stringify(to)"><slot /></a>'
+              }
+            }
+          }
+        })
+        await new Promise((resolve) => setTimeout(resolve, 0))
+        await wrapper.vm.$nextTick()
+        expect(wrapper.find('#key-id').element.value).toBe('keyid-abc')
+        expect(wrapper.find('#revocation-reason').element.value).toBe(
+          'Key Compromise'
+        )
+        expect(wrapper.find('#invalidity-date').exists()).toBe(true)
+        expect(wrapper.find('#superseded-until').exists()).toBe(true)
+        const link = wrapper.find('[data-test="superseded-by-link"]')
+        expect(link.text()).toBe('cert2')
+        expect(JSON.parse(link.attributes('data-to'))).toEqual({
+          name: 'CASpacesCertsCRUD',
+          params: { space_id: 'space1', cert_id: 'cert2' }
+        })
+        // revoked certs cannot be revoked again
+        wrapper.vm.isModifyMode = true
+        await wrapper.vm.$nextTick()
+        expect(
+          wrapper.findAll('button').some((b) => b.text().includes('Revoke'))
+        ).toBe(false)
+      }
+    )
+
+    it(
+      'offers revoke for superseded certs',
+      async () => {
+        api.get.mockImplementation((url) => {
+          if (url.includes('/api/v1/nodes/')) {
+            return Promise.resolve({ id: 'node1' })
+          }
+          return Promise.resolve({
+            id: 'cert1',
+            space_id: 'space1',
+            status: 'superseded',
+            cn: 'node1'
+          })
+        })
+        const wrapper = mount(CASpacesCertsForm, {
+          props: { resourceDef: createMockResourceDef() },
+          global: { stubs: { ...primeVueStubs, RouterLink: true } }
+        })
+        await new Promise((resolve) => setTimeout(resolve, 0))
+        wrapper.vm.isModifyMode = true
+        await wrapper.vm.$nextTick()
+        expect(wrapper.vm.getStatusSeverity('superseded')).toBe('info')
+        expect(
+          wrapper.findAll('button').some((b) => b.text().includes('Revoke'))
+        ).toBe(true)
       }
     )
   }
